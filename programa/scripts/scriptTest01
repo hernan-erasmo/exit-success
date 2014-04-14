@@ -1,0 +1,14 @@
+#!../bin/Proceso
+begin
+variables f,a,g
+	a = 1
+	f = 8
+	g <- doble a
+	print g
+end
+
+function doble
+variabes f
+	f = $0 + $0
+	return f
+end
