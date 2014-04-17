@@ -1,0 +1,7 @@
+Proceso:
+	- El código para el envío de un archivo a través de un socket.
+		http://stackoverflow.com/questions/11254447/file-transfer-server-client-in-c-on-linux-using-socket
+		https://github.com/sisoputnfrba/so-test-sockets/blob/master/Cliente/sock_cliente.c
+		man fread
+		man bzero
+		man 2 shutdown
