@@ -47,8 +47,7 @@ int main(int argc, char *argv[])
 		log_error(logger,"No se pudo abrir el script AnSISOP. Motivo: %s", strerror(errno));
 	}
 
-	if(logger != NULL)
-		log_destroy(logger);
+	log_destroy(logger);
 
 	return 0;
 }
