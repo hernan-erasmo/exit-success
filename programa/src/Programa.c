@@ -17,7 +17,6 @@
 int main(int argc, char *argv[])
 {
 	//Variables para el script
-	int script_buff;
 	FILE *script;
 	
 	//Variables para el logger
@@ -69,8 +68,7 @@ int main(int argc, char *argv[])
 		log_info(logger, "Conexión establecida.");
 		log_info(logger, "Comenzando a enviar el script AnSISOP.");
 
-		//¿Es necesaria la variable script_buff?
-		while ((script_buff = fread(buffer, sizeof(char), BUFF_SIZE, script)) > 0) {
+		while (fread(buffer, sizeof(char), BUFF_SIZE, script) > 0) {
 			if ((bytesEnviados += send(unSocket, buffer, strlen(buffer), 0)) < 0) {
 				log_error(logger, "Error en la transmisión del script. Motivo: %s", strerror(errno));
 			}
@@ -88,6 +86,7 @@ int main(int argc, char *argv[])
 	}
 
 	log_info(logger, "El programa finalizó.");
+	log_destroy(logger);
 
 	return EXIT_SUCCESS;
 }
