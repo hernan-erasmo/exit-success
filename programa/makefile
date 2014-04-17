@@ -1,3 +1,3 @@
-Proceso: ./src/Proceso.c
+Programa: ./src/Programa.c
 	mkdir -p bin
-	gcc ./src/Proceso.c -lcommons -o bin/Proceso
+	gcc -g ./src/Programa.c -lcommons -o bin/Programa

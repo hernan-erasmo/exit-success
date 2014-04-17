@@ -1,4 +1,4 @@
-#!../bin/Proceso
+#!../bin/Programa
 begin
 variables f,a,g
 	a = 1
