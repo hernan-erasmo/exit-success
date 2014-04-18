@@ -16,23 +16,27 @@
 
 int crearSocket(struct sockaddr_in *socketInfo);
 int enviarDatos(FILE *script, int unSocket);
+int checkArgs(int args);
 
 int main(int argc, char *argv[])
 {
+	int errorArgumentos = 0;
+
 	//Variables para el script
 	FILE *script;
 	
 	//Variables para el logger
 	char *nombreArchivoLog = "programa_log";
 	t_log *logger;
-
+	
 	//Variables para el socket
 	int unSocket;
 	struct sockaddr_in socketInfo;
-	int bytesEnviados;
-	
-	if (argc != 2) {
-		printf("Debe indicar como parámetro la ruta a un archivo.\n");
+	int bytesEnviados = 0;
+
+	errorArgumentos = checkArgs(argc);
+
+	if(errorArgumentos) {
 		return EXIT_FAILURE;
 	}
 
@@ -106,6 +110,8 @@ int enviarDatos(FILE *script, int unSocket)
 	char buffer[BUFF_SIZE];
 	int bEnv = 0;
 
+	memset(buffer, '\0', BUFF_SIZE);
+
 	while(fread(buffer, sizeof(char), BUFF_SIZE, script) > 0) {
 		if((bEnv += send(unSocket, buffer, strlen(buffer), 0)) < 0){
 			return -1;
@@ -114,4 +120,14 @@ int enviarDatos(FILE *script, int unSocket)
 	}
 
 	return bEnv;
+}
+
+int checkArgs(int args)
+{
+	if (args != 2) {
+		printf("Debe indicar como parámetro la ruta a un archivo.\n");
+		return 1;
+	}
+	
+	return 0;	
 }
