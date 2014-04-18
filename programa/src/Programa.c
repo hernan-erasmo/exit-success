@@ -39,9 +39,10 @@ int main(int argc, char *argv[])
 		return EXIT_FAILURE;
 	}
 
-	script = fopen(argv[1],"r");
-
-	if (script != NULL) {	//Podemos abrir el archivo correctamente
+	if ((script = fopen(argv[1],"r")) == NULL) {
+		log_error(logger,"No se pudo abrir el script AnSISOP. Motivo: %s", strerror(errno));
+	} else {
+		//Pudimos abrir el archivo correctamente
 		//Entonces creamos la conexión
 		log_info(logger, "Conectando a %s:%d ...", DIRECCION, PUERTO);
 
@@ -81,10 +82,8 @@ int main(int argc, char *argv[])
 		close(unSocket);
 		fclose(script);
 	
-	} else {
-		log_error(logger,"No se pudo abrir el script AnSISOP. Motivo: %s", strerror(errno));
 	}
-
+	
 	log_info(logger, "El programa finalizó.");
 	log_destroy(logger);
 
