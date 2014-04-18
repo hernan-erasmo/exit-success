@@ -48,8 +48,7 @@ int main(int argc, char *argv[])
 
 		if ((unSocket = socket(AF_INET,SOCK_STREAM,0)) < 0) {
 			log_error(logger, "Error al crear socket. Motivo: %s", strerror(errno));
-			fclose(script);
-			log_destroy(logger);
+			goto liberarRecursos;
 			return EXIT_FAILURE;
 		}
 
@@ -60,9 +59,7 @@ int main(int argc, char *argv[])
 		//Conectamos el socket con la dirección de 'socketInfo'
 		if (connect(unSocket, (struct sockaddr *) &socketInfo, sizeof(socketInfo)) != 0) {
 			log_error(logger, "Error al conectar el socket. Motivo: %s", strerror(errno));
-			fclose(script);
-			close(unSocket);
-			log_destroy(logger);
+			goto liberarRecursos;
 			return EXIT_FAILURE;
 		}
 
@@ -79,13 +76,17 @@ int main(int argc, char *argv[])
 		shutdown(unSocket, SHUT_WR);
 		log_info(logger, "Transmisión finalizada. Enviados %d bytes.", bytesEnviados);
 		
-		close(unSocket);
-		fclose(script);
-	
+		goto liberarRecursos;
 	}
-	
-	log_info(logger, "El programa finalizó.");
-	log_destroy(logger);
 
 	return EXIT_SUCCESS;
+
+liberarRecursos:
+	if(unSocket > -1) 
+		close(unSocket);
+
+	if(script != NULL)
+		fclose(script);
+	
+	log_destroy(logger);
 }

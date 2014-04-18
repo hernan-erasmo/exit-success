@@ -5,3 +5,7 @@ Proceso:
 		man fread
 		man bzero (por estar obsoleta, se cambió a memset() en el código)
 		man 2 shutdown
+
+	- Usando goto para liberar recursos en caso de error (y evitar duplicación de código)
+		http://web.archive.org/web/20130411141953/http://kerneltrap.org/node/553
+		http://www.stevemcconnell.com/ccgoto.htm
