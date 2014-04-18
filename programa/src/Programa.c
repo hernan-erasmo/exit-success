@@ -15,6 +15,7 @@
 #define BUFF_SIZE 1024
 
 int crearSocket(struct sockaddr_in *socketInfo);
+int enviarDatos(FILE *script, int unSocket);
 
 int main(int argc, char *argv[])
 {
@@ -28,8 +29,7 @@ int main(int argc, char *argv[])
 	//Variables para el socket
 	int unSocket;
 	struct sockaddr_in socketInfo;
-	char buffer[BUFF_SIZE];
-	int bytesEnviados = 0;
+	int bytesEnviados;
 	
 	if (argc != 2) {
 		printf("Debe indicar como parámetro la ruta a un archivo.\n");
@@ -63,16 +63,15 @@ int main(int argc, char *argv[])
 		log_info(logger, "Conexión establecida.");
 		log_info(logger, "Comenzando a enviar el script AnSISOP.");
 
-		while (fread(buffer, sizeof(char), BUFF_SIZE, script) > 0) {
-			if ((bytesEnviados += send(unSocket, buffer, strlen(buffer), 0)) < 0) {
-				log_error(logger, "Error en la transmisión del script. Motivo: %s", strerror(errno));
-			}
-			memset(buffer, '\0', BUFF_SIZE);
-		}
-
-		shutdown(unSocket, SHUT_WR);
-		log_info(logger, "Transmisión finalizada. Enviados %d bytes.", bytesEnviados);
+		if((bytesEnviados = enviarDatos(script, unSocket)) < 0) {
+			log_error(logger, "Error en la transmisión del script. Motivo: %s", strerror(errno));
+			goto liberarRecursos;
+			return EXIT_FAILURE;
+		} else {
+			log_info(logger, "Transmisión finalizada. Enviados %d bytes.", bytesEnviados);	
+		}	
 		
+		shutdown(unSocket, SHUT_WR);
 		goto liberarRecursos;
 	}
 
@@ -88,6 +87,7 @@ liberarRecursos:
 	log_destroy(logger);
 }
 
+
 int crearSocket(struct sockaddr_in *socketInfo)
 {
 	int sock = -1;
@@ -99,4 +99,19 @@ int crearSocket(struct sockaddr_in *socketInfo)
 	}
 
 	return sock;		
+}
+
+int enviarDatos(FILE *script, int unSocket)
+{
+	char buffer[BUFF_SIZE];
+	int bEnv = 0;
+
+	while(fread(buffer, sizeof(char), BUFF_SIZE, script) > 0) {
+		if((bEnv += send(unSocket, buffer, strlen(buffer), 0)) < 0){
+			return -1;
+		}
+		memset(buffer, '\0', BUFF_SIZE);
+	}
+
+	return bEnv;
 }
