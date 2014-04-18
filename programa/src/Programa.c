@@ -14,6 +14,8 @@
 #define PUERTO 5000
 #define BUFF_SIZE 1024
 
+int crearSocket(struct sockaddr_in *socketInfo);
+
 int main(int argc, char *argv[])
 {
 	//Variables para el script
@@ -46,17 +48,12 @@ int main(int argc, char *argv[])
 		//Entonces creamos la conexión
 		log_info(logger, "Conectando a %s:%d ...", DIRECCION, PUERTO);
 
-		if ((unSocket = socket(AF_INET,SOCK_STREAM,0)) < 0) {
+		if ((unSocket = crearSocket(&socketInfo)) < 0) {
 			log_error(logger, "Error al crear socket. Motivo: %s", strerror(errno));
 			goto liberarRecursos;
 			return EXIT_FAILURE;
 		}
 
-		socketInfo.sin_family = AF_INET;
-		socketInfo.sin_addr.s_addr = inet_addr(DIRECCION);
-		socketInfo.sin_port = htons(PUERTO);
-
-		//Conectamos el socket con la dirección de 'socketInfo'
 		if (connect(unSocket, (struct sockaddr *) &socketInfo, sizeof(socketInfo)) != 0) {
 			log_error(logger, "Error al conectar el socket. Motivo: %s", strerror(errno));
 			goto liberarRecursos;
@@ -89,4 +86,17 @@ liberarRecursos:
 		fclose(script);
 	
 	log_destroy(logger);
+}
+
+int crearSocket(struct sockaddr_in *socketInfo)
+{
+	int sock = -1;
+		
+	if((sock = socket(AF_INET,SOCK_STREAM,0)) >= 0) {
+		socketInfo->sin_family = AF_INET;
+		socketInfo->sin_addr.s_addr = inet_addr(DIRECCION);
+		socketInfo->sin_port = htons(PUERTO);
+	}
+
+	return sock;		
 }
