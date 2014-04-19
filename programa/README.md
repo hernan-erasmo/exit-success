@@ -6,5 +6,4 @@
 
 **Falta**:
 ==========
-	- ~~Implementar la carga de la configuración desde archivo.~~
 	- La lógica para recibir datos desde el kernel
