@@ -17,16 +17,17 @@
 int crearSocket(struct sockaddr_in *socketInfo);
 int enviarDatos(FILE *script, int unSocket);
 int checkArgs(int args);
+int crearLogger(t_log **logger);
 
 int main(int argc, char *argv[])
 {
 	int errorArgumentos = 0;
+	int errorLogger = 0;
 
 	//Variables para el script
 	FILE *script;
 	
 	//Variables para el logger
-	char *nombreArchivoLog = "programa_log";
 	t_log *logger;
 	
 	//Variables para el socket
@@ -35,13 +36,9 @@ int main(int argc, char *argv[])
 	int bytesEnviados = 0;
 
 	errorArgumentos = checkArgs(argc);
+	errorLogger = crearLogger(&logger);
 
-	if(errorArgumentos) {
-		return EXIT_FAILURE;
-	}
-
-	if ((logger = log_create(nombreArchivoLog,"Programa",true,LOG_LEVEL_DEBUG)) == NULL) {
-		printf("No se pudo inicializar un logger.\n");
+	if(errorArgumentos || errorLogger) {
 		return EXIT_FAILURE;
 	}
 
@@ -130,4 +127,16 @@ int checkArgs(int args)
 	}
 	
 	return 0;	
+}
+
+int crearLogger(t_log **logger)
+{
+	char *nombreArchivoLog = "programa_log";
+
+	if ((*logger = log_create(nombreArchivoLog,"Programa",true,LOG_LEVEL_DEBUG)) == NULL) {
+		printf("No se pudo inicializar un logger.\n");
+		return 1;
+	}
+
+	return 0;
 }
