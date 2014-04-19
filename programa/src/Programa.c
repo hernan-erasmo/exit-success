@@ -9,6 +9,7 @@
 #include <unistd.h>
 
 #include <commons/log.h>
+#include <commons/config.h>
 
 #define DIRECCION "127.0.0.1"
 #define PUERTO 5000
@@ -16,8 +17,9 @@
 
 int checkArgs(int args);
 int crearLogger(t_log **logger);
-int crearConexion(int *unSocket, struct sockaddr_in *socketInfo, t_log *logger);
-int crearSocket(struct sockaddr_in *socketInfo);
+int cargarConfig(t_config **config);
+int crearConexion(int *unSocket, struct sockaddr_in *socketInfo, t_config *config, t_log *logger);
+int crearSocket(struct sockaddr_in *socketInfo, t_config *config);
 int enviarDatos(FILE *script, int unSocket, t_log *logger);
 void finalizarEnvio(int *unSocket);
 
@@ -25,6 +27,7 @@ int main(int argc, char *argv[])
 {
 	int errorArgumentos = 0;
 	int errorLogger = 0;
+	int errorConfig = 0;
 	int errorConexion = 0;
 	int errorEnvio = 0;
 
@@ -38,10 +41,14 @@ int main(int argc, char *argv[])
 	int unSocket = -1;
 	struct sockaddr_in socketInfo;
 
+	//Variables para la carga de la configuración
+	t_config *config = NULL;
+
 	errorArgumentos = checkArgs(argc);
 	errorLogger = crearLogger(&logger);
+	errorConfig = cargarConfig(&config);
 
-	if(errorArgumentos || errorLogger) {
+	if(errorArgumentos || errorLogger || errorConfig) {
 		goto liberarRecursos;
 		return EXIT_FAILURE;
 	}
@@ -51,9 +58,9 @@ int main(int argc, char *argv[])
 	} else {
 		//Pudimos abrir el archivo correctamente
 		//Entonces creamos la conexión
-		log_info(logger, "Conectando a %s:%d ...", DIRECCION, PUERTO);
+		log_info(logger, "Conectando a %s:%d ...", config_get_string_value(config, "IP"), config_get_int_value(config, "Puerto"));
 
-		errorConexion = crearConexion(&unSocket, &socketInfo, logger);
+		errorConexion = crearConexion(&unSocket, &socketInfo, config, logger);
 		if (errorConexion) {
 			log_error(logger, "Error al conectar con el Kernel.");
 			goto liberarRecursos;
@@ -86,11 +93,14 @@ liberarRecursos:
 	
 	if(logger)
 		log_destroy(logger);
+
+	if(config)
+		config_destroy(config);
 }
 
-int crearConexion(int *unSocket, struct sockaddr_in *socketInfo, t_log *logger)
+int crearConexion(int *unSocket, struct sockaddr_in *socketInfo, t_config *config, t_log *logger)
 {
-	if ((*unSocket = crearSocket(socketInfo)) < 0) {
+	if ((*unSocket = crearSocket(socketInfo, config)) < 0) {
 		log_error(logger, "Error al crear socket. Motivo: %s", strerror(errno));
 		return 1;
 	}
@@ -103,14 +113,14 @@ int crearConexion(int *unSocket, struct sockaddr_in *socketInfo, t_log *logger)
 	return 0;
 }
 
-int crearSocket(struct sockaddr_in *socketInfo)
+int crearSocket(struct sockaddr_in *socketInfo, t_config *config)
 {
 	int sock = -1;
 		
 	if((sock = socket(AF_INET,SOCK_STREAM,0)) >= 0) {
 		socketInfo->sin_family = AF_INET;
-		socketInfo->sin_addr.s_addr = inet_addr(DIRECCION);
-		socketInfo->sin_port = htons(PUERTO);
+		socketInfo->sin_addr.s_addr = inet_addr(config_get_string_value(config, "IP"));
+		socketInfo->sin_port = htons(config_get_int_value(config, "Puerto"));
 	}
 
 	return sock;		
@@ -158,5 +168,18 @@ int crearLogger(t_log **logger)
 		return 1;
 	}
 
+	return 0;
+}
+
+int cargarConfig(t_config **config)
+{
+	char *path = getenv("ANSISOP_CONFIG");
+
+	if(path == NULL) {
+		printf("No se pudo encontrar la variable de entorno ANSISOP_CONFIG.\n");
+		return 1;
+	}
+
+	*config = config_create(path);
 	return 0;
 }
