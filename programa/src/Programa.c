@@ -14,6 +14,7 @@
 #define PUERTO 5000
 #define BUFF_SIZE 1024
 
+int crearConexion(int *unSocket, struct sockaddr_in *socketInfo, t_log *logger);
 int crearSocket(struct sockaddr_in *socketInfo);
 int enviarDatos(FILE *script, int unSocket);
 int checkArgs(int args);
@@ -23,6 +24,7 @@ int main(int argc, char *argv[])
 {
 	int errorArgumentos = 0;
 	int errorLogger = 0;
+	int errorConexion = 0;
 
 	//Variables para el script
 	FILE *script = NULL;
@@ -50,14 +52,9 @@ int main(int argc, char *argv[])
 		//Entonces creamos la conexión
 		log_info(logger, "Conectando a %s:%d ...", DIRECCION, PUERTO);
 
-		if ((unSocket = crearSocket(&socketInfo)) < 0) {
-			log_error(logger, "Error al crear socket. Motivo: %s", strerror(errno));
-			goto liberarRecursos;
-			return EXIT_FAILURE;
-		}
-
-		if (connect(unSocket, (struct sockaddr *) &socketInfo, sizeof(socketInfo)) != 0) {
-			log_error(logger, "Error al conectar el socket. Motivo: %s", strerror(errno));
+		errorConexion = crearConexion(&unSocket, &socketInfo, logger);
+		if (errorConexion) {
+			log_error(logger, "Error al conectar con el Kernel.");
 			goto liberarRecursos;
 			return EXIT_FAILURE;
 		}
@@ -88,6 +85,21 @@ liberarRecursos:
 	
 	if(logger)
 		log_destroy(logger);
+}
+
+int crearConexion(int *unSocket, struct sockaddr_in *socketInfo, t_log *logger)
+{
+	if ((*unSocket = crearSocket(socketInfo)) < 0) {
+		log_error(logger, "Error al crear socket. Motivo: %s", strerror(errno));
+		return 1;
+	}
+
+	if (connect(*unSocket, (struct sockaddr *) socketInfo, sizeof(*socketInfo)) != 0) {
+		log_error(logger, "Error al conectar socket. Motivo: %s", strerror(errno));
+		return 1;
+	}
+
+	return 0;
 }
 
 int crearSocket(struct sockaddr_in *socketInfo)
