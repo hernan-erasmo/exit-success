@@ -14,17 +14,19 @@
 #define PUERTO 5000
 #define BUFF_SIZE 1024
 
-int crearConexion(int *unSocket, struct sockaddr_in *socketInfo, t_log *logger);
-int crearSocket(struct sockaddr_in *socketInfo);
-int enviarDatos(FILE *script, int unSocket);
 int checkArgs(int args);
 int crearLogger(t_log **logger);
+int crearConexion(int *unSocket, struct sockaddr_in *socketInfo, t_log *logger);
+int crearSocket(struct sockaddr_in *socketInfo);
+int enviarDatos(FILE *script, int unSocket, t_log *logger);
+void finalizarEnvio(int *unSocket);
 
 int main(int argc, char *argv[])
 {
 	int errorArgumentos = 0;
 	int errorLogger = 0;
 	int errorConexion = 0;
+	int errorEnvio = 0;
 
 	//Variables para el script
 	FILE *script = NULL;
@@ -35,7 +37,6 @@ int main(int argc, char *argv[])
 	//Variables para el socket
 	int unSocket = -1;
 	struct sockaddr_in socketInfo;
-	int bytesEnviados = 0;
 
 	errorArgumentos = checkArgs(argc);
 	errorLogger = crearLogger(&logger);
@@ -62,15 +63,15 @@ int main(int argc, char *argv[])
 		log_info(logger, "Conexión establecida.");
 		log_info(logger, "Comenzando a enviar el script AnSISOP.");
 
-		if((bytesEnviados = enviarDatos(script, unSocket)) < 0) {
-			log_error(logger, "Error en la transmisión del script. Motivo: %s", strerror(errno));
+		errorEnvio = enviarDatos(script, unSocket, logger);
+		if (errorEnvio) {
 			goto liberarRecursos;
 			return EXIT_FAILURE;
 		} else {
-			log_info(logger, "Transmisión finalizada. Enviados %d bytes.", bytesEnviados);	
-		}	
+			finalizarEnvio(&unSocket);
+			log_info(logger, "Transmisión finalizada.");	
+		}			
 		
-		shutdown(unSocket, SHUT_WR);
 		goto liberarRecursos;
 	}
 
@@ -115,7 +116,7 @@ int crearSocket(struct sockaddr_in *socketInfo)
 	return sock;		
 }
 
-int enviarDatos(FILE *script, int unSocket)
+int enviarDatos(FILE *script, int unSocket, t_log *logger)
 {
 	char buffer[BUFF_SIZE];
 	int bEnv = 0;
@@ -124,12 +125,18 @@ int enviarDatos(FILE *script, int unSocket)
 
 	while(fread(buffer, sizeof(char), BUFF_SIZE, script) > 0) {
 		if((bEnv += send(unSocket, buffer, strlen(buffer), 0)) < 0){
-			return -1;
+			log_error(logger, "Error en la transmisión del script. Motivo: %s", strerror(errno));
+			return 1;
 		}
 		memset(buffer, '\0', BUFF_SIZE);
 	}
 
-	return bEnv;
+	log_info(logger, "Enviados %d bytes.", bEnv);	
+	return 0;
+}
+
+void finalizarEnvio(int *unSocket) {
+	shutdown(*unSocket, SHUT_WR);
 }
 
 int checkArgs(int args)
