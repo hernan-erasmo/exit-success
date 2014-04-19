@@ -25,13 +25,13 @@ int main(int argc, char *argv[])
 	int errorLogger = 0;
 
 	//Variables para el script
-	FILE *script;
+	FILE *script = NULL;
 	
 	//Variables para el logger
-	t_log *logger;
+	t_log *logger = NULL;
 	
 	//Variables para el socket
-	int unSocket;
+	int unSocket = -1;
 	struct sockaddr_in socketInfo;
 	int bytesEnviados = 0;
 
@@ -39,6 +39,7 @@ int main(int argc, char *argv[])
 	errorLogger = crearLogger(&logger);
 
 	if(errorArgumentos || errorLogger) {
+		goto liberarRecursos;
 		return EXIT_FAILURE;
 	}
 
@@ -79,15 +80,15 @@ int main(int argc, char *argv[])
 	return EXIT_SUCCESS;
 
 liberarRecursos:
-	if(unSocket > -1) 
+	if(unSocket != -1) 
 		close(unSocket);
 
-	if(script != NULL)
+	if(script)
 		fclose(script);
 	
-	log_destroy(logger);
+	if(logger)
+		log_destroy(logger);
 }
-
 
 int crearSocket(struct sockaddr_in *socketInfo)
 {
