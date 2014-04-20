@@ -11,8 +11,6 @@
 #include <commons/log.h>
 #include <commons/config.h>
 
-#define DIRECCION "127.0.0.1"
-#define PUERTO 5000
 #define BUFF_SIZE 1024
 
 int checkArgs(int args);
@@ -53,9 +51,7 @@ int main(int argc, char *argv[])
 		return EXIT_FAILURE;
 	}
 
-	if ((script = fopen(argv[1],"r")) == NULL) {
-		log_error(logger,"No se pudo abrir el script AnSISOP. Motivo: %s", strerror(errno));
-	} else {
+	if ((script = fopen(argv[1],"r")) != NULL) {
 		//Pudimos abrir el archivo correctamente
 		//Entonces creamos la conexión
 		log_info(logger, "Conectando a %s:%d ...", config_get_string_value(config, "IP"), config_get_int_value(config, "Puerto"));
@@ -78,10 +74,14 @@ int main(int argc, char *argv[])
 			finalizarEnvio(&unSocket);
 			log_info(logger, "Transmisión finalizada.");	
 		}			
-		
+	
+	} else {
+		log_error(logger,"No se pudo abrir el script AnSISOP. Motivo: %s", strerror(errno));
 		goto liberarRecursos;
+		return EXIT_FAILURE;
 	}
 
+	goto liberarRecursos;
 	return EXIT_SUCCESS;
 
 liberarRecursos:
