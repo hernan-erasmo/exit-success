@@ -1,0 +1,35 @@
+Operaciones de la UMV (enunciado v1.0)
+	Considerando lo discutido acá -> http://www.campusvirtual.frba.utn.edu.ar/especialidad/mod/forum/discuss.php?d=25800
+	Interpreto que...
+		
+		-Solicitar bytes desde una posición de memoria: [base], [offset] y [tamaño]
+			Lo utilizan las CPUs (al obtener información del programa en ejecución)
+
+			Nada que aclarar.
+		
+		-Enviar bytes para ser almacenados: [base], [offset], [tamaño] y [buffer]
+			Lo utilizan las CPUs (al actualizar las estructuras del programa (stack?) con los resultados de las operaciones que ejecuta)
+			Lo utiliza el PLP (al escribir los datos del Programa en los segmentos que reservó)
+
+			Nada que aclarar.
+
+		-Handshake: [Identificador del Programa] y [Tipo: Kernel/CPU]
+			Lo utilizan las CPUs y el PLP. (al crear la conexión con la UMV)
+			
+			Crea la conexión entre la UMV y el Kernel o CPU y esa conexión queda siempre establecida hasta que se desconecte por algún error de operación o fin de ejecución de algún proceso.
+		
+		-Cambio de proceso activo: [Identificador del Programa]
+			Lo utilizan las CPUs (antes de una operacion de lectura/escritura)
+
+			Lo utiliza la CPU para indicarle a la UMV que ahora está ejecutando instrucciones de un determinado Programa. Cuando solicita bytes o envía bytes, la CPU no indica el proceso que está ejecutando, entonces es posible que solicite leer/escribir memoria que no corresponde a su segmento. Antes de invocar a leer/escribir memoria, la CPU debe indicar a la UMV de un cambio de proceso activo.
+			Antes de ejecutar una solicitud de lectura/escritura de memoria, la UMV debe verificar que el segmento sobre el cual va a realizar la operación esté dentro de la tabla de segmentos del proceso activo. En caso contrario: Segmentation Fault.
+
+		-Crear segmento: [Identificador del Programa], [tamaño]
+			Lo utiliza el PLP (al reservar el espacio para las estructuras del script).
+
+			Siempre opera sobre el segmento en nombre del Programa que se pasa como parámetro, y no del que figura como proceso activo en la UMV
+
+		-Destruir segmentos del programa: [Identificador del Programa]
+			Lo utilizan las CPUs (pág 10 del enunciado: "Al ejecutar la última sentencia el CPU deberá solicitar la destrucción de todas las estructuras correspondientes[...]")
+
+			Ídem Crear segmento. Entiendo que si la UMV sólo necesita el identificador del programa para ser capaz de destriur todos los segmentos que le pertenecen, entonces es su responsabilidad saber a qué programa están asociados
