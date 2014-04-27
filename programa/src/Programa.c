@@ -133,7 +133,7 @@ int enviarDatos(FILE *script, int unSocket, t_log *logger)
 
 	memset(buffer, '\0', BUFF_SIZE);
 
-	while(fread(buffer, sizeof(char), BUFF_SIZE, script) > 0) {
+	while(fgets(buffer, BUFF_SIZE, script)) {
 		if((bEnv += send(unSocket, buffer, strlen(buffer), 0)) < 0){
 			log_error(logger, "Error en la transmisión del script. Motivo: %s", strerror(errno));
 			return 1;
