@@ -129,13 +129,25 @@ int crearSocket(struct sockaddr_in *socketInfo, t_config *config)
 int enviarDatos(FILE *script, int unSocket, t_log *logger)
 {
 	char buffer[BUFF_SIZE];
+	int id = 80; //P ascii, para indicar que soy un Programa
+	int sz = getFileSize(script);
 	int bEnv = 0;
 
 	memset(buffer, '\0', BUFF_SIZE);
 
+	if(send(unSocket, &id, sizeof(int), 0) < 0){
+		log_error(logger, "Error en la transmisión del script (Handshake ID). Motivo: %s", strerror(errno));
+		return 1;
+	}
+
+	if(send(unSocket, &sz, sizeof(int), 0) < 0){
+		log_error(logger, "Error en la transmisión del script (Handshake SZ). Motivo: %s", strerror(errno));
+		return 1;
+	}
+
 	while(fgets(buffer, BUFF_SIZE, script)) {
 		if((bEnv += send(unSocket, buffer, strlen(buffer), 0)) < 0){
-			log_error(logger, "Error en la transmisión del script. Motivo: %s", strerror(errno));
+			log_error(logger, "Error en la transmisión del script (Contenido). Motivo: %s", strerror(errno));
 			return 1;
 		}
 		memset(buffer, '\0', BUFF_SIZE);
@@ -182,4 +194,14 @@ int cargarConfig(t_config **config)
 
 	*config = config_create(path);
 	return 0;
+}
+
+int getFileSize(FILE *script){
+	int sz = 0;
+
+	fseek(script, 0L, SEEK_END);
+	sz = ftell(script);
+	fseek(script, 0L, SEEK_SET);
+
+	return sz;
 }
