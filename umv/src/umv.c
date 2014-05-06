@@ -1,19 +1,30 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include <commons/log.h>
+#include <commons/config.h>
 #include <commons/collections/list.h>
 
 #include "segmento.h"
 
 int crearLogger(t_log **logger);
+int cargarConfig(t_config **config, char *path);
 
 int main(int argc, char *argv[])
 {
 	int errorLogger = 0;
+	int errorConfig = 0;
 
 	//Variables para el logger
 	t_log *logger = NULL;
+
+	//Variables para la carga de la configuración
+	t_config *config = NULL;
+
+	//Variables para el manejo de la memoria principal
+	int32_t tamanio_mem_ppal = 0;
+	void *mem_ppal = NULL;
 
 	//Variables para las listas de segmentos
 	t_list *listaSegmentos = NULL;
@@ -21,11 +32,22 @@ int main(int argc, char *argv[])
 	int i;
 
 	errorLogger = crearLogger(&logger);
+	errorConfig = cargarConfig(&config, argv[1]);
 
-	if(errorLogger){
+	if(errorLogger || errorConfig){
 		goto liberarRecursos;
 		return EXIT_FAILURE;
 	}
+
+	//Cargo los valores desde la configuración
+	tamanio_mem_ppal = config_get_int_value(config, "TAMANIO_MEM_PPAL_BYTES");
+	log_info(logger, "TAMANIO_MEM_PPAL_BYTES = %d", tamanio_mem_ppal);
+	log_info(logger, "ALGORITMO_COMPACTACION = %s", config_get_string_value(config, "ALGORITMO_COMPACTACION"));
+
+	//Reservo memoria para la memoria principal
+	mem_ppal = malloc(tamanio_mem_ppal);
+	memset(mem_ppal, '\0', tamanio_mem_ppal);
+	log_info(logger, "La memoria principal abarca desde la dirección %p hasta %p", (mem_ppal), (mem_ppal + tamanio_mem_ppal));
 
 	//Inicializo una lista para los segmentos
 	log_info(logger, "Creo la lista usando list_create()");
@@ -37,7 +59,7 @@ int main(int argc, char *argv[])
 		total_segmentos += list_add(listaSegmentos, (void *) crearSegmento(1,i,i + 10));
 		log_info(logger, "Creé un segmento!");
 	}
-	
+
 	//Imprimo los datos de los segmentos por pantalla
 	log_info(logger, "Se crearon %d segmentos:", total_segmentos);
 	list_iterate(listaSegmentos, mostrarInfoSegmento);
@@ -59,8 +81,13 @@ liberarRecursos:
 	
 		list_destroy(listaSegmentos);
 	}
-		
 
+	if(config)
+		config_destroy(config);
+
+	if(mem_ppal) {
+		free(mem_ppal);
+	}
 }
 
 int crearLogger(t_log **logger)
@@ -73,4 +100,15 @@ int crearLogger(t_log **logger)
 	}
 
 	return 0;
+}
+
+int cargarConfig(t_config **config, char *path)
+{
+	if(path == NULL) {
+		printf("No se pudo cargar el archivo de configuración.\n");
+		return 1;
+	}
+
+	*config = config_create(path);
+	return 0;	
 }
