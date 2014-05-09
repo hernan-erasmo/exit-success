@@ -3,6 +3,44 @@
 
 #include "segmento.h"
 
+t_list *buscarEspacioLibre(t_list *segmentos, void *mem_ppal, int32_t size_mem_ppal)
+{
+	int cant_segmentos = list_size(segmentos);
+	t_list *lista_esp_libre = list_create();
+
+	if(cant_segmentos == 0){
+		list_add(lista_esp_libre, (void *) crearInstanciaEspLibre(mem_ppal, size_mem_ppal));
+		return lista_esp_libre;
+	}
+
+	//No encontró ningún espacio libre, ¡qué raro!
+	return NULL;
+}
+
+t_esp_libre *crearInstanciaEspLibre(void *mem, int32_t size)
+{
+	t_esp_libre *esp_libre = malloc(sizeof(t_esp_libre));
+	esp_libre->dir = mem;
+	esp_libre->size = size;
+
+	return esp_libre;
+}
+
+void mostrarInfoEspacioLibre(void *esp_libre)
+{
+	printf("Dirección física: %p\n", ((t_esp_libre *) esp_libre)-> dir);
+	printf("Tamaño del bloque: %d\n", ((t_esp_libre *) esp_libre)-> size);
+
+	return;
+}
+
+void eliminarEspacioLibre(void *esp_libre)
+{
+	free((t_esp_libre *) esp_libre);
+
+	return;
+}
+
 t_segmento *crearSegmento(int32_t prog_id, int32_t seg_id, int32_t size)
 {
 	t_segmento *seg = malloc(sizeof(t_segmento));

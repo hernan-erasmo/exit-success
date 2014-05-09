@@ -31,6 +31,9 @@ int main(int argc, char *argv[])
 	int32_t total_segmentos = 0;
 	int i;
 
+	//Variables para la administración de memoria
+	t_list *lista_esp_libre = NULL;
+
 	errorLogger = crearLogger(&logger);
 	errorConfig = cargarConfig(&config, argv[1]);
 
@@ -50,8 +53,17 @@ int main(int argc, char *argv[])
 	log_info(logger, "La memoria principal abarca desde la dirección %p hasta %p", (mem_ppal), (mem_ppal + tamanio_mem_ppal));
 
 	//Inicializo una lista para los segmentos
-	log_info(logger, "Creo la lista usando list_create()");
+	log_info(logger, "Creo la lista de segmentos usando list_create()");
 	listaSegmentos = list_create();
+
+	log_info(logger, "Creo la lista de espacio libre usando list_create()");
+	lista_esp_libre = list_create();
+
+	log_info(logger, "Veo si hay espacio libre en memoria");
+	lista_esp_libre = buscarEspacioLibre(listaSegmentos, mem_ppal, tamanio_mem_ppal);
+
+	log_info(logger, "Encontré los siguientes espacios libres en memoria:");
+	list_iterate(lista_esp_libre, mostrarInfoEspacioLibre);
 
 	//Creo segmentos y los agrego a la lista
 	log_info(logger, "Comienzo a crear los segmentos");
@@ -73,6 +85,17 @@ int main(int argc, char *argv[])
 liberarRecursos:
 	if(logger)
 		log_destroy(logger);
+
+	if(lista_esp_libre) {
+		printf("Eliminando lista\n");
+		if (!list_is_empty(lista_esp_libre)) {
+			printf("No estaba vacía!\n");
+			list_clean_and_destroy_elements(lista_esp_libre, eliminarEspacioLibre);
+		}
+
+		list_destroy(lista_esp_libre);
+		printf("Lista eliminada\n");
+	}
 
 	if(listaSegmentos) {
 		if (!list_is_empty(listaSegmentos)) {

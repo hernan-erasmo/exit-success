@@ -1,3 +1,58 @@
+¿Cómo atiende la UMV las solicitudes de memoria? Pueden darse dos situaciones:
+
+	- Caso 1: Toda la memoria virtual (la que hice yo con el malloc()) está disponible. La lista 
+			  que contiene a los segmentos debería estar vacía.
+
+			1- Verifico que el tamaño solicitado no exceda el tamaño total de la memoria disponible.
+				a- ¿Hay espacio? Si, entonces:
+					- Creo el segmento y lo meto en la lista de segmentos.
+					- Voy a 2.
+				b- ¿No hay espacio?
+					- Ni te gastes en tratar de compactar. Avisá y andá al paso 2.
+			2- Listo, atendí la solicitud.
+
+	- Caso 2: Hay programas utilizando la memoria
+		
+			1- Recorro la tabla que contiene los segmentos y en función de los inicios y los tamaños de cada 
+			   uno obtengo una lista de punteros a sectores de memoria libres, junto con el espacio libre de 
+			   cada uno. (Más abajo está el detalle de como funcionaría esta función mágica.)
+			2- Me fijo si en algún lugar hay espacio libre para satisfacer la solicitud.
+				a- ¿Hay? Si, entonces:
+					- Aplico el algoritmo correspondiente (First/Worst-Fit)
+					- Creo el segmento nuevo y voy al paso 3.
+				b- ¿No hay y todavía no probaste de compactar?
+					- Compactá.
+					- Volvé a 1.
+				c- ¿No hay y ya compactaste?
+					- Olvidate, no va a haber espacio entonces. Aviso y voy al paso 3.
+			3- Listo, atendí la solicitud.
+
+
+¿Cómo trabajaría la función buscarEspacioLibre()?
+Recibe como parámetro la lista de segmentos, un puntero al comienzo de la memoria principal
+y la cantidad de memoria física total, y comienza:
+
+1- ¿La lista está vacía?
+	SI) Retorna un elemento t_esp_libre que apunta a la primera dirección y como tamaño
+		tiene la cantidad total de memoria.
+	NO) Paso 2.
+2- Ordena sus elementos de acuerdo a dirección de memoria física, de manera ascendente.
+
+FOR (i = 0; i < tamaño_lista_segmentos-1; i++) //tamaño - 1, porque en la iteración i hay que obtener el valor de i+1
+											   //y cuando lleguemos a la última va a explotar. Hay que analizar 
+											   //aparte si hay espacio libre después del fin del último segmento
+	
+	3- Lee la dirección física del segmento[i]. ¿Coincide con el comienzo de la memoria?
+		SI) 
+			¿(segmento[i].size + 1) == segmento[i+1].pos_mem_ppal? //¿ estan pegados el i con el i+1 ?
+				SI) CONTINUE (avanzamos al segmento i+1, no hay espacio ni arriba ni abajo del segmento i)
+				NO) Creo una estructura t_esp_libre que apunta a (segmento[i].pos_mem_ppal + segmento[i].size) y
+					como tamaño tiene ('segmento[i+1].pos_mem_ppal' - 't_esp_libre.dir')
+		NO) Creo una estructura t_esp_libre que apunta al comienzo de la memoria y como tamaño
+			tiene segmento[i].pos_mem_ppal (es decir, el comienzo del primer segmento)
+
+END FOR
+
 Operaciones de la UMV (enunciado v1.0)
 	Considerando lo discutido acá -> http://www.campusvirtual.frba.utn.edu.ar/especialidad/mod/forum/discuss.php?d=25800
 	Interpreto que...
