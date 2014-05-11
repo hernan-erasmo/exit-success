@@ -56,11 +56,8 @@ int main(int argc, char *argv[])
 	log_info(logger, "Creo la lista de segmentos usando list_create()");
 	listaSegmentos = list_create();
 
-	log_info(logger, "Creo la lista de espacio libre usando list_create()");
-	lista_esp_libre = list_create();
-
 	log_info(logger, "Veo si hay espacio libre en memoria");
-	lista_esp_libre = buscarEspacioLibre(listaSegmentos, mem_ppal, tamanio_mem_ppal);
+	lista_esp_libre = buscarEspaciosLibres(listaSegmentos, mem_ppal, tamanio_mem_ppal);
 
 	log_info(logger, "Encontré los siguientes espacios libres en memoria:");
 	list_iterate(lista_esp_libre, mostrarInfoEspacioLibre);
@@ -87,14 +84,11 @@ liberarRecursos:
 		log_destroy(logger);
 
 	if(lista_esp_libre) {
-		printf("Eliminando lista\n");
 		if (!list_is_empty(lista_esp_libre)) {
-			printf("No estaba vacía!\n");
 			list_clean_and_destroy_elements(lista_esp_libre, eliminarEspacioLibre);
 		}
 
 		list_destroy(lista_esp_libre);
-		printf("Lista eliminada\n");
 	}
 
 	if(listaSegmentos) {
