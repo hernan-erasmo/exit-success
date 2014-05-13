@@ -1,4 +1,5 @@
 #include <pthread.h>
+#include <netdb.h>
 
 #include <commons/log.h>
 #include <parser/metadata_program.h>
@@ -14,4 +15,4 @@ typedef struct con_prog {
 } t_con_prog;
 
 void *plp(void *puerto_prog);
-void *atenderConexionPrograma(void *con_prog);
+int init_escucha_programas(int *listenningSocket, char *puerto, struct addrinfo **serverInfo, t_log *logger);

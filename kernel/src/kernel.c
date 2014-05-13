@@ -47,8 +47,8 @@ int main(int argc, char *argv[])
 		return EXIT_FAILURE;
 	}
 
-	pthread_join(threadPlp, &retorno);
-	log_info(logger, "El thread PLP finalizó y retornó status: %d", (int *) &retorno);
+	pthread_join(threadPlp, NULL);
+	log_info(logger, "El thread PLP finalizó y retornó status: (falta implementar!)");
 
 	goto liberarRecursos;
 	return EXIT_SUCCESS;
@@ -61,7 +61,6 @@ liberarRecursos:
 		config_destroy(config);
 
 	free(d_plp);
-	free(retorno);
 }
 
 int crearLogger(t_log **logger)
