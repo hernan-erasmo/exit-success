@@ -3,7 +3,7 @@
 
 #include "segmento.h"
 
-t_list *buscarEspaciosLibres(t_list *segmentos, void *mem_ppal, int32_t size_mem_ppal)
+t_list *buscarEspaciosLibres(t_list *segmentos, void *mem_ppal, uint32_t size_mem_ppal)
 {
 	int cant_segmentos = list_size(segmentos);
 	t_list *lista_esp_libre = list_create();
@@ -63,7 +63,7 @@ void reordenarListaSegmentos(t_list *segmentos)
 	//Implmementame, por favor!
 }
 
-t_esp_libre *crearInstanciaEspLibre(void *mem, int32_t size)
+t_esp_libre *crearInstanciaEspLibre(void *mem, uint32_t size)
 {
 	t_esp_libre *esp_libre = malloc(sizeof(t_esp_libre));
 	esp_libre->dir = mem;
@@ -87,7 +87,7 @@ void eliminarEspacioLibre(void *esp_libre)
 	return;
 }
 
-t_segmento *crearSegmento(int32_t prog_id, int32_t seg_id, int32_t size)
+t_segmento *crearSegmento(uint32_t prog_id, uint32_t seg_id, uint32_t size)
 {
 	t_segmento *seg = malloc(sizeof(t_segmento));
 	seg->prog_id = prog_id;

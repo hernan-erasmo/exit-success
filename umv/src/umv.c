@@ -23,12 +23,12 @@ int main(int argc, char *argv[])
 	t_config *config = NULL;
 
 	//Variables para el manejo de la memoria principal
-	int32_t tamanio_mem_ppal = 0;
+	uint32_t tamanio_mem_ppal = 0;
 	void *mem_ppal = NULL;
 
 	//Variables para las listas de segmentos
 	t_list *listaSegmentos = NULL;
-	int32_t total_segmentos = 0;
+	uint32_t total_segmentos = 0;
 	int i;
 
 	//Variables para la administración de memoria
