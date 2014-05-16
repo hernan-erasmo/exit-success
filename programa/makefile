@@ -1,3 +1,3 @@
-Programa: ./src/Programa.c
+programa: ./src/programa.c
 	mkdir -p bin
-	gcc -g ./src/Programa.c -lcommons -o ./bin/Programa
+	gcc -g ./src/programa.c -lcommons -o ./bin/programa
