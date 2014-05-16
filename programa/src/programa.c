@@ -11,15 +11,23 @@
 #include <commons/log.h>
 #include <commons/config.h>
 
-#define BUFF_SIZE 1024
+typedef struct paquete_programa {
+	char id;
+	char *mensaje;
+	uint32_t sizeMensaje;
+	uint32_t tamanio_total;
+} t_paquete_programa;
 
 int checkArgs(int args);
 int crearLogger(t_log **logger);
 int cargarConfig(t_config **config);
 int crearConexion(int *unSocket, struct sockaddr_in *socketInfo, t_config *config, t_log *logger);
 int crearSocket(struct sockaddr_in *socketInfo, t_config *config);
+char *cargarScript(FILE *script, char **contenidoScript);
 int enviarDatos(FILE *script, int unSocket, t_log *logger);
 void finalizarEnvio(int *unSocket);
+void inicializarPaquete(t_paquete_programa *paquete, uint32_t sizeMensaje, char **contenidoScript);
+char *serializarPaquete(t_paquete_programa *paquete, t_log *logger);
 
 int main(int argc, char *argv[])
 {
@@ -128,32 +136,29 @@ int crearSocket(struct sockaddr_in *socketInfo, t_config *config)
 
 int enviarDatos(FILE *script, int unSocket, t_log *logger)
 {
-	char buffer[BUFF_SIZE];
-	int id = 80; //P ascii, para indicar que soy un Programa
-	int sz = getFileSize(script);
-	int bEnv = 0;
+	uint32_t bEnv = 0;
+	char *contenidoScript = NULL;
+	char *paqueteSerializado = NULL;
+	uint32_t sizeMensaje = 0;
 
-	memset(buffer, '\0', BUFF_SIZE);
+	t_paquete_programa paquete;
+		sizeMensaje = getFileSize(script);
+		contenidoScript = calloc(sizeMensaje + 1, sizeof(char)); //sizeMensaje + 1, el contenido del script mas el '\0'
 
-	if(send(unSocket, &id, sizeof(int), 0) < 0){
+	cargarScript(script, &contenidoScript);
+	inicializarPaquete(&paquete, sizeMensaje, &contenidoScript);
+	paqueteSerializado = serializarPaquete(&paquete, logger);
+
+	if((bEnv += send(unSocket, paqueteSerializado, paquete.tamanio_total, 0)) < 0){
 		log_error(logger, "Error en la transmisión del script (Handshake ID). Motivo: %s", strerror(errno));
 		return 1;
 	}
 
-	if(send(unSocket, &sz, sizeof(int), 0) < 0){
-		log_error(logger, "Error en la transmisión del script (Handshake SZ). Motivo: %s", strerror(errno));
-		return 1;
-	}
+	log_info(logger, "Enviados %d bytes.", bEnv);
 
-	while(fgets(buffer, BUFF_SIZE, script)) {
-		if((bEnv += send(unSocket, buffer, strlen(buffer), 0)) < 0){
-			log_error(logger, "Error en la transmisión del script (Contenido). Motivo: %s", strerror(errno));
-			return 1;
-		}
-		memset(buffer, '\0', BUFF_SIZE);
-	}
+	free(contenidoScript);
+	free(paqueteSerializado);
 
-	log_info(logger, "Enviados %d bytes.", bEnv);	
 	return 0;
 }
 
@@ -175,7 +180,7 @@ int crearLogger(t_log **logger)
 {
 	char *nombreArchivoLog = "programa_log";
 
-	if ((*logger = log_create(nombreArchivoLog,"Programa",true,LOG_LEVEL_DEBUG)) == NULL) {
+	if ((*logger = log_create(nombreArchivoLog,"programa",true,LOG_LEVEL_DEBUG)) == NULL) {
 		printf("No se pudo inicializar un logger.\n");
 		return 1;
 	}
@@ -204,4 +209,51 @@ int getFileSize(FILE *script){
 	fseek(script, 0L, SEEK_SET);
 
 	return sz;
+}
+
+void inicializarPaquete(t_paquete_programa *paquete, uint32_t sizeMensaje, char **contenidoScript)
+{
+	paquete->id = 'P';
+	paquete->sizeMensaje = sizeMensaje;
+	paquete->mensaje = *contenidoScript;
+	paquete->tamanio_total = 1 + sizeof(paquete->sizeMensaje) + sizeMensaje + sizeof(paquete->tamanio_total);
+
+	return;
+}
+
+char *serializarPaquete(t_paquete_programa *paquete, t_log *logger)
+{
+	char *serializedPackage = calloc(1 + sizeof(paquete->sizeMensaje) + paquete->sizeMensaje + sizeof(paquete->tamanio_total), sizeof(char)); //El tamaño del char id, el tamaño de la variable sizeMensaje, el tamaño del script y el tamaño de la variable tamaño_total
+	uint32_t offset = 0;
+	uint32_t sizeToSend;
+
+	sizeToSend = sizeof(paquete->id);
+	log_info(logger, "sizeof(paquete->id) = %d", sizeof(paquete->id));
+	memcpy(serializedPackage + offset, &(paquete->id), sizeToSend);
+	offset += sizeToSend;
+
+	sizeToSend = sizeof(paquete->sizeMensaje);
+	log_info(logger, "sizeof(paquete->sizeMensaje) = %d", sizeof(paquete->sizeMensaje));
+	memcpy(serializedPackage + offset, &(paquete->sizeMensaje), sizeToSend);
+	offset += sizeToSend;
+
+	sizeToSend = paquete->sizeMensaje;
+	log_info(logger, "paquete->size = %d", paquete->sizeMensaje);
+	memcpy(serializedPackage + offset, paquete->mensaje, sizeToSend);
+
+	return serializedPackage;
+}
+
+char *cargarScript(FILE *script, char **contenidoScript)
+{
+	char *aux = NULL;
+	char c = '\0';
+	
+	aux = *contenidoScript;
+	while((c = fgetc(script)) != EOF){
+		memcpy(aux, &c, 1);
+		aux++;
+	}
+	memset(aux, '\0', 1);		// ¿Es realmente necesario este memset? Para preguntar. Pero anda igual.
+
 }
