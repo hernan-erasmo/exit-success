@@ -133,10 +133,18 @@ int enviarDatos(FILE *script, int unSocket, t_log *logger)
 	inicializarPaquete(&paquete, sizeMensaje, &contenidoScript);
 	paqueteSerializado = serializarPaquete(&paquete, logger);
 
+	bEnv = paquete.tamanio_total;
+	if(sendAll(unSocket, paqueteSerializado, &bEnv)){
+		log_error(logger, "Error en la transmisión del script. Motivo: %s", strerror(errno));
+		return 1;
+	}
+
+	/*
 	if((bEnv += send(unSocket, paqueteSerializado, paquete.tamanio_total, 0)) < 0){
 		log_error(logger, "Error en la transmisión del script (Handshake ID). Motivo: %s", strerror(errno));
 		return 1;
 	}
+	*/
 
 	log_info(logger, "Enviados %d bytes.", bEnv);
 
