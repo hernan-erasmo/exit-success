@@ -41,6 +41,7 @@ int main(int argc, char *argv[])
 	d_plp->puerto = config_get_string_value(config, "PUERTO_PROG");
 	d_plp->logger = logger;
 
+	log_info(logger, "[PLP] Inicializando el hilo PLP");
 	if(pthread_create(&threadPlp, NULL, plp, (void *) d_plp)) {
 		log_error(logger, "Error al crear el thread del PLP. Motivo: %s", strerror(errno));
 		goto liberarRecursos;
