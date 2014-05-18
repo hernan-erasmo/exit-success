@@ -139,13 +139,6 @@ int enviarDatos(FILE *script, int unSocket, t_log *logger)
 		return 1;
 	}
 
-	/*
-	if((bEnv += send(unSocket, paqueteSerializado, paquete.tamanio_total, 0)) < 0){
-		log_error(logger, "Error en la transmisión del script (Handshake ID). Motivo: %s", strerror(errno));
-		return 1;
-	}
-	*/
-
 	log_info(logger, "Enviados %d bytes.", bEnv);
 
 	free(contenidoScript);
@@ -216,8 +209,14 @@ void inicializarPaquete(t_paquete_programa *paquete, uint32_t sizeMensaje, char 
 char *serializarPaquete(t_paquete_programa *paquete, t_log *logger)
 {
 	char *serializedPackage = calloc(1 + sizeof(paquete->sizeMensaje) + paquete->sizeMensaje + sizeof(paquete->tamanio_total), sizeof(char)); //El tamaño del char id, el tamaño de la variable sizeMensaje, el tamaño del script y el tamaño de la variable tamaño_total
+	//char *serializedPackage = calloc(1 + sizeof(paquete->sizeMensaje) + paquete->sizeMensaje, sizeof(char)); //El tamaño del char id, el tamaño de la variable sizeMensaje, el tamaño del script y el tamaño de la variable tamaño_total
 	uint32_t offset = 0;
 	uint32_t sizeToSend;
+
+	sizeToSend = sizeof(paquete->tamanio_total);
+	log_info(logger, "sizeof(paquete->tamanio_total = %d", sizeof(paquete->tamanio_total));
+	memcpy(serializedPackage + offset, &(paquete->tamanio_total), sizeToSend);
+	offset += sizeToSend;
 
 	sizeToSend = sizeof(paquete->id);
 	log_info(logger, "sizeof(paquete->id) = %d", sizeof(paquete->id));
