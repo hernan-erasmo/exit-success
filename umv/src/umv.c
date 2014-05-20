@@ -11,6 +11,7 @@
 int crearLogger(t_log **logger);
 int cargarConfig(t_config **config, char *path);
 
+
 int main(int argc, char *argv[])
 {
 	int errorLogger = 0;
@@ -56,21 +57,28 @@ int main(int argc, char *argv[])
 	log_info(logger, "Creo la lista de segmentos usando list_create()");
 	listaSegmentos = list_create();
 
+	/*
+	**	Acá debería empezar a recibir comandos por teclado.
+	*/
+
+	/*
+	**	Acá debería empezar a escuchar por socket las conexiones entrantes
+	*/
+
 	log_info(logger, "Veo si hay espacio libre en memoria");
 	lista_esp_libre = buscarEspaciosLibres(listaSegmentos, mem_ppal, tamanio_mem_ppal);
 
 	log_info(logger, "Encontré los siguientes espacios libres en memoria:");
 	list_iterate(lista_esp_libre, mostrarInfoEspacioLibre);
 
-	//Creo segmentos y los agrego a la lista
-	log_info(logger, "Comienzo a crear los segmentos");
-	for(i = 0; i < 3; i++) {
-		total_segmentos += list_add(listaSegmentos, (void *) crearSegmento(1,i,i + 10));
-		log_info(logger, "Creé un segmento!");
-	}
-
 	//Imprimo los datos de los segmentos por pantalla
 	log_info(logger, "Se crearon %d segmentos:", total_segmentos);
+	list_iterate(listaSegmentos, mostrarInfoSegmento);
+
+	log_info(logger, "Los voy a ordenar por dirección física");
+	reordenarListaSegmentos(listaSegmentos);
+
+	//Imprimo los datos de los segmentos por pantalla
 	list_iterate(listaSegmentos, mostrarInfoSegmento);
 
 	log_info(logger, "Terminé de iterar usando list_iterate()");

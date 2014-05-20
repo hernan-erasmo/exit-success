@@ -20,11 +20,14 @@ void reordenarListaSegmentos(t_list *segmentos);
 t_esp_libre *crearInstanciaEspLibre(void *mem, uint32_t size);
 void eliminarEspacioLibre(void *esp_libre);
 void mostrarInfoEspacioLibre(void *esp_libre);
+bool comprarador_direccion_fisica_asc(void *seg_a, void *seg_b);
+bool comprarador_tamanio_asc(void *seg_a, void *seg_b);
+
 
 /*
 **	Interfaz de la UMV
 */
 
-t_segmento *crearSegmento(uint32_t prog_id, uint32_t seg_id, uint32_t size);
+t_segmento *crearSegmento(uint32_t prog_id, uint32_t size, t_list *espacio_libre);	//¿Debería retornar un id de segmento?
 void eliminarSegmento(void *seg);
 void mostrarInfoSegmento(void *seg);

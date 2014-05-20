@@ -55,12 +55,13 @@ t_list *buscarEspaciosLibres(t_list *segmentos, void *mem_ppal, uint32_t size_me
 	return lista_esp_libre;
 }
 
+//Esta funcion ordena los elementos de la lista de segmentos (no crea otra nueva ordenada, reordena la lista que le pasas)
+//de acuerdo a su dirección física "pos_mem_ppal" de menor a mayor.
 void reordenarListaSegmentos(t_list *segmentos)
 {
-	//Esta funcion ordena los elementos de la lista de segmentos (no crea otra nueva ordenada, reordena la lista que le pasas)
-	//de acuerdo a su dirección física "pos_mem_ppal" de menor a mayor.
+	list_sort(segmentos, comprarador_direccion_fisica_asc);
 
-	//Implmementame, por favor!
+	return;
 }
 
 t_esp_libre *crearInstanciaEspLibre(void *mem, uint32_t size)
@@ -87,11 +88,16 @@ void eliminarEspacioLibre(void *esp_libre)
 	return;
 }
 
-t_segmento *crearSegmento(uint32_t prog_id, uint32_t seg_id, uint32_t size)
+/*
+**	Su funcionamiento depende del algoritmo First-Fit o Worst-Fit.
+**	Busca espacio libre en memoria, elige el más adecuado de acuerdo
+** 	al algoritmo de asignación y guarda ahí un nuevo segmento.
+*/
+t_segmento *crearSegmento(uint32_t prog_id, uint32_t size, t_list *espacio_libre)
 {
 	t_segmento *seg = malloc(sizeof(t_segmento));
 	seg->prog_id = prog_id;
-	seg->seg_id = seg_id;
+	seg->seg_id = 0;
 	seg->inicio = 0;	//esto debe ser aleatorio y lo debe decidir la umv
 	seg->size = size;
 	seg->pos_mem_ppal = (void *) seg;	//la dirección donde comienza este segmento
@@ -114,4 +120,20 @@ void mostrarInfoSegmento(void *seg){
 	printf("Pos. Memoria Ppal.: %p\n", ((t_segmento *) seg)->pos_mem_ppal);
 
 	return;
+}
+
+bool comprarador_direccion_fisica_asc(void *seg_a, void *seg_b)
+{
+	t_segmento *a = (t_segmento *) seg_a;
+	t_segmento *b = (t_segmento *) seg_b;
+
+	return ((a->pos_mem_ppal) < (b->pos_mem_ppal));
+}
+
+bool comprarador_tamanio_asc(void *seg_a, void *seg_b)
+{
+	t_segmento *a = (t_segmento *) seg_a;
+	t_segmento *b = (t_segmento *) seg_b;
+
+	return ((a->size) < (b->size));
 }
