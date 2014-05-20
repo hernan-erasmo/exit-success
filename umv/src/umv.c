@@ -1,12 +1,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <pthread.h>
+#include <errno.h>
 
 #include <commons/log.h>
 #include <commons/config.h>
 #include <commons/collections/list.h>
 
-#include "segmento.h"
+#include "consola.h"
 
 int crearLogger(t_log **logger);
 int cargarConfig(t_config **config, char *path);
@@ -27,8 +29,14 @@ int main(int argc, char *argv[])
 	uint32_t tamanio_mem_ppal = 0;
 	void *mem_ppal = NULL;
 
+	//Variables para el manejo de los hilos
+	pthread_t threadConsola;
+	t_consola_init *c_init;
+
 	//Variables para las listas de segmentos
-	t_list *listaSegmentos = NULL;
+	t_list *listaSegmentos = NULL;				//Va a tener que estar sincronizada, ya que a ella
+												//acceden simultáneamente varios hilos, incluído
+												//el que maneja la consola.
 	uint32_t total_segmentos = 0;
 	int i;
 
@@ -57,14 +65,25 @@ int main(int argc, char *argv[])
 	log_info(logger, "Creo la lista de segmentos usando list_create()");
 	listaSegmentos = list_create();
 
-	/*
-	**	Acá debería empezar a recibir comandos por teclado.
-	*/
+	log_info(logger, "Inicializo la struct de configuración para la consola");
+	c_init = malloc(sizeof(t_consola_init));
+	c_init->listaSegmentos = listaSegmentos;
+	c_init->tamanio_mem_ppal = tamanio_mem_ppal;
+	c_init->mem_ppal = mem_ppal;
+/*
+**	Acá debería empezar a recibir comandos por teclado.
+*/
+	if(pthread_create(&threadConsola, NULL, consola, (void *) c_init)) {
+		log_error(logger, "Error al crear el thread de la consola. Motivo: %s", strerror(errno));
+		goto liberarRecursos;
+		return EXIT_FAILURE;
+	}	
 
 	/*
 	**	Acá debería empezar a escuchar por socket las conexiones entrantes
 	*/
 
+	/*
 	log_info(logger, "Veo si hay espacio libre en memoria");
 	lista_esp_libre = buscarEspaciosLibres(listaSegmentos, mem_ppal, tamanio_mem_ppal);
 
@@ -80,16 +99,23 @@ int main(int argc, char *argv[])
 
 	//Imprimo los datos de los segmentos por pantalla
 	list_iterate(listaSegmentos, mostrarInfoSegmento);
+	*/
 
 	log_info(logger, "Terminé de iterar usando list_iterate()");
 	log_info(logger, "Chau!");
 
+	pthread_join(threadConsola, NULL);
+	log_info(logger, "El thread de la consola finalizó y retornó status: (falta implementar!)");
+	
 	goto liberarRecursos;
 	return EXIT_SUCCESS;
 
 liberarRecursos:
 	if(logger)
 		log_destroy(logger);
+
+	if(c_init)
+		free(c_init);
 
 	if(lista_esp_libre) {
 		if (!list_is_empty(lista_esp_libre)) {
