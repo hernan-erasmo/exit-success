@@ -12,7 +12,8 @@
 
 int crearLogger(t_log **logger);
 int cargarConfig(t_config **config, char *path);
-
+void *inicializarMemoria(uint32_t size);
+void inicializarConfigConsola(t_consola_init **c_init, uint32_t sizeMem, void *mem, t_list *listaSegmentos);
 
 int main(int argc, char *argv[])
 {
@@ -34,11 +35,13 @@ int main(int argc, char *argv[])
 	t_consola_init *c_init;
 
 	//Variables para las listas de segmentos
-	t_list *listaSegmentos = NULL;				//Va a tener que estar sincronizada, ya que a ella
-												//acceden simultáneamente varios hilos, incluído
-												//el que maneja la consola.
+		/*
+		** OJO CON LA SINCRONIZACIÓN DE ESTAS VARIABLES, ya
+		** que a ellas acceden simultáneamente varios hilos,
+		** incluído el que maneja la consola.
+		*/
+	t_list *listaSegmentos = NULL;
 	uint32_t total_segmentos = 0;
-	int i;
 
 	//Variables para la administración de memoria
 	t_list *lista_esp_libre = NULL;
@@ -57,31 +60,35 @@ int main(int argc, char *argv[])
 	log_info(logger, "ALGORITMO_COMPACTACION = %s", config_get_string_value(config, "ALGORITMO_COMPACTACION"));
 
 	//Reservo memoria para la memoria principal
-	mem_ppal = malloc(tamanio_mem_ppal);
-	memset(mem_ppal, '\0', tamanio_mem_ppal);
-	log_info(logger, "La memoria principal abarca desde la dirección %p hasta %p", (mem_ppal), (mem_ppal + tamanio_mem_ppal));
-
+	if((mem_ppal = inicializarMemoria(tamanio_mem_ppal)) == NULL){
+		log_error(logger, "No se pudo crear la memoria principal.");
+		goto liberarRecursos;
+		return EXIT_FAILURE;
+	} else {
+		log_info(logger, "La memoria principal abarca desde la dirección %p hasta %p", (mem_ppal), (mem_ppal + tamanio_mem_ppal));
+	}
+	
 	//Inicializo una lista para los segmentos
 	log_info(logger, "Creo la lista de segmentos usando list_create()");
 	listaSegmentos = list_create();
 
-	log_info(logger, "Inicializo la struct de configuración para la consola");
-	c_init = malloc(sizeof(t_consola_init));
-	c_init->listaSegmentos = listaSegmentos;
-	c_init->tamanio_mem_ppal = tamanio_mem_ppal;
-	c_init->mem_ppal = mem_ppal;
-/*
-**	Acá debería empezar a recibir comandos por teclado.
-*/
+	//Inicializo la configuración de la consola
+	inicializarConfigConsola(&c_init, tamanio_mem_ppal, mem_ppal, listaSegmentos);
+
+
+	list_add(listaSegmentos, (void *) crearSegmento(1,200,NULL));
+	list_add(listaSegmentos, (void *) crearSegmento(4,23,NULL));
+
+	// Arranca la consola
 	if(pthread_create(&threadConsola, NULL, consola, (void *) c_init)) {
 		log_error(logger, "Error al crear el thread de la consola. Motivo: %s", strerror(errno));
 		goto liberarRecursos;
 		return EXIT_FAILURE;
 	}	
 
-	/*
-	**	Acá debería empezar a escuchar por socket las conexiones entrantes
-	*/
+/*
+**	Acá debería empezar a escuchar por socket las conexiones entrantes
+*/
 
 	/*
 	log_info(logger, "Veo si hay espacio libre en memoria");
@@ -162,4 +169,22 @@ int cargarConfig(t_config **config, char *path)
 
 	*config = config_create(path);
 	return 0;	
+}
+
+void *inicializarMemoria(uint32_t size)
+{
+	void *mem = malloc(size);
+	memset(mem, '\0', size);
+
+	return mem;
+}
+
+void inicializarConfigConsola(t_consola_init **c_init, uint32_t sizeMem, void *mem, t_list *listaSegmentos)
+{
+	*c_init = malloc(sizeof(t_consola_init));
+	(*c_init)->listaSegmentos = listaSegmentos;
+	(*c_init)->tamanio_mem_ppal = sizeMem;
+	(*c_init)->mem_ppal = mem;
+
+	return;
 }

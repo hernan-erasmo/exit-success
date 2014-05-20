@@ -113,11 +113,12 @@ void eliminarSegmento(void *seg)
 }
 
 void mostrarInfoSegmento(void *seg){
-	printf("ID Programa: %d\n", ((t_segmento *) seg)->prog_id);
-	printf("ID Segmento: %d\n", ((t_segmento *) seg)->seg_id);
-	printf("Dir. inicio: %d\n", ((t_segmento *) seg)->inicio);
-	printf("Tamaño: %d bytes\n", ((t_segmento *) seg)->size);
-	printf("Pos. Memoria Ppal.: %p\n", ((t_segmento *) seg)->pos_mem_ppal);
+	printf("\n%-15d%-15d%-15d%-20d%-20p", ((t_segmento *) seg)->prog_id, 
+										  ((t_segmento *) seg)->seg_id,
+										  ((t_segmento *) seg)->inicio,
+										  ((t_segmento *) seg)->size,
+										  ((t_segmento *) seg)->pos_mem_ppal
+	);
 
 	return;
 }

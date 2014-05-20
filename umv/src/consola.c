@@ -9,6 +9,7 @@ void *consola(void *consola_init)
 	t_consola_init *c_init = (t_consola_init *) consola_init;
 	uint32_t tamanio_mem_ppal = c_init->tamanio_mem_ppal;
 	void *mem_ppal = c_init->mem_ppal;
+	t_list *listaSegmentos = c_init->listaSegmentos;
 
 	char *comando = NULL;
 	int noSalir = 1;
@@ -25,12 +26,16 @@ void *consola(void *consola_init)
 		} else if(strcmp(comando,"info") == 0){
 			printf("\tTamaño memoria principal: %d bytes.\n", tamanio_mem_ppal);
 			printf("\t\tDesde %p hasta %p.\n", mem_ppal, (mem_ppal + tamanio_mem_ppal));
+		} else if(strcmp(comando,"dump-segmentos") == 0){
+			dump_segmentos(listaSegmentos);
 		} else if(strcmp(comando,"dump-all") == 0){
 			printf("UMV> Falta implementar el comando \"dump-all\".\n");
 		} else if (strcmp(comando,"escribir") == 0) {
 			printf("UMV> Falta implementar el comando \"escribir\".\n");
+		} else if (strcmp(comando,"h") == 0) {
+			printf("UMV> Falta implementar la ayuda. Perdón :(\n");
 		} else {
-			printf("UMV> Comando inválido.\n");
+			printf("UMV> Comando no reconocido. Ingrese 'h' para ver la lista de comandos disponibles.\n");
 		}
 
 		free(comando);
@@ -83,7 +88,14 @@ char *getLinea(void)
 			break;
 		}
 	}
-
-	//*line = '\0';
 	return linep;
+}
+
+void dump_segmentos(t_list *listaSegmentos)
+{
+	printf("\n%-15s%-15s%-15s%-20s%-20s\n","ID Programa", "ID Segmento", "Dir. Inicio", "Tamaño (bytes)", "Posicion en mem_ppal");
+	list_iterate(listaSegmentos, mostrarInfoSegmento);
+	printf("\n\n");
+
+	return;
 }
