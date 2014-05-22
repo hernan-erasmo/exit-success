@@ -28,6 +28,8 @@ void *consola(void *consola_init)
 			printf("\t\tDesde %p hasta %p.\n", mem_ppal, (mem_ppal + tamanio_mem_ppal));
 		} else if(strcmp(comando,"dump-segmentos") == 0){
 			dump_segmentos(listaSegmentos);
+		} else if(strcmp(comando,"crear-segmento") == 0){
+			crear_segmento(listaSegmentos, mem_ppal, tamanio_mem_ppal);
 		} else if(strcmp(comando,"dump-all") == 0){
 			printf("UMV> Falta implementar el comando \"dump-all\".\n");
 		} else if (strcmp(comando,"escribir") == 0) {
@@ -96,6 +98,22 @@ void dump_segmentos(t_list *listaSegmentos)
 	printf("\n%-15s%-15s%-15s%-20s%-20s\n","ID Programa", "ID Segmento", "Dir. Inicio", "Tamaño (bytes)", "Posicion en mem_ppal");
 	list_iterate(listaSegmentos, mostrarInfoSegmento);
 	printf("\n\n");
+
+	return;
+}
+
+void crear_segmento(t_list *listaSegmentos, void *mem_ppal, uint32_t tamanio_mem_ppal)
+{
+	t_list *espacios_libres = buscarEspaciosLibres(listaSegmentos, mem_ppal, tamanio_mem_ppal);
+	t_segmento *seg = crearSegmento(99,10,espacios_libres,listaSegmentos,"first-fit");
+	
+	list_add(listaSegmentos, seg);
+
+	if (!list_is_empty(espacios_libres)) {
+		list_clean_and_destroy_elements(espacios_libres, eliminarEspacioLibre);
+	}
+
+	list_destroy(espacios_libres);
 
 	return;
 }

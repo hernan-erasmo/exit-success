@@ -75,10 +75,6 @@ int main(int argc, char *argv[])
 	//Inicializo la configuración de la consola
 	inicializarConfigConsola(&c_init, tamanio_mem_ppal, mem_ppal, listaSegmentos);
 
-
-	list_add(listaSegmentos, (void *) crearSegmento(1,200,NULL));
-	list_add(listaSegmentos, (void *) crearSegmento(4,23,NULL));
-
 	// Arranca la consola
 	if(pthread_create(&threadConsola, NULL, consola, (void *) c_init)) {
 		log_error(logger, "Error al crear el thread de la consola. Motivo: %s", strerror(errno));

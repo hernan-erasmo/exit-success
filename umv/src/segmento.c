@@ -13,7 +13,7 @@ t_list *buscarEspaciosLibres(t_list *segmentos, void *mem_ppal, uint32_t size_me
 	int tamanio = 0;
 
 	//Ordeno la lista de segmentos de menor a mayor de acuerdo a su dirección física
-	//reordenarListaSegmentos(segmentos);
+	list_sort(segmentos, comparador_segmento_direccion_fisica_asc);
 
 	if(cant_segmentos == 0){
 	//Si no hay segmentos, entonces toda la memoria está disponible
@@ -55,15 +55,6 @@ t_list *buscarEspaciosLibres(t_list *segmentos, void *mem_ppal, uint32_t size_me
 	return lista_esp_libre;
 }
 
-//Esta funcion ordena los elementos de la lista de segmentos (no crea otra nueva ordenada, reordena la lista que le pasas)
-//de acuerdo a su dirección física "pos_mem_ppal" de menor a mayor.
-void reordenarListaSegmentos(t_list *segmentos)
-{
-	list_sort(segmentos, comprarador_direccion_fisica_asc);
-
-	return;
-}
-
 t_esp_libre *crearInstanciaEspLibre(void *mem, uint32_t size)
 {
 	t_esp_libre *esp_libre = malloc(sizeof(t_esp_libre));
@@ -93,14 +84,45 @@ void eliminarEspacioLibre(void *esp_libre)
 **	Busca espacio libre en memoria, elige el más adecuado de acuerdo
 ** 	al algoritmo de asignación y guarda ahí un nuevo segmento.
 */
-t_segmento *crearSegmento(uint32_t prog_id, uint32_t size, t_list *espacio_libre)
+t_segmento *crearSegmento(uint32_t prog_id,
+						  uint32_t size,
+						  t_list *espacios_libres,	//lista de espacios libres
+						  t_list *listaSegmentos,	//tabla de segmentos
+						  char *algoritmo)
 {
-	t_segmento *seg = malloc(sizeof(t_segmento));
-	seg->prog_id = prog_id;
-	seg->seg_id = 0;
-	seg->inicio = 0;	//esto debe ser aleatorio y lo debe decidir la umv
+	t_esp_libre *esp_libre = NULL;
+	t_segmento *seg = NULL;
+
+	if(strcasecmp(algoritmo, "first-fit") == 0) {
+		//ordenar la lista de espacio libre de menor a mayor por cantidad de espacio libre
+		list_sort(espacios_libres, comparador_esp_libre_tamanio_asc);
+		
+		//tomar el primer elemento que pueda contner el segmento requerido y crear el segmento ahí
+		esp_libre = buscar_primer_lugar_adecuado(espacios_libres, size);
+		
+		//si no hay ninguno que pueda hacerlo, no hay espacio libre para el nuevo segmento.
+		if(esp_libre == NULL){
+			printf("No se pudo crear el segmento porque no hay espacio disponible.\n");
+			return seg;
+		}
+
+	} else if (strcasecmp(algoritmo, "worst-fit") == 0) {
+		//ordenar la lista de espacio libre de mayor a menor por cantidad de espacio libre
+		//tomar el primer elemento de la lista y si contiene espacio suficiente, crear segmento ahí
+		//si no tiene espacio suficiente, no hay espacio libre para el nuevo segmento.
+		return seg;
+	} else {
+		printf("No encontré el algoritmo de asignación.\n");
+		return seg;
+	}
+
+	seg = malloc(sizeof(t_segmento));
 	seg->size = size;
-	seg->pos_mem_ppal = (void *) seg;	//la dirección donde comienza este segmento
+	
+	seg->prog_id = prog_id;
+	seg->seg_id = getSegId(listaSegmentos);	//calcular en funcion del id de programa
+	seg->inicio = 0;	//esto debe ser aleatorio y lo debe decidir la umv. Es el que conoce el programa, y no cambia.
+	seg->pos_mem_ppal = esp_libre->dir;	//la dirección donde comienza este segmento
 
 	return seg;
 }
@@ -123,7 +145,7 @@ void mostrarInfoSegmento(void *seg){
 	return;
 }
 
-bool comprarador_direccion_fisica_asc(void *seg_a, void *seg_b)
+bool comparador_segmento_direccion_fisica_asc(void *seg_a, void *seg_b)
 {
 	t_segmento *a = (t_segmento *) seg_a;
 	t_segmento *b = (t_segmento *) seg_b;
@@ -131,10 +153,49 @@ bool comprarador_direccion_fisica_asc(void *seg_a, void *seg_b)
 	return ((a->pos_mem_ppal) < (b->pos_mem_ppal));
 }
 
-bool comprarador_tamanio_asc(void *seg_a, void *seg_b)
+bool comparador_segmento_tamanio_asc(void *seg_a, void *seg_b)
 {
 	t_segmento *a = (t_segmento *) seg_a;
 	t_segmento *b = (t_segmento *) seg_b;
 
 	return ((a->size) < (b->size));
+}
+
+bool comparador_esp_libre_tamanio_asc(void *esp_a, void *esp_b)
+{
+	t_esp_libre *a = (t_esp_libre *) esp_a;
+	t_esp_libre *b = (t_esp_libre *) esp_b;
+
+	return ((a->size) < (b->size));
+}
+
+uint32_t getSegId(t_list *listaSegmentos)
+{
+
+	return 0;
+}
+
+/*
+**	Útil sólo para first-fit, ya que para worst-fit la lista ya está ordenada de mayor a menor
+**	y si el tamaño solicitado no entra en el primer espacio, no entrará en ninguno.
+**	Se podría llamar para worst-fit, pero recorrería toda la lista y devolvería NULL al no encontrar
+**	ningún espacio libre.
+*/ 
+t_esp_libre *buscar_primer_lugar_adecuado(t_list *espacios_libres, uint32_t size_requerido)
+{
+	uint32_t i;
+	uint32_t tope = list_size(espacios_libres);
+	
+	t_esp_libre *encontrado = NULL;
+	t_esp_libre *candidato = NULL;
+
+	for(i = 0; i < tope; i++) {
+		candidato = list_get(espacios_libres, i);
+		if(candidato->size >= size_requerido){
+			encontrado = candidato;
+			return encontrado;
+		}
+	}
+
+	return encontrado;
 }

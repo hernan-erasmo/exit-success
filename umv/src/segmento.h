@@ -16,18 +16,19 @@ typedef struct esp_libre {
 } t_esp_libre;
 
 t_list *buscarEspaciosLibres(t_list *segmentos, void *mem_ppal, uint32_t size_mem_ppal);
-void reordenarListaSegmentos(t_list *segmentos);
 t_esp_libre *crearInstanciaEspLibre(void *mem, uint32_t size);
+t_esp_libre *buscar_primer_lugar_adecuado(t_list *espacios_libres, uint32_t size_requerido);
 void eliminarEspacioLibre(void *esp_libre);
 void mostrarInfoEspacioLibre(void *esp_libre);
-bool comprarador_direccion_fisica_asc(void *seg_a, void *seg_b);
-bool comprarador_tamanio_asc(void *seg_a, void *seg_b);
-
+uint32_t getSegId(t_list *listaSegmentos);
+bool comparador_segmento_direccion_fisica_asc(void *seg_a, void *seg_b);
+bool comparador_segmento_tamanio_asc(void *seg_a, void *seg_b);
+bool comparador_esp_libre_tamanio_asc(void *esp_a, void *esp_b);
 
 /*
 **	Interfaz de la UMV
 */
 
-t_segmento *crearSegmento(uint32_t prog_id, uint32_t size, t_list *espacio_libre);	//¿Debería retornar un id de segmento?
+t_segmento *crearSegmento(uint32_t prog_id, uint32_t size, t_list *espacios_libres, t_list *listaSegmentos, char *algoritmo);	//¿Debería retornar un id de segmento?
 void eliminarSegmento(void *seg);
 void mostrarInfoSegmento(void *seg);
