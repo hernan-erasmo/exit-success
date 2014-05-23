@@ -54,7 +54,7 @@ t_list *buscarEspaciosLibres(t_list *segmentos, void *mem_ppal, uint32_t size_me
 		}
 
 		//Si hay espacio entre el último segmento y el fin de la memoria
-		tamanio = (mem_ppal + size_mem_ppal) - (fin_segmento_actual);
+		tamanio = (mem_ppal + size_mem_ppal - 1) - (fin_segmento_actual);
 		if(tamanio > 0)
 			list_add(lista_esp_libre, (void *) crearInstanciaEspLibre((fin_segmento_actual + 1), tamanio));
 	}
@@ -109,7 +109,7 @@ t_segmento *crearSegmento(uint32_t prog_id,
 		
 		//si no hay ninguno que pueda hacerlo, no hay espacio libre para el nuevo segmento.
 		if(esp_libre == NULL){
-			printf("No se pudo crear el segmento porque no hay espacio disponible.\n");
+			printf("UMV> El programa con ID %d quiere crear un segmento de %d bytes, pero no hay espacio.\n", prog_id, size);
 			return seg;
 		}
 

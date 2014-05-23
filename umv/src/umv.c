@@ -65,7 +65,7 @@ int main(int argc, char *argv[])
 		goto liberarRecursos;
 		return EXIT_FAILURE;
 	} else {
-		log_info(logger, "La memoria principal abarca desde la dirección %p hasta %p", (mem_ppal), (mem_ppal + tamanio_mem_ppal));
+		log_info(logger, "La memoria principal abarca desde la dirección %p hasta %p", (mem_ppal), (mem_ppal + tamanio_mem_ppal - 1));
 	}
 	
 	//Inicializo una lista para los segmentos
