@@ -11,6 +11,8 @@ t_list *buscarEspaciosLibres(t_list *segmentos, void *mem_ppal, uint32_t size_me
 	t_segmento *seg_siguiente = NULL;
 	int i = 0;
 	int tamanio = 0;
+	void *posicion_segmento_actual=NULL;
+	void *fin_segmento_actual = NULL;
 
 	//Ordeno la lista de segmentos de menor a mayor de acuerdo a su dirección física
 	list_sort(segmentos, comparador_segmento_direccion_fisica_asc);
@@ -26,9 +28,12 @@ t_list *buscarEspaciosLibres(t_list *segmentos, void *mem_ppal, uint32_t size_me
 		tamanio = 0;
 		seg_actual = list_get(segmentos, i);
 		
+		posicion_segmento_actual = seg_actual->pos_mem_ppal;
+		fin_segmento_actual = posicion_segmento_actual + seg_actual->size - 1;
+		
 		//Si hay espacio entre el principio de la memoria y el principio del primer segmento.
-		if(seg_actual->pos_mem_ppal > mem_ppal){
-			tamanio = (seg_actual->pos_mem_ppal - 1) - mem_ppal;
+		if(posicion_segmento_actual > mem_ppal){
+			tamanio = posicion_segmento_actual - mem_ppal;
 			list_add(lista_esp_libre, (void *) crearInstanciaEspLibre(mem_ppal, tamanio));
 		}
 
@@ -37,19 +42,21 @@ t_list *buscarEspaciosLibres(t_list *segmentos, void *mem_ppal, uint32_t size_me
 			seg_siguiente = list_get(segmentos, i+1);
 
 			//Si hay espacio entre el segmento actual y el siguiente
-			if((seg_actual->pos_mem_ppal + seg_actual->size + 1) < seg_siguiente->pos_mem_ppal){
-				tamanio = seg_siguiente->pos_mem_ppal - (seg_actual->pos_mem_ppal + seg_actual->size);
-				list_add(lista_esp_libre, (void *) crearInstanciaEspLibre((seg_actual->pos_mem_ppal + seg_actual->size + 1), tamanio));
+			if((fin_segmento_actual + 1) < seg_siguiente->pos_mem_ppal){
+				tamanio = seg_siguiente->pos_mem_ppal - (fin_segmento_actual);
+				list_add(lista_esp_libre, (void *) crearInstanciaEspLibre((fin_segmento_actual + 1), tamanio));
 			}
 
 			i++;
 			seg_actual = list_get(segmentos, i);
+			posicion_segmento_actual = seg_actual->pos_mem_ppal;
+			fin_segmento_actual = posicion_segmento_actual + seg_actual->size - 1;
 		}
 
 		//Si hay espacio entre el último segmento y el fin de la memoria
-		tamanio = (mem_ppal + size_mem_ppal) - (seg_actual->pos_mem_ppal + seg_actual->size);
+		tamanio = (mem_ppal + size_mem_ppal) - (fin_segmento_actual);
 		if(tamanio > 0)
-			list_add(lista_esp_libre, (void *) crearInstanciaEspLibre((seg_actual->pos_mem_ppal + seg_actual->size + 1), tamanio));
+			list_add(lista_esp_libre, (void *) crearInstanciaEspLibre((fin_segmento_actual + 1), tamanio));
 	}
 
 	return lista_esp_libre;
@@ -198,4 +205,13 @@ t_esp_libre *buscar_primer_lugar_adecuado(t_list *espacios_libres, uint32_t size
 	}
 
 	return encontrado;
+}
+
+void dump_segmentos(t_list *listaSegmentos)
+{
+	printf("\n%-15s%-15s%-15s%-20s%-20s\n","ID Programa", "ID Segmento", "Dir. Inicio", "Tamaño (bytes)", "Posicion en mem_ppal");
+	list_iterate(listaSegmentos, mostrarInfoSegmento);
+	printf("\n\n");
+
+	return;
 }

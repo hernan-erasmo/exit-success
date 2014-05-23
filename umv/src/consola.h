@@ -11,5 +11,4 @@ typedef struct consola_init {
 
 void *consola(void *c_init);
 char *getLinea(void);
-void dump_segmentos(t_list *listaSegmentos);
 void crear_segmento(t_list *listaSegmentos, void *mem_ppal, uint32_t tamanio_mem_ppal);

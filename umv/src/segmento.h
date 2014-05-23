@@ -32,3 +32,4 @@ bool comparador_esp_libre_tamanio_asc(void *esp_a, void *esp_b);
 t_segmento *crearSegmento(uint32_t prog_id, uint32_t size, t_list *espacios_libres, t_list *listaSegmentos, char *algoritmo);	//¿Debería retornar un id de segmento?
 void eliminarSegmento(void *seg);
 void mostrarInfoSegmento(void *seg);
+void dump_segmentos(t_list *listaSegmentos);

@@ -93,15 +93,6 @@ char *getLinea(void)
 	return linep;
 }
 
-void dump_segmentos(t_list *listaSegmentos)
-{
-	printf("\n%-15s%-15s%-15s%-20s%-20s\n","ID Programa", "ID Segmento", "Dir. Inicio", "Tamaño (bytes)", "Posicion en mem_ppal");
-	list_iterate(listaSegmentos, mostrarInfoSegmento);
-	printf("\n\n");
-
-	return;
-}
-
 void crear_segmento(t_list *listaSegmentos, void *mem_ppal, uint32_t tamanio_mem_ppal)
 {
 	t_list *espacios_libres = buscarEspaciosLibres(listaSegmentos, mem_ppal, tamanio_mem_ppal);
