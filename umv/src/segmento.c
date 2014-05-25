@@ -43,7 +43,7 @@ t_list *buscarEspaciosLibres(t_list *segmentos, void *mem_ppal, uint32_t size_me
 
 			//Si hay espacio entre el segmento actual y el siguiente
 			if((fin_segmento_actual + 1) < seg_siguiente->pos_mem_ppal){
-				tamanio = seg_siguiente->pos_mem_ppal - (fin_segmento_actual);
+				tamanio = seg_siguiente->pos_mem_ppal - (fin_segmento_actual + 1);
 				list_add(lista_esp_libre, (void *) crearInstanciaEspLibre((fin_segmento_actual + 1), tamanio));
 			}
 

@@ -115,6 +115,12 @@ void crear_segmento(t_list *listaSegmentos, void *mem_ppal, uint32_t tamanio_mem
 	printf("\tTamaño (uint32_t): ");
 	scanf("%d", &tamanio_segmento);
 
+	if(!tamanio_segmento){
+		printf("UMV> No se puede crear un segmento de tamaño 0.\n");
+		fgetc(stdin);
+		return;
+	}
+
 	t_list *espacios_libres = buscarEspaciosLibres(listaSegmentos, mem_ppal, tamanio_mem_ppal);
 	t_segmento *seg = crearSegmento(id_prog,tamanio_segmento,espacios_libres,listaSegmentos,"first-fit");
 	
@@ -158,7 +164,11 @@ void info_memoria(void *mem_ppal, t_list *listaSegmentos, uint32_t tamanio_mem_p
 	//printf("\t\tDesde %p hasta %p.\n", mem_ppal, (mem_ppal + tamanio_mem_ppal));
 	t_list *esp_libre = buscarEspaciosLibres(listaSegmentos, mem_ppal, tamanio_mem_ppal);
 
-	list_iterate(esp_libre, mostrarInfoEspacioLibre);
+	if(list_is_empty(esp_libre)){
+		printf("\tNo hay espacio libre en memoria.\n");
+	} else {
+		list_iterate(esp_libre, mostrarInfoEspacioLibre);
+	}
 
 	list_destroy_and_destroy_elements(esp_libre, eliminarEspacioLibre);
 }
