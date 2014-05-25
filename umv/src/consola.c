@@ -25,8 +25,7 @@ void *consola(void *consola_init)
 			noSalir = 0;
 		
 		} else if(strcmp(comando,"info") == 0){
-			printf("\tTamaño memoria principal: %d bytes.\n", tamanio_mem_ppal);
-			printf("\t\tDesde %p hasta %p.\n", mem_ppal, (mem_ppal + tamanio_mem_ppal));
+			info_memoria(mem_ppal, listaSegmentos, tamanio_mem_ppal);
 		
 		} else if(strcmp(comando,"crear-segmento") == 0){
 			crear_segmento(listaSegmentos, mem_ppal, tamanio_mem_ppal);
@@ -151,4 +150,15 @@ void destruir_segmentos(t_list *listaSegmentos)
 	destruirSegmentos(listaSegmentos, progId);
 	
 	return;
+}
+
+void info_memoria(void *mem_ppal, t_list *listaSegmentos, uint32_t tamanio_mem_ppal)
+{
+	//printf("\tTamaño memoria principal: %d bytes.\n", tamanio_mem_ppal);
+	//printf("\t\tDesde %p hasta %p.\n", mem_ppal, (mem_ppal + tamanio_mem_ppal));
+	t_list *esp_libre = buscarEspaciosLibres(listaSegmentos, mem_ppal, tamanio_mem_ppal);
+
+	list_iterate(esp_libre, mostrarInfoEspacioLibre);
+
+	list_destroy_and_destroy_elements(esp_libre, eliminarEspacioLibre);
 }

@@ -73,8 +73,8 @@ t_esp_libre *crearInstanciaEspLibre(void *mem, uint32_t size)
 
 void mostrarInfoEspacioLibre(void *esp_libre)
 {
-	printf("Dirección física: %p\n", ((t_esp_libre *) esp_libre)-> dir);
-	printf("Tamaño del bloque: %d\n", ((t_esp_libre *) esp_libre)-> size);
+	t_esp_libre *esp = (t_esp_libre *) esp_libre;
+	printf("\t%d bytes libres entre %p y %p\n", esp->size, esp->dir, (esp->size + esp->dir - 1));
 
 	return;
 }
