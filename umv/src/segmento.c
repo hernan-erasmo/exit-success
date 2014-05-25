@@ -127,7 +127,7 @@ t_segmento *crearSegmento(uint32_t prog_id,
 	seg->size = size;
 	
 	seg->prog_id = prog_id;
-	seg->seg_id = getSegId(listaSegmentos);	//calcular en funcion del id de programa
+	seg->seg_id = getSegId(listaSegmentos, prog_id);	//calcular en funcion del id de programa
 	seg->inicio = 0;	//esto debe ser aleatorio y lo debe decidir la umv. Es el que conoce el programa, y no cambia.
 	seg->pos_mem_ppal = esp_libre->dir;	//la dirección donde comienza este segmento
 	seg->marcadoParaBorrar = 0;
@@ -177,10 +177,18 @@ bool comparador_esp_libre_tamanio_asc(void *esp_a, void *esp_b)
 	return ((a->size) < (b->size));
 }
 
-uint32_t getSegId(t_list *listaSegmentos)
+uint32_t getSegId(t_list *listaSegmentos, uint32_t prog_id)
 {
+	int i, max_seg_id = 0, size = list_size(listaSegmentos);
+	t_segmento *s = NULL;
 
-	return 0;
+	for(i = 0; i < size; i++){
+		s = list_get(listaSegmentos, i);
+		if((s->prog_id == prog_id) && (s->seg_id > max_seg_id))
+			max_seg_id = s->seg_id;
+	}
+	
+	return ++max_seg_id;
 }
 
 /*
