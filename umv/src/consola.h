@@ -11,6 +11,9 @@ typedef struct consola_init {
 
 void *consola(void *c_init);
 char *getLinea(void);
-void crear_segmento(t_list *listaSegmentos, void *mem_ppal, uint32_t tamanio_mem_ppal);
-void destruir_segmentos(t_list *listaSegmentos);
-void info_memoria(void *mem_ppal, t_list *listaSegmentos, uint32_t tamanio_mem_ppal);
+t_list *buscarSegmentosConId(t_list *listaSegmentos, uint32_t id);
+
+void comando_crear_segmento(t_list *listaSegmentos, void *mem_ppal, uint32_t tamanio_mem_ppal);
+void comando_destruir_segmentos(t_list *listaSegmentos);
+void comando_dump_segmentos(t_list *listaSegmentos);
+void comando_info_memoria(void *mem_ppal, t_list *listaSegmentos, uint32_t tamanio_mem_ppal);
