@@ -100,7 +100,7 @@ t_segmento *crearSegmento(uint32_t prog_id,
 	t_esp_libre *esp_libre = NULL;
 	t_segmento *seg = NULL;
 
-	if(strcasecmp(algoritmo, "first-fit") == 0) {
+	if(strcasecmp(algoritmo, "first_fit") == 0) {
 		//ordenar la lista de espacio libre de menor a mayor por cantidad de espacio libre
 		list_sort(espacios_libres, comparador_esp_libre_tamanio_asc);
 		
@@ -113,11 +113,19 @@ t_segmento *crearSegmento(uint32_t prog_id,
 			return seg;
 		}
 
-	} else if (strcasecmp(algoritmo, "worst-fit") == 0) {
+	} else if (strcasecmp(algoritmo, "worst_fit") == 0) {
 		//ordenar la lista de espacio libre de mayor a menor por cantidad de espacio libre
+		list_sort(espacios_libres, comparador_esp_libre_tamanio_desc);
+		
 		//tomar el primer elemento de la lista y si contiene espacio suficiente, crear segmento ahí
+		esp_libre = (t_esp_libre *) list_get(espacios_libres, 0);
+
 		//si no tiene espacio suficiente, no hay espacio libre para el nuevo segmento.
-		return seg;
+		if((esp_libre == NULL) || (esp_libre->size < size)){
+			printf("UMV> El programa con ID %d quiere crear un segmento de %d bytes, pero no hay espacio.\n", prog_id, size);
+			return seg;
+		}
+
 	} else {
 		printf("No encontré el algoritmo de asignación.\n");
 		return seg;
@@ -175,6 +183,14 @@ bool comparador_esp_libre_tamanio_asc(void *esp_a, void *esp_b)
 	t_esp_libre *b = (t_esp_libre *) esp_b;
 
 	return ((a->size) < (b->size));
+}
+
+bool comparador_esp_libre_tamanio_desc(void *esp_a, void *esp_b)
+{
+	t_esp_libre *a = (t_esp_libre *) esp_a;
+	t_esp_libre *b = (t_esp_libre *) esp_b;
+
+	return ((a->size) > (b->size));
 }
 
 uint32_t getSegId(t_list *listaSegmentos, uint32_t prog_id)

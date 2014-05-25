@@ -25,6 +25,7 @@ uint32_t getSegId(t_list *listaSegmentos, uint32_t prog_id);
 bool comparador_segmento_direccion_fisica_asc(void *seg_a, void *seg_b);
 bool comparador_segmento_tamanio_asc(void *seg_a, void *seg_b);
 bool comparador_esp_libre_tamanio_asc(void *esp_a, void *esp_b);
+bool comparador_esp_libre_tamanio_desc(void *esp_a, void *esp_b);
 void *marcar_para_borrar(void *seg);
 bool marcado_para_borrar(void *seg);
 

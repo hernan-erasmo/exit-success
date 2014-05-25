@@ -13,7 +13,7 @@
 int crearLogger(t_log **logger);
 int cargarConfig(t_config **config, char *path);
 void *inicializarMemoria(uint32_t size);
-void inicializarConfigConsola(t_consola_init **c_init, uint32_t sizeMem, void *mem, t_list *listaSegmentos);
+void inicializarConfigConsola(t_consola_init **c_init, uint32_t sizeMem, void *mem, t_list *listaSegmentos, char *algoritmo_comp);
 
 int main(int argc, char *argv[])
 {
@@ -29,6 +29,7 @@ int main(int argc, char *argv[])
 	//Variables para el manejo de la memoria principal
 	uint32_t tamanio_mem_ppal = 0;
 	void *mem_ppal = NULL;
+	char *algoritmo_comp = NULL;
 
 	//Variables para el manejo de los hilos
 	pthread_t threadConsola;
@@ -56,8 +57,9 @@ int main(int argc, char *argv[])
 
 	//Cargo los valores desde la configuración
 	tamanio_mem_ppal = config_get_int_value(config, "TAMANIO_MEM_PPAL_BYTES");
+	algoritmo_comp = config_get_string_value(config, "ALGORITMO_COMPACTACION");
 	log_info(logger, "TAMANIO_MEM_PPAL_BYTES = %d", tamanio_mem_ppal);
-	log_info(logger, "ALGORITMO_COMPACTACION = %s", config_get_string_value(config, "ALGORITMO_COMPACTACION"));
+	log_info(logger, "ALGORITMO_COMPACTACION = %s", algoritmo_comp);
 
 	//Reservo memoria para la memoria principal
 	if((mem_ppal = inicializarMemoria(tamanio_mem_ppal)) == NULL){
@@ -73,7 +75,7 @@ int main(int argc, char *argv[])
 	listaSegmentos = list_create();
 
 	//Inicializo la configuración de la consola
-	inicializarConfigConsola(&c_init, tamanio_mem_ppal, mem_ppal, listaSegmentos);
+	inicializarConfigConsola(&c_init, tamanio_mem_ppal, mem_ppal, listaSegmentos, algoritmo_comp);
 
 	// Arranca la consola
 	if(pthread_create(&threadConsola, NULL, consola, (void *) c_init)) {
@@ -85,24 +87,6 @@ int main(int argc, char *argv[])
 /*
 **	Acá debería empezar a escuchar por socket las conexiones entrantes
 */
-
-	/*
-	log_info(logger, "Veo si hay espacio libre en memoria");
-	lista_esp_libre = buscarEspaciosLibres(listaSegmentos, mem_ppal, tamanio_mem_ppal);
-
-	log_info(logger, "Encontré los siguientes espacios libres en memoria:");
-	list_iterate(lista_esp_libre, mostrarInfoEspacioLibre);
-
-	//Imprimo los datos de los segmentos por pantalla
-	log_info(logger, "Se crearon %d segmentos:", total_segmentos);
-	list_iterate(listaSegmentos, mostrarInfoSegmento);
-
-	log_info(logger, "Los voy a ordenar por dirección física");
-	reordenarListaSegmentos(listaSegmentos);
-
-	//Imprimo los datos de los segmentos por pantalla
-	list_iterate(listaSegmentos, mostrarInfoSegmento);
-	*/
 
 	log_info(logger, "Terminé de iterar usando list_iterate()");
 	log_info(logger, "Chau!");
@@ -175,12 +159,13 @@ void *inicializarMemoria(uint32_t size)
 	return mem;
 }
 
-void inicializarConfigConsola(t_consola_init **c_init, uint32_t sizeMem, void *mem, t_list *listaSegmentos)
+void inicializarConfigConsola(t_consola_init **c_init, uint32_t sizeMem, void *mem, t_list *listaSegmentos, char *algoritmo_comp)
 {
 	*c_init = malloc(sizeof(t_consola_init));
 	(*c_init)->listaSegmentos = listaSegmentos;
 	(*c_init)->tamanio_mem_ppal = sizeMem;
 	(*c_init)->mem_ppal = mem;
+	(*c_init)->algoritmo_comp = algoritmo_comp;
 
 	return;
 }

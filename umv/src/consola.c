@@ -10,6 +10,7 @@ void *consola(void *consola_init)
 	uint32_t tamanio_mem_ppal = c_init->tamanio_mem_ppal;
 	void *mem_ppal = c_init->mem_ppal;
 	t_list *listaSegmentos = c_init->listaSegmentos;
+	char *algoritmo_comp = c_init->algoritmo_comp;
 
 	char *comando = NULL;
 	int noSalir = 1;
@@ -25,10 +26,13 @@ void *consola(void *consola_init)
 			noSalir = 0;
 		
 		} else if(strcmp(comando,"info") == 0){
-			comando_info_memoria(mem_ppal, listaSegmentos, tamanio_mem_ppal);
+			comando_info_memoria(mem_ppal, listaSegmentos, tamanio_mem_ppal, algoritmo_comp);
+		
+		} else if(strcmp(comando,"cambiar-algoritmo") == 0){
+			comando_cambiar_algoritmo(&algoritmo_comp);
 		
 		} else if(strcmp(comando,"crear-segmento") == 0){
-			comando_crear_segmento(listaSegmentos, mem_ppal, tamanio_mem_ppal);
+			comando_crear_segmento(listaSegmentos, mem_ppal, tamanio_mem_ppal, algoritmo_comp);
 		
 		} else if(strcmp(comando,"destruir-segmentos") == 0){
 			comando_destruir_segmentos(listaSegmentos);
@@ -60,7 +64,27 @@ void *consola(void *consola_init)
 	pthread_exit(NULL);
 }
 
-void comando_crear_segmento(t_list *listaSegmentos, void *mem_ppal, uint32_t tamanio_mem_ppal)
+void comando_cambiar_algoritmo(char **algoritmo)
+{
+	uint32_t opcion = 0;
+	
+	printf("\t1) FIRST_FIT\n\t2) WORST_FIT\n");
+	printf("\tElija una opción: ");
+	scanf("%d", &opcion);
+
+	if(opcion == 1) {
+		*algoritmo = "FIRST_FIT";
+	} else if (opcion == 2) {
+		*algoritmo = "WORST_FIT";
+	}
+		
+	//Si no hago este fgetc() entonces se repite dos veces el prompt de UMV> cuando retorna al bucle principal.
+	fgetc(stdin);
+
+	return;
+}
+
+void comando_crear_segmento(t_list *listaSegmentos, void *mem_ppal, uint32_t tamanio_mem_ppal, char *algoritmo)
 {
 	uint32_t id_prog = 0;
 	uint32_t tamanio_segmento = 0;
@@ -77,7 +101,7 @@ void comando_crear_segmento(t_list *listaSegmentos, void *mem_ppal, uint32_t tam
 	}
 
 	t_list *espacios_libres = buscarEspaciosLibres(listaSegmentos, mem_ppal, tamanio_mem_ppal);
-	t_segmento *seg = crearSegmento(id_prog,tamanio_segmento,espacios_libres,listaSegmentos,"first-fit");
+	t_segmento *seg = crearSegmento(id_prog,tamanio_segmento,espacios_libres,listaSegmentos,algoritmo);
 	
 	if(seg != NULL){
 		list_add(listaSegmentos, seg);
@@ -145,9 +169,10 @@ void comando_dump_segmentos(t_list *listaSegmentos)
 	return;
 }
 
-void comando_info_memoria(void *mem_ppal, t_list *listaSegmentos, uint32_t tamanio_mem_ppal)
+void comando_info_memoria(void *mem_ppal, t_list *listaSegmentos, uint32_t tamanio_mem_ppal, char *algoritmo)
 {
 	t_list *esp_libre = buscarEspaciosLibres(listaSegmentos, mem_ppal, tamanio_mem_ppal);
+	printf("\tEl algoritmo de compactación actual es: %s\n", algoritmo);
 
 	if(list_is_empty(esp_libre)){
 		printf("\tNo hay espacio libre en memoria.\n");
@@ -224,3 +249,4 @@ t_list *buscarSegmentosConId(t_list *listaSegmentos, uint32_t id)
 		
 	return seg;
 }
+
