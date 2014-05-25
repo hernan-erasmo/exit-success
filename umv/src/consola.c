@@ -36,8 +36,10 @@ void *consola(void *consola_init)
 			printf("UMV> Falta implementar el comando \"escribir\".\n");
 		} else if (strcmp(comando,"h") == 0) {
 			printf("UMV> Falta implementar la ayuda. Perdón :(\n");
+		} else if (strlen(comando) == 0) {
+			//para cuando se presiona 'enter' sin ningún caracter, repite el prompt indefinidamente.
 		} else {
-			printf("UMV> Comando no reconocido. Ingrese 'h' para ver la lista de comandos disponibles.\n");
+			printf("UMV> No entiendo \"%s\". Ingrese 'h' para ver la lista de comandos disponibles.\n", comando);
 		}
 
 		free(comando);
@@ -95,14 +97,30 @@ char *getLinea(void)
 
 void crear_segmento(t_list *listaSegmentos, void *mem_ppal, uint32_t tamanio_mem_ppal)
 {
+	uint32_t id_prog = 0;
+	uint32_t tamanio_segmento = 0;
+
+	printf("\tID de segmento (uint32_t): ");
+	scanf("%d", &id_prog);
+	printf("\tTamaño (uint32_t): ");
+	scanf("%d", &tamanio_segmento);
+
 	t_list *espacios_libres = buscarEspaciosLibres(listaSegmentos, mem_ppal, tamanio_mem_ppal);
-	t_segmento *seg = crearSegmento(99,10,espacios_libres,listaSegmentos,"first-fit");
+	t_segmento *seg = crearSegmento(id_prog,tamanio_segmento,espacios_libres,listaSegmentos,"first-fit");
 	
-	list_add(listaSegmentos, seg);
+	if(seg != NULL){
+		list_add(listaSegmentos, seg);
+		printf("UMV> Se creó el segmento.\n");
+	} else {
+		printf("UMV> No se pudo crear el segmento.\n");
+	}
 
 	if (!list_is_empty(espacios_libres)) {
 		list_clean_and_destroy_elements(espacios_libres, eliminarEspacioLibre);
 	}
+
+	//Si no hago este fgetc() entonces se repite dos veces el prompt de UMV> cuando retorna al bucle principal.
+	fgetc(stdin);
 
 	list_destroy(espacios_libres);
 
