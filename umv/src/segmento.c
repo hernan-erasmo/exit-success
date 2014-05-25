@@ -130,6 +130,7 @@ t_segmento *crearSegmento(uint32_t prog_id,
 	seg->seg_id = getSegId(listaSegmentos);	//calcular en funcion del id de programa
 	seg->inicio = 0;	//esto debe ser aleatorio y lo debe decidir la umv. Es el que conoce el programa, y no cambia.
 	seg->pos_mem_ppal = esp_libre->dir;	//la dirección donde comienza este segmento
+	seg->marcadoParaBorrar = 0;
 
 	return seg;
 }
@@ -210,8 +211,45 @@ t_esp_libre *buscar_primer_lugar_adecuado(t_list *espacios_libres, uint32_t size
 void dump_segmentos(t_list *listaSegmentos)
 {
 	printf("\n%-15s%-15s%-15s%-20s%-20s\n","ID Programa", "ID Segmento", "Dir. Inicio", "Tamaño (bytes)", "Posicion en mem_ppal");
+	list_sort(listaSegmentos, comparador_segmento_direccion_fisica_asc);
 	list_iterate(listaSegmentos, mostrarInfoSegmento);
 	printf("\n\n");
 
 	return;
+}
+
+void destruirSegmentos(t_list *listaSegmentos, uint32_t prog_id)
+{
+	int i, marcados = 0, sizeLista = 0;
+	sizeLista = list_size(listaSegmentos);
+	t_segmento *s = NULL;
+
+	for(i = 0; i < sizeLista; i++){
+		s = (t_segmento *) list_get(listaSegmentos, i);
+
+		if(s->prog_id == prog_id){
+			marcados++;
+			s->marcadoParaBorrar = 1;
+		}
+	}
+
+	while(marcados){
+		list_remove_and_destroy_by_condition(listaSegmentos, marcado_para_borrar, eliminarSegmento);
+		marcados--;
+	}
+
+	return;
+}
+
+void *marcar_para_borrar(void *seg)
+{
+	t_segmento *s = (t_segmento *) seg;
+	s->marcadoParaBorrar = 1;
+
+	return;
+}
+
+bool marcado_para_borrar(void *seg)
+{
+	return ((t_segmento *) seg)->marcadoParaBorrar;
 }

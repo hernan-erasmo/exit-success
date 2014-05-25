@@ -23,21 +23,32 @@ void *consola(void *consola_init)
 
 		if(strcmp(comando,"q") == 0){
 			noSalir = 0;
+		
 		} else if(strcmp(comando,"info") == 0){
 			printf("\tTamaño memoria principal: %d bytes.\n", tamanio_mem_ppal);
 			printf("\t\tDesde %p hasta %p.\n", mem_ppal, (mem_ppal + tamanio_mem_ppal));
-		} else if(strcmp(comando,"dump-segmentos") == 0){
-			dump_segmentos(listaSegmentos);
+		
 		} else if(strcmp(comando,"crear-segmento") == 0){
 			crear_segmento(listaSegmentos, mem_ppal, tamanio_mem_ppal);
+		
+		} else if(strcmp(comando,"destruir-segmentos") == 0){
+			destruir_segmentos(listaSegmentos);
+		
 		} else if(strcmp(comando,"dump-all") == 0){
 			printf("UMV> Falta implementar el comando \"dump-all\".\n");
+		
+		} else if(strcmp(comando,"dump-segmentos") == 0){
+			dump_segmentos(listaSegmentos);
+		
 		} else if (strcmp(comando,"escribir") == 0) {
 			printf("UMV> Falta implementar el comando \"escribir\".\n");
+		
 		} else if (strcmp(comando,"h") == 0) {
 			printf("UMV> Falta implementar la ayuda. Perdón :(\n");
+		
 		} else if (strlen(comando) == 0) {
 			//para cuando se presiona 'enter' sin ningún caracter, repite el prompt indefinidamente.
+		
 		} else {
 			printf("UMV> No entiendo \"%s\". Ingrese 'h' para ver la lista de comandos disponibles.\n", comando);
 		}
@@ -100,7 +111,7 @@ void crear_segmento(t_list *listaSegmentos, void *mem_ppal, uint32_t tamanio_mem
 	uint32_t id_prog = 0;
 	uint32_t tamanio_segmento = 0;
 
-	printf("\tID de segmento (uint32_t): ");
+	printf("\tID de programa (uint32_t): ");
 	scanf("%d", &id_prog);
 	printf("\tTamaño (uint32_t): ");
 	scanf("%d", &tamanio_segmento);
@@ -124,5 +135,20 @@ void crear_segmento(t_list *listaSegmentos, void *mem_ppal, uint32_t tamanio_mem
 
 	list_destroy(espacios_libres);
 
+	return;
+}
+
+void destruir_segmentos(t_list *listaSegmentos)
+{
+	uint32_t progId = 0;
+	
+	printf("\tIngrese el ID del programa: ");
+	scanf("%d", &progId);
+	
+	//Si no hago este fgetc() entonces se repite dos veces el prompt de UMV> cuando retorna al bucle principal.
+	fgetc(stdin);
+	
+	destruirSegmentos(listaSegmentos, progId);
+	
 	return;
 }
