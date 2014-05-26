@@ -38,3 +38,5 @@ void eliminarSegmento(void *seg);
 void mostrarInfoSegmento(void *seg);
 void dump_segmentos(t_list *listaSegmentos);
 void destruirSegmentos(t_list *listaSegmentos, uint32_t prog_id);
+void actualizarInfoSegmento(void **pos_actual, void **fin_actual, t_segmento *seg);
+uint32_t compactar(t_list *segmentos, void *mem_ppal, uint32_t size_mem_ppal);

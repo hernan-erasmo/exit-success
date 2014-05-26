@@ -15,6 +15,7 @@ char *getLinea(void);
 t_list *buscarSegmentosConId(t_list *listaSegmentos, uint32_t id);
 
 void comando_cambiar_algoritmo(char **algoritmo);
+void comando_compactar(t_list *listaSegmentos, void *mem_ppal, uint32_t tamanio_mem_ppal);
 void comando_crear_segmento(t_list *listaSegmentos, void *mem_ppal, uint32_t tamanio_mem_ppal, char *algoritmo);
 void comando_destruir_segmentos(t_list *listaSegmentos);
 void comando_dump_segmentos(t_list *listaSegmentos);

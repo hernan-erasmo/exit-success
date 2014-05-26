@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "segmento.h"
 
@@ -143,6 +144,72 @@ t_segmento *crearSegmento(uint32_t prog_id,
 	return seg;
 }
 
+uint32_t compactar(t_list *segmentos, void *mem_ppal, uint32_t size_mem_ppal)
+{
+	int i, cant_segmentos = list_size(segmentos);
+	uint32_t espacio_liberado = 0;
+	t_segmento *seg_actual = NULL;
+	t_segmento *seg_siguiente = NULL;
+
+	void *pos_seg_actual = NULL;
+	void *fin_seg_actual = NULL;
+	void *aux = NULL;
+
+	if(cant_segmentos == 0){
+		return espacio_liberado;
+	}
+
+	//Ordeno los segmentos de menor a mayor según dirección física
+	list_sort(segmentos, comparador_segmento_direccion_fisica_asc);
+
+	i = 0;
+	seg_actual = list_get(segmentos, i);
+	pos_seg_actual = seg_actual->pos_mem_ppal;
+	fin_seg_actual = pos_seg_actual + seg_actual->size - 1;
+	//actualizarInfoSegmento(&pos_seg_actual, &fin_seg_actual, seg_actual);
+	
+	//Si el primer segmento NO está pegado al comienzo de la memoria, lo mueve ahí
+	if(seg_actual->pos_mem_ppal > mem_ppal){
+		espacio_liberado += (seg_actual->pos_mem_ppal - mem_ppal);
+		aux = memmove(mem_ppal, seg_actual->pos_mem_ppal, seg_actual->size);
+		seg_actual->pos_mem_ppal = aux;
+
+		pos_seg_actual = seg_actual->pos_mem_ppal;
+		fin_seg_actual = pos_seg_actual + seg_actual->size - 1;		
+		//actualizarInfoSegmento(&pos_seg_actual, &fin_seg_actual, seg_actual);
+	}
+
+	//Si existe más de un segmento, va moviéndolos juntos si es que no están pegados.
+	while (i < (cant_segmentos - 1)) {
+		seg_siguiente = list_get(segmentos, i+1);
+
+		//No están pegados
+		if((fin_seg_actual + 1) < seg_siguiente->pos_mem_ppal){
+			espacio_liberado += (seg_siguiente->pos_mem_ppal - (fin_seg_actual + 1));
+			aux = memmove(fin_seg_actual + 1, seg_siguiente->pos_mem_ppal, seg_siguiente->size);
+			seg_siguiente->pos_mem_ppal = aux;
+		}
+
+		i++;
+		seg_actual = seg_siguiente;
+		
+		pos_seg_actual = seg_actual->pos_mem_ppal;
+		fin_seg_actual = pos_seg_actual + seg_actual->size - 1;		
+		//actualizarInfoSegmento(&pos_seg_actual, &fin_seg_actual, seg_actual);
+		
+	}
+
+	return espacio_liberado;
+}
+
+void actualizarInfoSegmento(void **pos_actual, void **fin_actual, t_segmento *seg)
+{
+	*pos_actual = seg->pos_mem_ppal;
+	*fin_actual = pos_actual + seg->size - 1;
+
+	return;
+}
+
 void eliminarSegmento(void *seg)
 {
 	free((t_segmento *) seg);
@@ -165,6 +232,7 @@ bool comparador_segmento_direccion_fisica_asc(void *seg_a, void *seg_b)
 {
 	t_segmento *a = (t_segmento *) seg_a;
 	t_segmento *b = (t_segmento *) seg_b;
+
 
 	return ((a->pos_mem_ppal) < (b->pos_mem_ppal));
 }

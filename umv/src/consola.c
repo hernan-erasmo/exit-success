@@ -31,6 +31,9 @@ void *consola(void *consola_init)
 		} else if(strcmp(comando,"cambiar-algoritmo") == 0){
 			comando_cambiar_algoritmo(&algoritmo_comp);
 		
+		} else if(strcmp(comando,"compactar") == 0){
+			comando_compactar(listaSegmentos, mem_ppal, tamanio_mem_ppal);
+		
 		} else if(strcmp(comando,"crear-segmento") == 0){
 			comando_crear_segmento(listaSegmentos, mem_ppal, tamanio_mem_ppal, algoritmo_comp);
 		
@@ -82,6 +85,15 @@ void comando_cambiar_algoritmo(char **algoritmo)
 	fgetc(stdin);
 
 	return;
+}
+
+void comando_compactar(t_list *listaSegmentos, void *mem_ppal, uint32_t tamanio_mem_ppal)
+{
+	uint32_t espacioLiberado = 0;
+
+	espacioLiberado = compactar(listaSegmentos, mem_ppal, tamanio_mem_ppal);
+
+	printf("\tSe pudieron liberar %d bytes.\n", espacioLiberado);
 }
 
 void comando_crear_segmento(t_list *listaSegmentos, void *mem_ppal, uint32_t tamanio_mem_ppal, char *algoritmo)
