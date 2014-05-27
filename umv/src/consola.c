@@ -119,15 +119,32 @@ void comando_crear_segmento(t_list *listaSegmentos, void *mem_ppal, uint32_t tam
 		list_add(listaSegmentos, seg);
 		printf("UMV> Se creó el segmento.\n");
 	} else {
-		printf("UMV> No se pudo crear el segmento.\n");
-	}
+		printf("UMV> No se pudo crear el segmento en el estado actual de la memoria. Voy a compactar.\n");
+		comando_compactar(listaSegmentos, mem_ppal, tamanio_mem_ppal);
+		
+		if (!list_is_empty(espacios_libres)) {
+			list_clean_and_destroy_elements(espacios_libres, eliminarEspacioLibre);
+		}
 
-	if (!list_is_empty(espacios_libres)) {
-		list_clean_and_destroy_elements(espacios_libres, eliminarEspacioLibre);
+		list_destroy(espacios_libres);
+
+		espacios_libres = buscarEspaciosLibres(listaSegmentos, mem_ppal, tamanio_mem_ppal);
+		seg = crearSegmento(id_prog,tamanio_segmento,espacios_libres,listaSegmentos,algoritmo);
+
+		if(seg != NULL){
+			list_add(listaSegmentos, seg);
+			printf("UMV> Se creó el segmento.\n");	
+		} else {
+			printf("UMV> No se pudo crear el segmento porque no hay espacio en memoria.\n");
+		}	
 	}
 
 	//Si no hago este fgetc() entonces se repite dos veces el prompt de UMV> cuando retorna al bucle principal.
 	fgetc(stdin);
+
+	if (!list_is_empty(espacios_libres)) {
+		list_clean_and_destroy_elements(espacios_libres, eliminarEspacioLibre);
+	}
 
 	list_destroy(espacios_libres);
 
