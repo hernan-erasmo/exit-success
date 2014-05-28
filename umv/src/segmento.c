@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdbool.h>
 
 #include "segmento.h"
 
@@ -137,7 +138,7 @@ t_segmento *crearSegmento(uint32_t prog_id,
 	
 	seg->prog_id = prog_id;
 	seg->seg_id = getSegId(listaSegmentos, prog_id);	//calcular en funcion del id de programa
-	seg->inicio = 0;	//esto debe ser aleatorio y lo debe decidir la umv. Es el que conoce el programa, y no cambia.
+	seg->inicio = getDirInicio(listaSegmentos, prog_id, size);	//esto debe ser aleatorio y lo debe decidir la umv. Es el que conoce el programa, y no cambia.
 	seg->pos_mem_ppal = esp_libre->dir;	//la dirección donde comienza este segmento
 	seg->marcadoParaBorrar = 0;
 
@@ -273,6 +274,63 @@ uint32_t getSegId(t_list *listaSegmentos, uint32_t prog_id)
 	}
 	
 	return ++max_seg_id;
+}
+
+uint32_t getDirInicio(t_list *listaSegmentos, uint32_t prog_id, uint32_t size)
+{
+	//Uso un algoritmo de tipo ARC* para generar los números de base de segmento (dirección virtual)	
+
+	int base = 0;
+	int i, tamanio_lista = list_size(listaSegmentos);
+	t_segmento *seg = NULL;
+	int techo = 100000;
+	int encontrado = 0;
+	int adecuado = 1;
+	uint32_t candidato = 0;
+
+
+	while(!encontrado){
+	
+		//Paso 1: genero un número aleatorio entre 0 y un número muy grande.
+		candidato = rand() % techo;
+		adecuado = 1;
+
+		for(i = 0; i < tamanio_lista; i++){
+			seg = list_get(listaSegmentos, i);
+
+			if(seg->prog_id != prog_id)
+				continue;
+
+			if(!esAdecuadoInicio(candidato, size, seg->inicio, seg->size)){
+				adecuado = 0;
+				break;
+			}
+		}
+
+		if(adecuado)
+			encontrado = 1;
+	}
+
+	//*ARC: Algoritmo Recontra Choto
+
+	return candidato;
+}
+
+bool esAdecuadoInicio(uint32_t candidato, uint32_t candidato_size, uint32_t actual, uint32_t actual_size)
+{
+	uint32_t fin_candidato = candidato + candidato_size - 1;
+	uint32_t fin_actual = actual + actual_size - 1;
+
+	if((candidato >= actual) && (candidato <= fin_actual))
+		return false;	//Porque pisa con el principio al segmento virtual actual
+
+	if((fin_candidato >= actual) && (fin_candidato <= fin_actual))
+		return false;	//Porque pisa con el final al segmento virtual actual
+
+	if((candidato <= actual) && (fin_candidato >= fin_actual))
+		return false;	//Porque envuelve al segmento virtual actual
+
+	return true;
 }
 
 /*

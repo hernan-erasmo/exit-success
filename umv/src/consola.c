@@ -42,7 +42,7 @@ void *consola(void *consola_init)
 		
 		} else if(strcmp(comando,"dump-all") == 0){
 			printf("UMV> Falta implementar el comando \"dump-all\".\n");
-		
+
 		} else if(strcmp(comando,"dump-segmentos") == 0){
 			comando_dump_segmentos(listaSegmentos);
 		
