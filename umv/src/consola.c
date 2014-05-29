@@ -41,7 +41,7 @@ void *consola(void *consola_init)
 			comando_destruir_segmentos(listaSegmentos);
 		
 		} else if(strcmp(comando,"dump-all") == 0){
-			printf("UMV> Falta implementar el comando \"dump-all\".\n");
+			comando_dump_all(mem_ppal, tamanio_mem_ppal);
 
 		} else if(strcmp(comando,"dump-segmentos") == 0){
 			comando_dump_segmentos(listaSegmentos);
@@ -166,6 +166,52 @@ void comando_destruir_segmentos(t_list *listaSegmentos)
 	return;
 }
 
+void comando_dump_all(void *mem_ppal, uint32_t tamanio_mem_ppal)
+{
+	void *aux = mem_ppal;
+	void *offset = mem_ppal - 1;
+	uint32_t cant = 0;
+	uint32_t step = 16;
+	int indice = 0;
+
+	printf("\tIngrese offset y cantidad de bytes (separados por un espacio): ");
+	scanf("%p %d", &offset, &cant);
+	
+	if((offset < mem_ppal) || (offset > (mem_ppal + tamanio_mem_ppal - 1))){
+		printf("\tLa base no cae dentro de la memoria reservada por la UMV.\n");
+
+		//Si no hago este fgetc() entonces se repite dos veces el prompt de UMV> cuando retorna al bucle principal.
+		fgetc(stdin);
+		return;		
+	}
+
+	if(cant <= 0){
+		printf("\tLa cantidad de bytes debe ser mayor que cero.\n");
+
+		//Si no hago este fgetc() entonces se repite dos veces el prompt de UMV> cuando retorna al bucle principal.
+		fgetc(stdin);
+		return;		
+	}
+
+	indice = (cant / step) + 1;
+	aux = offset;
+	printf("indice: %d\n", indice);
+
+	while(indice > 0){
+		printf("\t%p\t", aux);
+		imprimirArrayDeBytes(aux, step);
+		//imprimirArrayDeChars();
+		printf("\n");
+		indice = indice - 1;
+		aux += step;
+	}
+
+	//Si no hago este fgetc() entonces se repite dos veces el prompt de UMV> cuando retorna al bucle principal.
+	fgetc(stdin);
+	
+	return;
+}
+
 void comando_dump_segmentos(t_list *listaSegmentos)
 {
 	int id_prog, opcion = 0;
@@ -279,3 +325,15 @@ t_list *buscarSegmentosConId(t_list *listaSegmentos, uint32_t id)
 	return seg;
 }
 
+void imprimirArrayDeBytes(void *offset, uint32_t cantidad)
+{
+	int i;
+	char *c;
+
+	for(i = 0; i < cantidad; i++){
+		c = (char *) (offset + i);
+		printf("%02X ", *c);
+	}
+
+	return;
+}
