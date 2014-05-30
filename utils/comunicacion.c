@@ -70,3 +70,14 @@ int recvAll(t_paquete_programa *paquete, int sock)
 
 	return bytesRecibidos;
 }
+
+void inicializar_paquete(t_paquete_programa *paq)
+{
+	paq->id = 'X';
+	paq->mensaje = NULL;
+	paq->sizeMensaje = 0;
+	//paq->tamanio_total = 1 + sizeof(paquete->sizeMensaje) + sizeMensaje + sizeof(paquete->tamanio_total);
+	paq->tamanio_total = 0;
+	
+	return;
+}

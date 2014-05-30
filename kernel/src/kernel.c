@@ -38,7 +38,9 @@ int main(int argc, char *argv[])
 	}
 
 	d_plp = malloc(sizeof(t_datos_plp));
-	d_plp->puerto = config_get_string_value(config, "PUERTO_PROG");
+	d_plp->puerto_escucha = config_get_string_value(config, "PUERTO_PROG");
+	d_plp->ip_umv = config_get_string_value(config, "IP_UMV");
+	d_plp->puerto_umv = config_get_int_value(config, "PUERTO_UMV");
 	d_plp->logger = logger;
 
 	log_info(logger, "[PLP] Inicializando el hilo PLP");

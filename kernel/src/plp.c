@@ -6,34 +6,55 @@
 #include <string.h>
 
 #include "plp.h"
-#include "../../utils/comunicacion.h"
-
-#define PACKAGESIZE 1024
-
-int init_escucha_programas(int *listenningSocket, char *puerto, struct addrinfo **serverInfo, t_log *logger);
 
 void *plp(void *datos_plp)
 {
+	//Variables de errores
+	int errorConexion = 0;
+	int errorHandshake = 0;
+
 	//Variables de inicializacion
-	char *puerto = ((t_datos_plp *) datos_plp)->puerto;
+	char *puerto_escucha = ((t_datos_plp *) datos_plp)->puerto_escucha;
+	char *ip_umv = ((t_datos_plp *) datos_plp)->ip_umv;
+	int puerto_umv = ((t_datos_plp *) datos_plp)->puerto_umv;
 	t_log *logger = ((t_datos_plp *) datos_plp)->logger;
 
 	//Variables de sockets
 	struct addrinfo *serverInfo = NULL;
+	int socket_umv = -1;
 	int listenningSocket = -1;
 	int socketCliente = -1;
-	char package[PACKAGESIZE];
 	int status = 1;		// Estructura que manjea el status de los recieve.
 	struct sockaddr_in addr; // Esta estructura contendra los datos de la conexion del cliente. IP, puerto, etc.
+	struct sockaddr_in dir_umv;
 	socklen_t addrlen = sizeof(addr);	
 	
+	t_paquete_programa paquete;
+	inicializar_paquete(&paquete);
+
 	pthread_mutex_t init_plp = PTHREAD_MUTEX_INITIALIZER;
 	pthread_mutex_t fin_plp = PTHREAD_MUTEX_INITIALIZER;
+
+	log_info(logger, "[PLP] Intentando conectar con la UMV...");
+	errorConexion = crearConexion(&socket_umv, &dir_umv, ip_umv, puerto_umv, logger);
+	if (errorConexion) {
+		log_error(logger, "[PLP] Error al intentar conectar con la UMV");
+		goto liberarRecursos;
+		pthread_exit(NULL);
+	}
+	log_info(logger, "[PLP] Conexión establecida con la UMV!");
+
+	errorHandshake = enviar_handshake(socket_umv,logger);
+	if (errorHandshake) {
+		log_error(logger, "[PLP] Error al enviar el handshake UMV.");
+		goto liberarRecursos;
+		pthread_exit(NULL);
+	}
 
 	//Meto en un mutex la inicialización del plp
 	pthread_mutex_lock(&init_plp);
 		log_info(logger, "[PLP] Creando el socket que escucha conexiones de programas.");
-		if(init_escucha_programas(&listenningSocket, puerto, &serverInfo, logger) != 0){
+		if(init_escucha_programas(&listenningSocket, puerto_escucha, &serverInfo, logger) != 0){
 			goto liberarRecursos;
 			pthread_exit(NULL);
 		}
@@ -41,22 +62,26 @@ void *plp(void *datos_plp)
 		log_info(logger, "[PLP] Esperando conexiones de programas...");
 	pthread_mutex_unlock(&init_plp);
 
-	socketCliente = accept(listenningSocket, (struct sockaddr *) &addr, &addrlen);
-	log_info(logger, "[PLP] Recibí una conexión!");
+	//bucle principal del PLP
+	while(1){
+		socketCliente = accept(listenningSocket, (struct sockaddr *) &addr, &addrlen);
+		log_info(logger, "[PLP] Recibí una conexión!");
 
-	t_paquete_programa paquete;
-
-	status = recvAll(&paquete, socketCliente);
-	if(status){
-		switch(paquete.id)
-		{
-			case 'P':
-				log_info(logger, "[PLP] Un programa se conectó. Va a enviar %d bytes de datos.", paquete.tamanio_total);
-				log_info(logger, "[PLP] Se recibieron %d bytes.", status);
-				printf("%s", paquete.mensaje);
-				break;
-			default:
-				log_info(logger, "[PLP] No es una conexión de un programa");
+		status = recvAll(&paquete, socketCliente);
+		if(status){
+			switch(paquete.id)
+			{
+				case 'P':
+					log_info(logger, "[PLP] Un programa se conectó. Va a enviar %d bytes de datos.", paquete.tamanio_total);
+					log_info(logger, "[PLP] Se recibieron %d bytes.", status);
+					printf("%s", paquete.mensaje);
+					break;
+				case 'U':
+					log_info(logger, "[PLP] Se recibió una conexión de la UMV.");
+					break;
+				default:
+					log_info(logger, "[PLP] No es una conexión de un programa");
+			}
 		}
 	}
 
@@ -79,7 +104,7 @@ void *plp(void *datos_plp)
 		pthread_mutex_unlock(&fin_plp);
 }
 
-int init_escucha_programas(int *listenningSocket, char *puerto, struct addrinfo **serverInfo, t_log *logger)
+int init_escucha_programas(int *listenningSocket, char *puerto_escucha, struct addrinfo **serverInfo, t_log *logger)
 {
 	struct addrinfo hints;
 
@@ -89,7 +114,7 @@ int init_escucha_programas(int *listenningSocket, char *puerto, struct addrinfo 
 	hints.ai_socktype = SOCK_STREAM;	// Indica que usaremos el protocolo TCP
 
 	// Notar que le pasamos NULL como IP, ya que le indicamos que use localhost en AI_PASSIVE
-	if (getaddrinfo(NULL, puerto, &hints, serverInfo) != 0) {
+	if (getaddrinfo(NULL, puerto_escucha, &hints, serverInfo) != 0) {
 		log_error(logger,"[PLP] No se pudo crear la estructura addrinfo. Motivo: %s", strerror(errno));
 		return 1;
 	}
@@ -98,7 +123,7 @@ int init_escucha_programas(int *listenningSocket, char *puerto, struct addrinfo 
 		log_error(logger, "[PLP] Error al crear socket para Programas. Motivo: %s", strerror(errno));
 		return 1;
 	}
-	log_info(logger, "[PLP] Se creó el socket a la escucha del puerto: %s (Programas)", puerto);
+	log_info(logger, "[PLP] Se creó el socket a la escucha del puerto_escucha: %s (Programas)", puerto_escucha);
 
 	if(bind(*listenningSocket,(*serverInfo)->ai_addr, (*serverInfo)->ai_addrlen)) {
 		log_error(logger, "[PLP] No se pudo bindear el socket para Programas a la dirección. Motivo: %s", strerror(errno));
@@ -108,4 +133,101 @@ int init_escucha_programas(int *listenningSocket, char *puerto, struct addrinfo 
 	listen(*listenningSocket, 10);
 
 	return 0;
+}
+
+int crearConexion(int *unSocket, struct sockaddr_in *socketInfo, char *ip, int puerto, t_log *logger)
+{
+	if ((*unSocket = crearSocket(socketInfo, ip, puerto)) < 0) {
+		log_error(logger, "[PLP] Error al crear socket. Motivo: %s", strerror(errno));
+		return 1;
+	}
+
+	if (connect(*unSocket, (struct sockaddr *) socketInfo, sizeof(*socketInfo)) != 0) {
+		log_error(logger, "[PLP] Error al conectar socket. Motivo: %s", strerror(errno));
+		return 1;
+	}
+
+	return 0;
+}
+
+int crearSocket(struct sockaddr_in *socketInfo, char *ip, int puerto)
+{
+	int sock = -1;
+		
+	if((sock = socket(AF_INET,SOCK_STREAM,0)) >= 0) {
+		socketInfo->sin_family = AF_INET;
+		socketInfo->sin_addr.s_addr = inet_addr(ip);
+		socketInfo->sin_port = htons(puerto);
+	}
+
+	return sock;		
+}
+
+void crear_paquete_handshake(t_paquete_programa *paq)
+{
+	paq->id = 'K';
+	paq->sizeMensaje = 0;
+	paq->tamanio_total = 1 + sizeof(paq->sizeMensaje) + sizeof(paq->tamanio_total);
+
+	return;
+}
+
+int enviar_handshake(int unSocket, t_log *logger)
+{
+	uint32_t bEnv = 0;
+	char *contenidoScript = "handshake";
+	char *paqueteSerializado = NULL;
+	uint32_t sizeMensaje = 0;
+
+	t_paquete_programa paquete;
+		sizeMensaje = strlen(contenidoScript);
+		//contenidoScript = calloc(sizeMensaje + 1, sizeof(char)); //sizeMensaje + 1, el contenido del script mas el '\0'
+
+	paquete.id = 'K';
+	paquete.sizeMensaje = sizeMensaje;
+	paquete.mensaje = contenidoScript;
+	paquete.tamanio_total = 1 + sizeof(paquete.sizeMensaje) + sizeMensaje + sizeof(paquete.tamanio_total);
+	
+	paqueteSerializado = serializarPaquete(&paquete, logger);
+
+	bEnv = paquete.tamanio_total;
+	if(sendAll(unSocket, paqueteSerializado, &bEnv)){
+		log_error(logger, "[PLP] Error en la transmisión del handshake. Motivo: %s", strerror(errno));
+		return 1;
+	}
+
+	log_info(logger, "[PLP] Handshake finalizado. Enviados %d bytes.", bEnv);
+
+	free(paqueteSerializado);
+
+	return 0;
+}
+
+char *serializarPaquete(t_paquete_programa *paquete, t_log *logger)
+{
+	char *serializedPackage = calloc(1 + sizeof(paquete->sizeMensaje) + paquete->sizeMensaje + sizeof(paquete->tamanio_total), sizeof(char)); //El tamaño del char id, el tamaño de la variable sizeMensaje, el tamaño del script y el tamaño de la variable tamaño_total
+	//char *serializedPackage = calloc(1 + sizeof(paquete->sizeMensaje) + paquete->sizeMensaje, sizeof(char)); //El tamaño del char id, el tamaño de la variable sizeMensaje, el tamaño del script y el tamaño de la variable tamaño_total
+	uint32_t offset = 0;
+	uint32_t sizeToSend;
+
+	sizeToSend = sizeof(paquete->tamanio_total);
+	log_info(logger, "sizeof(paquete->tamanio_total = %d", sizeof(paquete->tamanio_total));
+	memcpy(serializedPackage + offset, &(paquete->tamanio_total), sizeToSend);
+	offset += sizeToSend;
+
+	sizeToSend = sizeof(paquete->id);
+	log_info(logger, "sizeof(paquete->id) = %d", sizeof(paquete->id));
+	memcpy(serializedPackage + offset, &(paquete->id), sizeToSend);
+	offset += sizeToSend;
+
+	sizeToSend = sizeof(paquete->sizeMensaje);
+	log_info(logger, "sizeof(paquete->sizeMensaje) = %d", sizeof(paquete->sizeMensaje));
+	memcpy(serializedPackage + offset, &(paquete->sizeMensaje), sizeToSend);
+	offset += sizeToSend;
+
+	sizeToSend = paquete->sizeMensaje;
+	log_info(logger, "paquete->size = %d", paquete->sizeMensaje);
+	memcpy(serializedPackage + offset, paquete->mensaje, sizeToSend);
+
+	return serializedPackage;
 }

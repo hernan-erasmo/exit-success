@@ -9,3 +9,4 @@ typedef struct paquete_programa {
 
 int sendAll(int sock, char *buf, int *len);
 int recvAll(t_paquete_programa *paquete, int sock);
+void inicializar_paquete(t_paquete_programa *paq);
