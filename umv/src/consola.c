@@ -168,16 +168,17 @@ void comando_destruir_segmentos(t_list *listaSegmentos)
 
 void comando_dump_all(void *mem_ppal, uint32_t tamanio_mem_ppal)
 {
-	void *aux = mem_ppal;
+	void *posicion = mem_ppal;
 	void *offset = mem_ppal - 1;
-	uint32_t cant = 0;
-	uint32_t step = 16;
-	int indice = 0;
+	void *fin_memoria = mem_ppal + tamanio_mem_ppal - 1;
+	uint32_t salto = 16;
+	int cant = 0;
+	int bytesAImprimir = 0;
 
 	printf("\tIngrese offset y cantidad de bytes (separados por un espacio): ");
 	scanf("%p %d", &offset, &cant);
 	
-	if((offset < mem_ppal) || (offset > (mem_ppal + tamanio_mem_ppal - 1))){
+	if((offset < mem_ppal) || (offset > fin_memoria)){
 		printf("\tLa base no cae dentro de la memoria reservada por la UMV.\n");
 
 		//Si no hago este fgetc() entonces se repite dos veces el prompt de UMV> cuando retorna al bucle principal.
@@ -193,17 +194,27 @@ void comando_dump_all(void *mem_ppal, uint32_t tamanio_mem_ppal)
 		return;		
 	}
 
-	indice = (cant / step) + 1;
-	aux = offset;
-	printf("indice: %d\n", indice);
+	posicion = offset;
 
-	while(indice > 0){
-		printf("\t%p\t", aux);
-		imprimirArrayDeBytes(aux, step);
+	while(cant > 0){
+		bytesAImprimir = (cant < salto) ? cant : salto;
+		cant -= salto;
+
+		/*
+		if((posicion + bytesAImprimir) > fin_memoria){
+			bytesAImprimir = posicion - fin_memoria + 1;
+		}
+*/
+		printf("\t%p\t", posicion);
+		imprimirArrayDeBytes(posicion, bytesAImprimir);
 		//imprimirArrayDeChars();
 		printf("\n");
-		indice = indice - 1;
-		aux += step;
+
+		posicion += salto;
+		if(posicion > fin_memoria){
+			printf("\n\t\t ######## FIN DE LA MEMORIA RESERVADA ########\n");
+			break;
+		}
 	}
 
 	//Si no hago este fgetc() entonces se repite dos veces el prompt de UMV> cuando retorna al bucle principal.
