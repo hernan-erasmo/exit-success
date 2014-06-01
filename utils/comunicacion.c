@@ -85,7 +85,6 @@ void inicializar_paquete(t_paquete_programa *paq)
 char *serializar_paquete(t_paquete_programa *paquete, t_log *logger)
 {
 	char *serializedPackage = calloc(1 + sizeof(paquete->sizeMensaje) + paquete->sizeMensaje + sizeof(paquete->tamanio_total), sizeof(char)); //El tamaño del char id, el tamaño de la variable sizeMensaje, el tamaño del script y el tamaño de la variable tamaño_total
-	//char *serializedPackage = calloc(1 + sizeof(paquete->sizeMensaje) + paquete->sizeMensaje, sizeof(char)); //El tamaño del char id, el tamaño de la variable sizeMensaje, el tamaño del script y el tamaño de la variable tamaño_total
 	uint32_t offset = 0;
 	uint32_t sizeToSend;
 
@@ -141,6 +140,7 @@ int crear_socket(struct sockaddr_in *socketInfo, char *ip, int puerto)
 
 int crear_conexion_entrante(int *listenningSocket, char *puerto_escucha, struct addrinfo **serverInfo, t_log *logger, char *id_proceso)
 {
+	int reutilizarSocket = 1;
 	struct addrinfo hints;
 
 	memset(&hints, 0, sizeof(hints));
@@ -155,13 +155,18 @@ int crear_conexion_entrante(int *listenningSocket, char *puerto_escucha, struct 
 	}
 	
 	if ((*listenningSocket = socket((*serverInfo)->ai_family, (*serverInfo)->ai_socktype, (*serverInfo)->ai_protocol)) < 0) {
-		log_error(logger, "[%s] Error al crear socket para Programas. Motivo: %s", id_proceso, strerror(errno));
+		log_error(logger, "[%s] Error al crear socket. Motivo: %s", id_proceso, strerror(errno));
 		return 1;
 	}
 	log_info(logger, "[%s] Se creó el socket a la escucha del puerto_escucha: %s (Programas)", id_proceso, puerto_escucha);
 
+	if(setsockopt(*listenningSocket, SOL_SOCKET, SO_REUSEADDR, &reutilizarSocket, sizeof(int)) == -1){
+		log_error(logger, "[%s] Error al hacer que el socket se libere al finalizar el proceos. Motivo: %s", id_proceso, strerror(errno));
+		return 1;	
+	}
+
 	if(bind(*listenningSocket,(*serverInfo)->ai_addr, (*serverInfo)->ai_addrlen)) {
-		log_error(logger, "[%s] No se pudo bindear el socket para Programas a la dirección. Motivo: %s", id_proceso, strerror(errno));
+		log_error(logger, "[%s] No se pudo bindear el socket a la dirección. Motivo: %s", id_proceso, strerror(errno));
 		return 1;
 	}
 
