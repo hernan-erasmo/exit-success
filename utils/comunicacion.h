@@ -1,5 +1,8 @@
 #include <netinet/in.h>
 #include <errno.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netdb.h>
 
 #include <commons/log.h>
 
@@ -17,4 +20,5 @@ char *serializar_paquete(t_paquete_programa *paquete, t_log *logger);
 
 //Sockets
 int crear_conexion_saliente(int *unSocket, struct sockaddr_in *socketInfo, char *ip, int puerto, t_log *logger, char *id_proceso);
+int crear_conexion_entrante(int *listenningSocket, char *puerto, struct addrinfo **serverInfo, t_log *logger, char *id_proceso);
 int crear_socket(struct sockaddr_in *socketInfo, char *ip, int puerto);

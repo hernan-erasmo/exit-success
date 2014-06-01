@@ -138,3 +138,34 @@ int crear_socket(struct sockaddr_in *socketInfo, char *ip, int puerto)
 
 	return sock;		
 }
+
+int crear_conexion_entrante(int *listenningSocket, char *puerto_escucha, struct addrinfo **serverInfo, t_log *logger, char *id_proceso)
+{
+	struct addrinfo hints;
+
+	memset(&hints, 0, sizeof(hints));
+	hints.ai_family = AF_UNSPEC;		// No importa si uso IPv4 o IPv6
+	hints.ai_flags = AI_PASSIVE;		// Asigna el address del localhost: 127.0.0.1
+	hints.ai_socktype = SOCK_STREAM;	// Indica que usaremos el protocolo TCP
+
+	// Notar que le pasamos NULL como IP, ya que le indicamos que use localhost en AI_PASSIVE
+	if (getaddrinfo(NULL, puerto_escucha, &hints, serverInfo) != 0) {
+		log_error(logger,"[%s] No se pudo crear la estructura addrinfo. Motivo: %s", id_proceso, strerror(errno));
+		return 1;
+	}
+	
+	if ((*listenningSocket = socket((*serverInfo)->ai_family, (*serverInfo)->ai_socktype, (*serverInfo)->ai_protocol)) < 0) {
+		log_error(logger, "[%s] Error al crear socket para Programas. Motivo: %s", id_proceso, strerror(errno));
+		return 1;
+	}
+	log_info(logger, "[%s] Se creó el socket a la escucha del puerto_escucha: %s (Programas)", id_proceso, puerto_escucha);
+
+	if(bind(*listenningSocket,(*serverInfo)->ai_addr, (*serverInfo)->ai_addrlen)) {
+		log_error(logger, "[%s] No se pudo bindear el socket para Programas a la dirección. Motivo: %s", id_proceso, strerror(errno));
+		return 1;
+	}
+
+	listen(*listenningSocket, 10);
+
+	return 0;
+}

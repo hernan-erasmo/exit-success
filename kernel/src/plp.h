@@ -19,6 +19,5 @@ typedef struct con_prog {
 } t_con_prog;
 
 void *plp(void *puerto_prog);
-int init_escucha_programas(int *listenningSocket, char *puerto, struct addrinfo **serverInfo, t_log *logger);
 
 int enviar_handshake(int unSocket, t_log *logger);
