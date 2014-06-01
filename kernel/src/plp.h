@@ -24,4 +24,3 @@ int crearConexion(int *unSocket, struct sockaddr_in *socketInfo, char *ip, int p
 int crearSocket(struct sockaddr_in *socketInfo, char *ip, int puerto);
 
 int enviar_handshake(int unSocket, t_log *logger);
-char *serializarPaquete(t_paquete_programa *paquete, t_log *logger);

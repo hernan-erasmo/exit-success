@@ -81,3 +81,32 @@ void inicializar_paquete(t_paquete_programa *paq)
 	
 	return;
 }
+
+char *serializar_paquete(t_paquete_programa *paquete, t_log *logger)
+{
+	char *serializedPackage = calloc(1 + sizeof(paquete->sizeMensaje) + paquete->sizeMensaje + sizeof(paquete->tamanio_total), sizeof(char)); //El tamaño del char id, el tamaño de la variable sizeMensaje, el tamaño del script y el tamaño de la variable tamaño_total
+	//char *serializedPackage = calloc(1 + sizeof(paquete->sizeMensaje) + paquete->sizeMensaje, sizeof(char)); //El tamaño del char id, el tamaño de la variable sizeMensaje, el tamaño del script y el tamaño de la variable tamaño_total
+	uint32_t offset = 0;
+	uint32_t sizeToSend;
+
+	sizeToSend = sizeof(paquete->tamanio_total);
+	log_info(logger, "sizeof(paquete->tamanio_total = %d", sizeof(paquete->tamanio_total));
+	memcpy(serializedPackage + offset, &(paquete->tamanio_total), sizeToSend);
+	offset += sizeToSend;
+
+	sizeToSend = sizeof(paquete->id);
+	log_info(logger, "sizeof(paquete->id) = %d", sizeof(paquete->id));
+	memcpy(serializedPackage + offset, &(paquete->id), sizeToSend);
+	offset += sizeToSend;
+
+	sizeToSend = sizeof(paquete->sizeMensaje);
+	log_info(logger, "sizeof(paquete->sizeMensaje) = %d", sizeof(paquete->sizeMensaje));
+	memcpy(serializedPackage + offset, &(paquete->sizeMensaje), sizeToSend);
+	offset += sizeToSend;
+
+	sizeToSend = paquete->sizeMensaje;
+	log_info(logger, "paquete->size = %d", paquete->sizeMensaje);
+	memcpy(serializedPackage + offset, paquete->mensaje, sizeToSend);
+
+	return serializedPackage;
+}
