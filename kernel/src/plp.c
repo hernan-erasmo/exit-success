@@ -36,7 +36,7 @@ void *plp(void *datos_plp)
 	pthread_mutex_t fin_plp = PTHREAD_MUTEX_INITIALIZER;
 
 	log_info(logger, "[PLP] Intentando conectar con la UMV...");
-	errorConexion = crearConexion(&socket_umv, &dir_umv, ip_umv, puerto_umv, logger);
+	errorConexion = crear_conexion_saliente(&socket_umv, &dir_umv, ip_umv, puerto_umv, logger, "PLP");
 	if (errorConexion) {
 		log_error(logger, "[PLP] Error al intentar conectar con la UMV");
 		goto liberarRecursos;
@@ -133,34 +133,6 @@ int init_escucha_programas(int *listenningSocket, char *puerto_escucha, struct a
 	listen(*listenningSocket, 10);
 
 	return 0;
-}
-
-int crearConexion(int *unSocket, struct sockaddr_in *socketInfo, char *ip, int puerto, t_log *logger)
-{
-	if ((*unSocket = crearSocket(socketInfo, ip, puerto)) < 0) {
-		log_error(logger, "[PLP] Error al crear socket. Motivo: %s", strerror(errno));
-		return 1;
-	}
-
-	if (connect(*unSocket, (struct sockaddr *) socketInfo, sizeof(*socketInfo)) != 0) {
-		log_error(logger, "[PLP] Error al conectar socket. Motivo: %s", strerror(errno));
-		return 1;
-	}
-
-	return 0;
-}
-
-int crearSocket(struct sockaddr_in *socketInfo, char *ip, int puerto)
-{
-	int sock = -1;
-		
-	if((sock = socket(AF_INET,SOCK_STREAM,0)) >= 0) {
-		socketInfo->sin_family = AF_INET;
-		socketInfo->sin_addr.s_addr = inet_addr(ip);
-		socketInfo->sin_port = htons(puerto);
-	}
-
-	return sock;		
 }
 
 void crear_paquete_handshake(t_paquete_programa *paq)

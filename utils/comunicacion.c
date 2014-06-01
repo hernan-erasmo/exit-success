@@ -110,3 +110,31 @@ char *serializar_paquete(t_paquete_programa *paquete, t_log *logger)
 
 	return serializedPackage;
 }
+
+int crear_conexion_saliente(int *unSocket, struct sockaddr_in *socketInfo, char *ip, int puerto, t_log *logger, char* id_proceso)
+{
+	if ((*unSocket = crear_socket(socketInfo, ip, puerto)) < 0) {
+		log_error(logger, "[%s] Error al crear socket. Motivo: %s", id_proceso, strerror(errno));
+		return 1;
+	}
+
+	if (connect(*unSocket, (struct sockaddr *) socketInfo, sizeof(*socketInfo)) != 0) {
+		log_error(logger, "[%s] Error al conectar socket. Motivo: %s", id_proceso, strerror(errno));
+		return 1;
+	}
+
+	return 0;
+}
+
+int crear_socket(struct sockaddr_in *socketInfo, char *ip, int puerto)
+{
+	int sock = -1;
+		
+	if((sock = socket(AF_INET,SOCK_STREAM,0)) >= 0) {
+		socketInfo->sin_family = AF_INET;
+		socketInfo->sin_addr.s_addr = inet_addr(ip);
+		socketInfo->sin_port = htons(puerto);
+	}
+
+	return sock;		
+}

@@ -43,12 +43,15 @@ int main(int argc, char *argv[])
 		return EXIT_FAILURE;
 	}
 
+	int puerto = config_get_int_value(config, "Puerto");
+	char *ip_kernel = config_get_string_value(config, "IP");
+
 	if ((script = fopen(argv[1],"r")) != NULL) {
 		//Pudimos abrir el archivo correctamente
 		//Entonces creamos la conexión
-		log_info(logger, "Conectando a %s:%d ...", config_get_string_value(config, "IP"), config_get_int_value(config, "Puerto"));
+		log_info(logger, "Conectando a %s:%d ...", ip_kernel, puerto);
 
-		errorConexion = crearConexion(&unSocket, &socketInfo, config, logger);
+		errorConexion = crear_conexion_saliente(&unSocket, &socketInfo, ip_kernel, puerto, logger, "PROGRAMA");
 		if (errorConexion) {
 			log_error(logger, "Error al conectar con el Kernel.");
 			goto liberarRecursos;
@@ -88,34 +91,6 @@ liberarRecursos:
 
 	if(config)
 		config_destroy(config);
-}
-
-int crearConexion(int *unSocket, struct sockaddr_in *socketInfo, t_config *config, t_log *logger)
-{
-	if ((*unSocket = crearSocket(socketInfo, config)) < 0) {
-		log_error(logger, "Error al crear socket. Motivo: %s", strerror(errno));
-		return 1;
-	}
-
-	if (connect(*unSocket, (struct sockaddr *) socketInfo, sizeof(*socketInfo)) != 0) {
-		log_error(logger, "Error al conectar socket. Motivo: %s", strerror(errno));
-		return 1;
-	}
-
-	return 0;
-}
-
-int crearSocket(struct sockaddr_in *socketInfo, t_config *config)
-{
-	int sock = -1;
-		
-	if((sock = socket(AF_INET,SOCK_STREAM,0)) >= 0) {
-		socketInfo->sin_family = AF_INET;
-		socketInfo->sin_addr.s_addr = inet_addr(config_get_string_value(config, "IP"));
-		socketInfo->sin_port = htons(config_get_int_value(config, "Puerto"));
-	}
-
-	return sock;		
 }
 
 int enviarDatos(FILE *script, int unSocket, t_log *logger)
