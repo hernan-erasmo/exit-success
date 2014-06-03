@@ -41,6 +41,7 @@ int main(int argc, char *argv[])
 	d_plp->puerto_escucha = config_get_string_value(config, "PUERTO_PROG");
 	d_plp->ip_umv = config_get_string_value(config, "IP_UMV");
 	d_plp->puerto_umv = config_get_int_value(config, "PUERTO_UMV");
+	d_plp->tamanio_stack = config_get_int_value(config, "TAMANIO_STACK");
 	d_plp->logger = logger;
 
 	log_info(logger, "[PLP] Inicializando el hilo PLP");
