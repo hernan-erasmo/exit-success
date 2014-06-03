@@ -76,7 +76,6 @@ void inicializar_paquete(t_paquete_programa *paq)
 	paq->id = 'X';
 	paq->mensaje = NULL;
 	paq->sizeMensaje = 0;
-	//paq->tamanio_total = 1 + sizeof(paquete->sizeMensaje) + sizeMensaje + sizeof(paquete->tamanio_total);
 	paq->tamanio_total = 0;
 	
 	return;
@@ -84,9 +83,13 @@ void inicializar_paquete(t_paquete_programa *paq)
 
 char *serializar_paquete(t_paquete_programa *paquete, t_log *logger)
 {
-	char *serializedPackage = calloc(1 + sizeof(paquete->sizeMensaje) + paquete->sizeMensaje + sizeof(paquete->tamanio_total), sizeof(char)); //El tamaño del char id, el tamaño de la variable sizeMensaje, el tamaño del script y el tamaño de la variable tamaño_total
+	int tamanio_total = 1 + sizeof(paquete->sizeMensaje) + paquete->sizeMensaje + sizeof(paquete->tamanio_total);
+
+	char *serializedPackage = calloc(tamanio_total, 1); //El tamaño del char id, el tamaño de la variable sizeMensaje, el tamaño del script y el tamaño de la variable tamaño_total
 	uint32_t offset = 0;
 	uint32_t sizeToSend;
+
+	paquete->tamanio_total = tamanio_total;
 
 	sizeToSend = sizeof(paquete->tamanio_total);
 	log_info(logger, "sizeof(paquete->tamanio_total = %d", sizeof(paquete->tamanio_total));
