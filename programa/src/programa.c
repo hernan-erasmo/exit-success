@@ -176,7 +176,7 @@ void inicializarPaquete(t_paquete_programa *paquete, uint32_t sizeMensaje, char 
 	paquete->id = 'P';
 	paquete->sizeMensaje = sizeMensaje;
 	paquete->mensaje = *contenidoScript;
-	paquete->tamanio_total = 1 + sizeof(paquete->sizeMensaje) + sizeMensaje + sizeof(paquete->tamanio_total);
+	//paquete->tamanio_total = 1 + sizeof(paquete->sizeMensaje) + sizeMensaje + sizeof(paquete->tamanio_total);
 
 	return;
 }
