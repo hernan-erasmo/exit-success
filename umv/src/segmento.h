@@ -35,7 +35,7 @@ bool marcado_para_borrar(void *seg);
 **	Interfaz de la UMV
 */
 
-t_segmento *crearSegmento(uint32_t prog_id, uint32_t size, t_list *espacios_libres, t_list *listaSegmentos, char *algoritmo);	//¿Debería retornar un id de segmento?
+uint32_t crearSegmento(uint32_t prog_id, uint32_t size, t_list *espacios_libres, t_list *listaSegmentos, char *algoritmo);	//¿Debería retornar un id de segmento?
 void eliminarSegmento(void *seg);
 void mostrarInfoSegmento(void *seg);
 void dump_segmentos(t_list *listaSegmentos);

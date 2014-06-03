@@ -93,7 +93,7 @@ void eliminarEspacioLibre(void *esp_libre)
 **	Busca espacio libre en memoria, elige el más adecuado de acuerdo
 ** 	al algoritmo de asignación y guarda ahí un nuevo segmento.
 */
-t_segmento *crearSegmento(uint32_t prog_id,
+uint32_t crearSegmento(uint32_t prog_id,
 						  uint32_t size,
 						  t_list *espacios_libres,	//lista de espacios libres
 						  t_list *listaSegmentos,	//tabla de segmentos
@@ -112,7 +112,7 @@ t_segmento *crearSegmento(uint32_t prog_id,
 		//si no hay ninguno que pueda hacerlo, no hay espacio libre para el nuevo segmento.
 		if(esp_libre == NULL){
 			printf("UMV> El programa con ID %d quiere crear un segmento de %d bytes, pero no hay espacio.\n", prog_id, size);
-			return seg;
+			return 0;
 		}
 
 	} else if (strcasecmp(algoritmo, "worst_fit") == 0) {
@@ -125,12 +125,12 @@ t_segmento *crearSegmento(uint32_t prog_id,
 		//si no tiene espacio suficiente, no hay espacio libre para el nuevo segmento.
 		if((esp_libre == NULL) || (esp_libre->size < size)){
 			printf("UMV> El programa con ID %d quiere crear un segmento de %d bytes, pero no hay espacio.\n", prog_id, size);
-			return seg;
+			return 0;
 		}
 
 	} else {
 		printf("No encontré el algoritmo de asignación.\n");
-		return seg;
+		return 0;
 	}
 
 	seg = malloc(sizeof(t_segmento));
@@ -141,8 +141,10 @@ t_segmento *crearSegmento(uint32_t prog_id,
 	seg->inicio = getDirInicio(listaSegmentos, prog_id, size);	//esto debe ser aleatorio y lo debe decidir la umv. Es el que conoce el programa, y no cambia.
 	seg->pos_mem_ppal = esp_libre->dir;	//la dirección donde comienza este segmento
 	seg->marcadoParaBorrar = 0;
+	
+	list_add(listaSegmentos, seg);
 
-	return seg;
+	return seg->inicio;
 }
 
 uint32_t compactar(t_list *segmentos, void *mem_ppal, uint32_t size_mem_ppal)
@@ -280,7 +282,7 @@ uint32_t getDirInicio(t_list *listaSegmentos, uint32_t prog_id, uint32_t size)
 {
 	//Uso un algoritmo de tipo ARC* para generar los números de base de segmento (dirección virtual)	
 
-	int base = 0;
+	int base = 1;
 	int i, tamanio_lista = list_size(listaSegmentos);
 	t_segmento *seg = NULL;
 	int techo = 100000;

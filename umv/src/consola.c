@@ -113,11 +113,10 @@ void comando_crear_segmento(t_list *listaSegmentos, void *mem_ppal, uint32_t tam
 	}
 
 	t_list *espacios_libres = buscarEspaciosLibres(listaSegmentos, mem_ppal, tamanio_mem_ppal);
-	t_segmento *seg = crearSegmento(id_prog,tamanio_segmento,espacios_libres,listaSegmentos,algoritmo);
+	uint32_t seg = crearSegmento(id_prog,tamanio_segmento,espacios_libres,listaSegmentos,algoritmo);
 	
-	if(seg != NULL){
-		list_add(listaSegmentos, seg);
-		printf("UMV> Se creó el segmento.\n");
+	if(seg != 0){
+		printf("UMV> Se creó el segmento (dir. virtual = %d).\n", seg);
 	} else {
 		printf("UMV> No se pudo crear el segmento en el estado actual de la memoria. Voy a compactar.\n");
 		comando_compactar(listaSegmentos, mem_ppal, tamanio_mem_ppal);
@@ -131,9 +130,8 @@ void comando_crear_segmento(t_list *listaSegmentos, void *mem_ppal, uint32_t tam
 		espacios_libres = buscarEspaciosLibres(listaSegmentos, mem_ppal, tamanio_mem_ppal);
 		seg = crearSegmento(id_prog,tamanio_segmento,espacios_libres,listaSegmentos,algoritmo);
 
-		if(seg != NULL){
-			list_add(listaSegmentos, seg);
-			printf("UMV> Se creó el segmento.\n");	
+		if(seg != 0){
+			printf("UMV> Se creó el segmento (dir. virtual = %d).\n", seg);
 		} else {
 			printf("UMV> No se pudo crear el segmento porque no hay espacio en memoria.\n");
 		}	
