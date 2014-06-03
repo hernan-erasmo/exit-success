@@ -2,6 +2,9 @@
 
 #include <commons/collections/list.h>
 
+#ifndef SEGMENTO_H
+#define SEGMENTO_H
+
 typedef struct segmento {
 	uint32_t prog_id;
 	uint32_t seg_id;	// Está porque soy un boludo
@@ -35,10 +38,12 @@ bool marcado_para_borrar(void *seg);
 **	Interfaz de la UMV
 */
 
-uint32_t crearSegmento(uint32_t prog_id, uint32_t size, t_list *espacios_libres, t_list *listaSegmentos, char *algoritmo);	//¿Debería retornar un id de segmento?
+uint32_t crearSegmento(uint32_t prog_id, uint32_t size, t_list *espacios_libres, t_list *listaSegmentos, char *algoritmo);
 void eliminarSegmento(void *seg);
 void mostrarInfoSegmento(void *seg);
 void dump_segmentos(t_list *listaSegmentos);
 void destruirSegmentos(t_list *listaSegmentos, uint32_t prog_id);
 void actualizarInfoSegmento(void **pos_actual, void **fin_actual, t_segmento *seg);
 uint32_t compactar(t_list *segmentos, void *mem_ppal, uint32_t size_mem_ppal);
+
+#endif /* SEGMENTO_H */

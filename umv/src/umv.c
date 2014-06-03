@@ -92,46 +92,35 @@ int main(int argc, char *argv[])
 		pthread_exit(NULL);
 	}
 
-
-	log_info(logger, "[UMV] Esperando conexión del PLP (Kernel)");
-	while(1){
-		socketCliente = accept(listenningSocket, (struct sockaddr *) &addr, &addrlen);
-		log_info(logger, "[UMV] Recibí una conexión!");
-
-		t_paquete_programa paquete;
-
-		status = recvAll(&paquete, socketCliente);
-		if(status){
-			switch(paquete.id)
-			{
-				case 'K':
-					log_info(logger, "[UMV] Se conectó el Kernel (hilo PLP)");
-					//log_info(logger, "[UMV] Un programa se conectó. Va a enviar %d bytes de datos.", paquete.tamanio_total);
-					//printf("%s", paquete.mensaje);
-
-					/*
-					**	TIRÁ UN HILO PARA ATENDER EL PLP, SALI DE ESTE WHILE Y PONETE A ESCUCHAR CPUs
-					*/
-
-					break;
-				default:
-					log_info(logger, "[UMV] No es una conexión del kernel.");
-			}
-		}
-
-		if(paquete.mensaje)
-			free(paquete.mensaje);
-
-		//Salimos de este bucle (con la conexión al plp o con un intento de conexión fallido)
-		break;
-	}	
-
 /*
-**	Acá debería empezar a escuchar por socket las conexiones entrantes de las CPUs
+**	Acá debería escuchar y delegar las conexiones a threads
 */
 
-	log_info(logger, "Terminé de iterar usando list_iterate()");
-	log_info(logger, "Chau!");
+	while(1){
+		log_info(logger, "[UMV] Esperando conexiones entrantes...");
+
+		int *socketNuevo = malloc(sizeof(int));
+		pthread_t *hiloAtencion = malloc(sizeof(pthread_t));
+		
+		t_param_memoria *param_memoria = malloc(sizeof(t_param_memoria));
+			param_memoria->listaSegmentos = listaSegmentos;
+			param_memoria->mem_ppal = mem_ppal;
+			param_memoria->tamanio_mem_ppal = tamanio_mem_ppal;
+			param_memoria->algoritmo_comp = algoritmo_comp;
+		
+		t_config_conexion *conf_con = malloc(sizeof(t_config_conexion));
+			conf_con->socket = socketNuevo;
+			conf_con->parametros_memoria = param_memoria;
+			conf_con->logger = logger;
+
+		if((*socketNuevo = accept(listenningSocket, (struct sockaddr *) &addr, &addrlen)) != -1){
+			pthread_create(hiloAtencion, 0, atencionConexiones, (void *) conf_con);
+			pthread_detach(*hiloAtencion);
+		} else {
+			log_error(logger, "[UMV] Error al aceptar una nueva conexión.");
+			continue;
+		}
+	}
 
 	pthread_join(threadConsola, NULL);
 	log_info(logger, "El thread de la consola finalizó y retornó status: (falta implementar!)");

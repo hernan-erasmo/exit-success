@@ -8,6 +8,7 @@
 #include <commons/collections/list.h>
 
 #include "consola.h"
+#include "atencionConexiones.h"
 #include "../../utils/comunicacion.h"
 
 int crearLogger(t_log **logger);
