@@ -60,43 +60,43 @@ void *plp(void *datos_plp)
 		log_info(logger, "[PLP] Esperando conexiones de programas...");
 	pthread_mutex_unlock(&init_plp);
 
-	uint32_t base_segmento = 0;
-
 	//bucle principal del PLP
 	while(1){
-		int *sc = malloc(sizeof(int));
-		if((*sc = accept(listenningSocket, (struct sockaddr *) &addr, &addrlen)) == -1){
+		int sc;
+		if((sc = accept(listenningSocket, (struct sockaddr *) &addr, &addrlen)) == -1){
 			log_error(logger, "[PLP] Error al aceptar una conexión entrante.");
 			continue;
 		}
-		//socketCliente = accept(listenningSocket, (struct sockaddr *) &addr, &addrlen);
+
 		log_info(logger, "[PLP] Recibí una conexión!");
 
-		//status = recvAll(&paquete, socketCliente);
-		status = recvAll(&paquete, *sc);
+		/*
+		**	Acá habría que tener un select, entonces se haría algo así como
+		**		if(la conexion viene de un socket que ya tengo en mi lista)
+		**			busco en la cola de new al pcb cuyo socket es igual al que me está hablando,
+		**			y envío ese pcb a la rutina de atención de solicitudes de programas
+		**		else
+		**			creo un pcb con un nuevo id de programa, lo encolo en new y se lo paso a la
+		**			rutina de atención de solicitudes de programas para que lo modifique
+		**
+		**
+		**		if(la rutina de atención de solicitudes de programas retornó error)
+		**			mando el pcb a la cola de exit, y que ahí se encarge de liberar toda la memoria
+		**			(la que alocó el pcb por su cuenta, y los segmentos que están en la umv. Que invoque
+		**			funciones de la umv si es necesario). La cola de exit se encarga de liberar los segmentos.
+		**
+		*/ 
+
+		status = recvAll(&paquete, sc);
 		if(status){
 			switch(paquete.id)
 			{
-				case 'P':
-					/*
-					**	Llegó una solicitud de un programa. Solicito a la UMV que cree los segmentos necesarios.
-					*/
-					log_info(logger, "[PLP] Un programa se conectó. Va a enviar %d bytes de datos.", paquete.tamanio_total);
-					log_info(logger, "[PLP] Se recibieron %d bytes.", status);
-
-					base_segmento = solicitar_crear_segmento(socket_umv, id_programa, 999, logger);
-					if(base_segmento == 0){
-						log_error(logger, "[PLP] La UMV no pudo crear un segmento necesario para este programa. Se aborta su creación.");
-						//hay que destruir los segmentos que ya haya creado!!!!!!!!!1
-						break;
+				case 'P':	//Llegó una solicitud de un programa. Solicito a la UMV que cree los segmentos necesarios.
+					if(atender_solicitud_programa(socket_umv, &paquete, NULL, logger) == 0){
+						log_error(logger, "[PLP] No se pudo satisfacer la solicitud del programa");
 					} else {
-						log_info(logger, "[PLP] La UMV creó un segmento con base %d", base_segmento);
+						log_info(logger, "[PLP] Solicitud atendida satisfactoriamente.");
 					}
-
-					/*
-					**	Acá se crea el PCB y se envía a la
-					** 	UMV las solicitudes para crear los segmentos del programa nuevo.
-					*/
 					
 					break;
 				case 'U':
@@ -107,8 +107,8 @@ void *plp(void *datos_plp)
 			}
 		}
 
-		close(*sc);
-		free(sc);
+		close(sc);
+		//free(sc);
 	}
 
 	goto liberarRecursos;
@@ -131,6 +131,27 @@ void *plp(void *datos_plp)
 			if(paquete.mensaje)
 				free(paquete.mensaje);
 		pthread_mutex_unlock(&fin_plp);
+}
+
+int atender_solicitud_programa(int socket_umv, t_paquete_programa *paquete, t_pcb *pcb, t_log *logger)
+{
+	uint32_t base_segmento = 0;
+
+	log_info(logger, "[PLP] Un programa envió un mensaje");
+
+	/*
+	**	Extraigo los metadatos usando el mensaje que viene en el paquete y llamo a solicitar_crear_segmento
+	**	cuantas veces sea necesario.
+	*/
+
+	base_segmento = solicitar_crear_segmento(socket_umv, 1, 999, logger);
+	if(base_segmento == 0){
+		log_error(logger, "[PLP] La UMV no pudo crear un segmento necesario para este programa. Se aborta su creación.");
+	} else {
+		log_info(logger, "[PLP] La UMV creó un segmento con base %d", base_segmento);
+	}
+
+	return base_segmento;
 }
 
 uint32_t solicitar_crear_segmento(int socket_umv, uint32_t id_programa, uint32_t tamanio_segmento, t_log *logger)
