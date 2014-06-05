@@ -39,9 +39,6 @@ void *plp(void *datos_plp)
 	struct sockaddr_in dir_umv;
 	socklen_t addrlen = sizeof(addr);	
 	
-	t_paquete_programa paquete;
-	inicializar_paquete(&paquete);
-
 	pthread_mutex_t init_plp = PTHREAD_MUTEX_INITIALIZER;
 	pthread_mutex_t fin_plp = PTHREAD_MUTEX_INITIALIZER;
 
@@ -107,6 +104,9 @@ void *plp(void *datos_plp)
 					
 				} else {	//Ya tengo a este socket en mi lista de conexiones
 					log_info(logger, "[SELECT] Conexión vieja");
+					t_paquete_programa paquete;
+					inicializar_paquete(&paquete);
+
 					status = recvAll(&paquete, sockActual);
 					if(status){
 						switch(paquete.id)
@@ -125,7 +125,14 @@ void *plp(void *datos_plp)
 							default:
 								log_info(logger, "[PLP] No es una conexión de un programa");
 						}
-					}	
+					} else {
+						log_info(logger, "[PLP] El socket %d cerró su conexión y ya no está en mi lista de sockets.", sockActual);
+						close(sockActual);
+						FD_CLR(sockActual, &master);
+					}
+
+					if(paquete.mensaje)
+						free(paquete.mensaje);	
 				}
 			}
 		}
@@ -170,8 +177,6 @@ void *plp(void *datos_plp)
 			if(socketCliente != -1)
 				close(socketCliente);
 
-			if(paquete.mensaje)
-				free(paquete.mensaje);
 		pthread_mutex_unlock(&fin_plp);
 }
 
