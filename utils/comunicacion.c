@@ -44,6 +44,7 @@ int recvAll(t_paquete_programa *paquete, int sock)
 	if(status < 0) {return status;}
 
 	bytesARecibir = paquete->tamanio_total - sizeof(paquete->tamanio_total);	//El tamaño del paquete quitando el tamaño total
+	printf("Espero recibir %d bytes por el socket %d.\n", bytesARecibir, sock);
 	buffer = calloc(bytesARecibir, 1);
 
 	while(bytesARecibir > 0){
@@ -51,6 +52,7 @@ int recvAll(t_paquete_programa *paquete, int sock)
 		bytesRecibidos += recibido;
 		bytesARecibir -= recibido;
 	}
+	printf("Recibí %d bytes por el socket %d.\n", bytesRecibidos, sock);
 
 	//Cargamos el id del programa
 	char id;
