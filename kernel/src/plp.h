@@ -18,6 +18,7 @@ typedef struct datos_plp {
 typedef struct pcb {
 	uint32_t id;				//Identificador del programa
 	int socket;					//Socket de conexión al programa
+	uint32_t peso;				//Resultado del cálculo del peso para ordenarlo al entrar a la cola ready.
 	uint32_t seg_cod;			//Puntero al comienzo del segmento de código en la umv
 	uint32_t seg_stack;			//Puntero al comienzo del segmento de stack en la umv
 	void *cursor_stack;			//Puntero al primer byte del contexto de ejcución actual
@@ -35,4 +36,6 @@ uint32_t solicitar_crear_segmento(int socket_umv, uint32_t id_programa, uint32_t
 char *codificar_crear_segmento(uint32_t id_programa, uint32_t tamanio);
 int atender_solicitud_programa(int socket_umv, t_paquete_programa *paquete, t_pcb *pcb, uint32_t tamanio_stack, t_log *logger);
 
+void calcularPeso(t_pcb *pcb, t_metadata_program *metadatos);
+bool ordenar_por_peso(void *a, void *b);
 void mostrar_datos_cola(void *item);

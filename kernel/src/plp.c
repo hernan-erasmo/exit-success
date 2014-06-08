@@ -117,6 +117,7 @@ void *plp(void *datos_plp)
 								; //¿Por qué un statement vacío? ver http://goo.gl/6SwXRB
 								t_pcb *pcb = malloc(sizeof(t_pcb));
 								pcb->socket = sockActual;
+								pcb->peso = 0;
 
 								if(atender_solicitud_programa(socket_umv, &paquete, pcb, tamanio_stack, logger) == 0){
 									log_error(logger, "[PLP] No se pudo satisfacer la solicitud del programa");
@@ -131,7 +132,7 @@ void *plp(void *datos_plp)
 									log_info(logger, "[PLP] Solicitud atendida satisfactoriamente.");
 									list_add(cola_new, pcb);
 
-									//reordenamos la cola de acuerdo al peso
+									list_sort(cola_new, ordenar_por_peso);
 
 									list_iterate(cola_new, mostrar_datos_cola);
 								}
@@ -215,7 +216,10 @@ int atender_solicitud_programa(int socket_umv, t_paquete_programa *paquete, t_pc
 		//mandar el pcb a exit
 		estado_final = 0;
 	}
-	
+
+	if(estado_final != 0)
+		calcularPeso(pcb, metadatos);
+
 	metadata_destruir(metadatos);
 
 	return estado_final;
@@ -225,7 +229,8 @@ uint32_t solicitar_crear_segmento(int socket_umv, uint32_t id_programa, uint32_t
 {
 	uint32_t bEnv = 0;
 	char *orden = codificar_crear_segmento(id_programa, tamanio_segmento);
-	
+	uint32_t valorRetorno = 0;
+
 	t_paquete_programa paq_saliente;
 		paq_saliente.id = 'P';
 		paq_saliente.mensaje = orden;
@@ -249,8 +254,11 @@ uint32_t solicitar_crear_segmento(int socket_umv, uint32_t id_programa, uint32_t
 	log_info(logger, "[PLP] Esperando la respuesta de la UMV.");
 	bRec = recvAll(&respuesta, socket_umv);
 	log_info(logger, "[PLP] La UMV respondió %s", respuesta.mensaje);
-	
-	return atoi(respuesta.mensaje);
+
+	valorRetorno = atoi(respuesta.mensaje);
+	free(respuesta.mensaje);
+
+	return valorRetorno;
 }
 
 char *codificar_crear_segmento(uint32_t id_programa, uint32_t tamanio)
@@ -286,10 +294,29 @@ char *codificar_crear_segmento(uint32_t id_programa, uint32_t tamanio)
 	return orden_completa;
 }
 
+void calcularPeso(t_pcb *pcb, t_metadata_program *metadatos)
+{
+	int cant_etiquetas = metadatos->etiquetas_size;
+	int cant_funciones = metadatos->cantidad_de_funciones;
+	int tot_lineas_cod = metadatos->instrucciones_size;
+
+	pcb->peso = (5 * cant_etiquetas) + (3 * cant_funciones) + tot_lineas_cod;
+
+	return;
+}
+
+bool ordenar_por_peso(void *a, void *b)
+{
+	t_pcb *pcb_a = (t_pcb *) a;
+	t_pcb *pcb_b = (t_pcb *) b;
+
+	return (pcb_a->peso < pcb_b->peso);
+}
+
 void mostrar_datos_cola(void *item)
 {
 	t_pcb *pcb = (t_pcb *) item;
-	printf("ID del Programa: %d\n", pcb->id);
+	printf("ID del Programa: %d, Peso: %d\n", pcb->id, pcb->peso);
 
 	return;
 }
