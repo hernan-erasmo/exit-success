@@ -24,7 +24,7 @@ void *consola(void *c_init);
 char *getLinea(void);
 t_list *buscarSegmentosConId(t_list *listaSegmentos, uint32_t id);
 void imprimirArrayDeBytes(void *offset, uint32_t cantidad);
-
+void imprimirArrayDeChars(void *offset, uint32_t cantidad);
 
 void comando_cambiar_algoritmo(char **algoritmo);
 void comando_compactar(t_list *listaSegmentos, void *mem_ppal, uint32_t tamanio_mem_ppal);

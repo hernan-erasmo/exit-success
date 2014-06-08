@@ -199,14 +199,10 @@ void comando_dump_all(void *mem_ppal, uint32_t tamanio_mem_ppal)
 		bytesAImprimir = (cant < salto) ? cant : salto;
 		cant -= salto;
 
-		/*
-		if((posicion + bytesAImprimir) > fin_memoria){
-			bytesAImprimir = posicion - fin_memoria + 1;
-		}
-*/
 		printf("\t%p\t", posicion);
 		imprimirArrayDeBytes(posicion, bytesAImprimir);
-		//imprimirArrayDeChars();
+		printf("\t");
+		imprimirArrayDeChars(posicion, bytesAImprimir);
 		printf("\n");
 
 		posicion += salto;
@@ -343,6 +339,23 @@ void imprimirArrayDeBytes(void *offset, uint32_t cantidad)
 	for(i = 0; i < cantidad; i++){
 		c = (char *) (offset + i);
 		printf("%02X ", *c);
+	}
+
+	return;
+}
+
+void imprimirArrayDeChars(void *offset, uint32_t cantidad)
+{
+	int i;
+	char *c;
+
+	for(i = 0; i < cantidad; i++){
+		c = (char *) (offset + i);
+
+		if(*c > 32)
+			printf("%c", *c);
+		else
+			printf(".");
 	}
 
 	return;
