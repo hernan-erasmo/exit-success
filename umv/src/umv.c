@@ -223,3 +223,78 @@ void inicializarConfigConsola(t_consola_init **c_init, uint32_t sizeMem, void *m
 
 	return;
 }
+
+uint32_t enviar_bytes(t_list *listaSegmentos, uint32_t base, uint32_t offset, uint32_t tamanio, char *buffer)
+{
+	int cod_retorno = 0;
+	int escritura_valida = 0;
+
+	t_segmento *seg = buscar_segmento_solicitado(listaSegmentos, base);
+
+	if(seg == NULL){
+		cod_retorno = -1;
+		return cod_retorno;
+	}
+	
+	if(escritura_valida = chequear_limites_escritura(seg, offset, tamanio)){
+		void *dest = seg->pos_mem_ppal + offset;
+		memcpy(dest, buffer, tamanio);
+	} else {
+		cod_retorno = -1;
+		return;
+	}	
+
+	return cod_retorno;
+}
+
+t_segmento *buscar_segmento_solicitado(t_list *listaSegmentos, uint32_t base)
+{
+	int i, size_activos = 0;
+
+	t_list *segmentosActivos = list_filter(listaSegmentos, buscar_por_proceso_activo);
+	size_activos = list_size(segmentosActivos);
+	if(size_activos == 0){
+		//No se encontró un segmento para el proceso activo
+		return NULL;
+	}
+
+	t_segmento *seg = NULL;
+	int encontrado = 0;
+	for(i = 0; i < size_activos; i++){
+		seg = list_get(segmentosActivos, i);
+		
+		if(seg->inicio == base)
+			return seg;
+		
+	}
+
+	//No se encontró un segmento con base [base] en la lista de segmentos del proceso activo
+	return NULL;
+}
+
+bool buscar_por_proceso_activo(void *seg)
+{
+	t_segmento *segmento = (t_segmento *) seg;
+
+	return(segmento->prog_id = PROCESO_ACTIVO);
+}
+
+int chequear_limites_escritura(t_segmento *seg, uint32_t offset, uint32_t tamanioAEscribir)
+{
+	uint32_t comienzo_segmento = seg->inicio;
+	uint32_t fin_segmento = comienzo_segmento + seg->size - 1;
+	uint32_t pos_comienzo_escritura = comienzo_segmento + offset;
+	uint32_t pos_fin_escritura = pos_comienzo_escritura + tamanioAEscribir - 1;
+
+	//Quiero escribir fuera del fin de segmento
+	if(pos_comienzo_escritura > fin_segmento){
+		return 0;
+	}
+
+	//Quiero escribir un tamanio que va a terminar afuera del segmento
+	if(pos_fin_escritura > fin_segmento){
+		return 0;
+	}
+
+	return 1;
+}
