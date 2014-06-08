@@ -41,9 +41,10 @@ int recvAll(t_paquete_programa *paquete, int sock)
 
 	uint32_t long_paquete;
 	status = recv(sock, &(paquete->tamanio_total), sizeof(paquete->tamanio_total), 0);
-	if(status < 0) {return status;}
+	if(status <= 0 || paquete->tamanio_total <= 0) {return 0;}	//Para que carajo quiero seguir sufriendo, si yo mismo espero cero bytes.
 
 	bytesARecibir = paquete->tamanio_total - sizeof(paquete->tamanio_total);	//El tamaño del paquete quitando el tamaño total
+	printf("Espero recibir %d bytes por el socket %d.\n", bytesARecibir, sock);
 	buffer = calloc(bytesARecibir, 1);
 
 	while(bytesARecibir > 0){
@@ -51,6 +52,7 @@ int recvAll(t_paquete_programa *paquete, int sock)
 		bytesRecibidos += recibido;
 		bytesARecibir -= recibido;
 	}
+	printf("Recibí %d bytes por el socket %d.\n", bytesRecibidos, sock);
 
 	//Cargamos el id del programa
 	char id;

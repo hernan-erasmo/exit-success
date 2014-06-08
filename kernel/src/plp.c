@@ -1,14 +1,26 @@
 #include <stdio.h>
 #include <errno.h>
 #include <stdlib.h>
+#include <sys/select.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <string.h>
 
 #include "plp.h"
 
+static uint32_t contador_id_programa = 1;
+
 void *plp(void *datos_plp)
 {
+	//Variables del select (copia descarada de la guía Beej)
+	fd_set master;
+	fd_set read_fds;
+	FD_ZERO(&master);
+	FD_ZERO(&read_fds);
+	int sockActual;
+	int newfd;
+	int fdmax;
+
 	//Variables de errores
 	int errorConexion = 0;
 
@@ -29,14 +41,11 @@ void *plp(void *datos_plp)
 	struct sockaddr_in dir_umv;
 	socklen_t addrlen = sizeof(addr);	
 	
-	t_paquete_programa paquete;
-	inicializar_paquete(&paquete);
-
 	pthread_mutex_t init_plp = PTHREAD_MUTEX_INITIALIZER;
 	pthread_mutex_t fin_plp = PTHREAD_MUTEX_INITIALIZER;
 
 	t_list *cola_new = list_create();
-	uint32_t id_programa = 1;
+	t_list *cola_exit = list_create();
 
 	//Fin variables
 
@@ -60,55 +69,91 @@ void *plp(void *datos_plp)
 		log_info(logger, "[PLP] Esperando conexiones de programas...");
 	pthread_mutex_unlock(&init_plp);
 
+	FD_SET(listenningSocket, &master);
+	fdmax = listenningSocket;
+
 	//bucle principal del PLP
 	while(1){
-		int sc;
-		if((sc = accept(listenningSocket, (struct sockaddr *) &addr, &addrlen)) == -1){
-			log_error(logger, "[PLP] Error al aceptar una conexión entrante.");
+		read_fds = master;
+		log_info(logger, "[SELECT] Me bloqueé");
+		if(select(fdmax + 1, &read_fds, NULL, NULL, NULL) == -1){
+			log_error(logger, "[PLP] El select tiró un error, y la verdad que no sé que hacer. Sigo corriendo.");
 			continue;
 		}
+		log_info(logger, "[SELECT] Salí del bloqueo");
 
-		log_info(logger, "[PLP] Recibí una conexión!");
+		//Recorro tooooodos los descriptores que tengo
+		for(sockActual = 0; sockActual <= fdmax; sockActual++){
 
-		/*
-		**	Acá habría que tener un select, entonces se haría algo así como
-		**		if(la conexion viene de un socket que ya tengo en mi lista)
-		**			busco en la cola de new al pcb cuyo socket es igual al que me está hablando,
-		**			y envío ese pcb a la rutina de atención de solicitudes de programas
-		**		else
-		**			creo un pcb con un nuevo id de programa, lo encolo en new y se lo paso a la
-		**			rutina de atención de solicitudes de programas para que lo modifique
-		**
-		**
-		**		if(la rutina de atención de solicitudes de programas retornó error)
-		**			mando el pcb a la cola de exit, y que ahí se encarge de liberar toda la memoria
-		**			(la que alocó el pcb por su cuenta, y los segmentos que están en la umv. Que invoque
-		**			funciones de la umv si es necesario). La cola de exit se encarga de liberar los segmentos.
-		**
-		*/ 
+			if(FD_ISSET(sockActual, &read_fds)){	//Si éste es el que está listo, entonces...
+				
+				//...me están avisando que se quiere conectar un programa que nunca se conectó todavía.
+				if(sockActual == listenningSocket){
+					log_info(logger, "[SELECT] Conexion nueva");		
 
-		status = recvAll(&paquete, sc);
-		if(status){
-			switch(paquete.id)
-			{
-				case 'P':	//Llegó una solicitud de un programa. Solicito a la UMV que cree los segmentos necesarios.
-					if(atender_solicitud_programa(socket_umv, &paquete, NULL, logger) == 0){
-						log_error(logger, "[PLP] No se pudo satisfacer la solicitud del programa");
-					} else {
-						log_info(logger, "[PLP] Solicitud atendida satisfactoriamente.");
-					}
+					if((newfd = accept(listenningSocket, (struct sockaddr *) &addr, &addrlen)) != -1){
+						FD_SET(newfd, &master);
+						
+						if(newfd > fdmax)
+							fdmax = newfd;
 					
-					break;
-				case 'U':
-					log_info(logger, "[PLP] Se recibió un mensaje de la UMV.");
-					break;
-				default:
-					log_info(logger, "[PLP] No es una conexión de un programa");
+						log_info(logger, "[PLP] Recibí una conexión! El socket es: %d", newfd);
+					} else {
+						log_error(logger, "[PLP] Error al aceptar una conexión entrante.");
+					}
+
+				} else {	//Ya tengo a este socket en mi lista de conexiones
+
+					log_info(logger, "[SELECT] Conexión vieja");
+					t_paquete_programa paquete;
+					inicializar_paquete(&paquete);
+
+					status = recvAll(&paquete, sockActual);
+					if(status){
+						switch(paquete.id)
+						{
+							case 'P':	//Asumo que todo lo que entre por acá es una solicitud de un programa nuevo.
+						
+								; //¿Por qué un statement vacío? ver http://goo.gl/6SwXRB
+								t_pcb *pcb = malloc(sizeof(t_pcb));
+								pcb->socket = sockActual;
+
+								if(atender_solicitud_programa(socket_umv, &paquete, pcb, tamanio_stack, logger) == 0){
+									log_error(logger, "[PLP] No se pudo satisfacer la solicitud del programa");
+
+								/*
+								**	mando el pcb a la cola de exit, y que ahí se encarge de liberar toda la memoria
+								**	(la que alocó el pcb por su cuenta, y los segmentos que están en la umv. Que invoque
+								**	funciones de la umv si es necesario). La cola de exit se encarga de liberar los segmentos.
+								*/
+									list_add(cola_exit, pcb);
+								} else {
+									log_info(logger, "[PLP] Solicitud atendida satisfactoriamente.");
+									list_add(cola_new, pcb);
+
+									//reordenamos la cola de acuerdo al peso
+
+									list_iterate(cola_new, mostrar_datos_cola);
+								}
+								break;
+
+							case 'U':
+								log_info(logger, "[PLP] Se recibió un mensaje de la UMV.");
+								break;
+							default:
+								log_info(logger, "[PLP] No es una conexión de un programa");
+						}
+					} else {
+						log_info(logger, "[PLP] El socket %d cerró su conexión y ya no está en mi lista de sockets.", sockActual);
+						close(sockActual);
+						FD_CLR(sockActual, &master);
+					}
+
+					if(paquete.mensaje)
+						free(paquete.mensaje);	
+				}
 			}
 		}
-
-		close(sc);
-		//free(sc);
 	}
 
 	goto liberarRecursos;
@@ -119,6 +164,9 @@ void *plp(void *datos_plp)
 			if(list_is_empty(cola_new))
 				list_destroy(cola_new);
 
+			if(list_is_empty(cola_exit))
+				list_destroy(cola_exit);
+
 			if(serverInfo != NULL)
 				freeaddrinfo(serverInfo);
 
@@ -128,30 +176,49 @@ void *plp(void *datos_plp)
 			if(socketCliente != -1)
 				close(socketCliente);
 
-			if(paquete.mensaje)
-				free(paquete.mensaje);
 		pthread_mutex_unlock(&fin_plp);
 }
 
-int atender_solicitud_programa(int socket_umv, t_paquete_programa *paquete, t_pcb *pcb, t_log *logger)
+int atender_solicitud_programa(int socket_umv, t_paquete_programa *paquete, t_pcb *pcb, uint32_t tamanio_stack, t_log *logger)
 {
-	uint32_t base_segmento = 0;
-
 	log_info(logger, "[PLP] Un programa envió un mensaje");
 
-	/*
-	**	Extraigo los metadatos usando el mensaje que viene en el paquete y llamo a solicitar_crear_segmento
-	**	cuantas veces sea necesario.
-	*/
+	int i, estado_final = 1;
+	uint32_t base_segmento = 0;
+	t_metadata_program *metadatos = NULL;
 
-	base_segmento = solicitar_crear_segmento(socket_umv, 1, 999, logger);
-	if(base_segmento == 0){
-		log_error(logger, "[PLP] La UMV no pudo crear un segmento necesario para este programa. Se aborta su creación.");
-	} else {
-		log_info(logger, "[PLP] La UMV creó un segmento con base %d", base_segmento);
+	pcb->id = contador_id_programa;
+	contador_id_programa++;
+	
+	//creo el segmento para el código
+	printf("paquete->mensaje tiene un strlen de %d", strlen(paquete->mensaje));
+	if((pcb->seg_cod = solicitar_crear_segmento(socket_umv, contador_id_programa, strlen(paquete->mensaje), logger)) == 0){
+		log_error(logger, "[PLP] La UMV no pudo crear el segmento de código para este programa. Se aborta su creación.");
+		contador_id_programa--;
+		//mandar el pcb a exit
+		estado_final = 0;
 	}
 
-	return base_segmento;
+	if((pcb->seg_stack = solicitar_crear_segmento(socket_umv, contador_id_programa, tamanio_stack, logger)) == 0){
+		log_error(logger, "[PLP] La UMV no pudo crear el segmento de stack para este programa. Se aborta su creación.");
+		contador_id_programa--;
+		//mandar el pcb a exit
+		estado_final = 0;
+	}
+
+	metadatos = metadata_desde_literal(paquete->mensaje);
+
+	uint32_t tamanio_indice_codigo = metadatos->instrucciones_size * 8;
+	if((pcb->seg_idx_cod = solicitar_crear_segmento(socket_umv, contador_id_programa, tamanio_indice_codigo, logger)) == 0){
+		log_error(logger, "[PLP] La UMV no pudo crear el segmento para el índice de código de este programa. Se aborta su creación.");
+		contador_id_programa--;
+		//mandar el pcb a exit
+		estado_final = 0;
+	}
+	
+	metadata_destruir(metadatos);
+
+	return estado_final;
 }
 
 uint32_t solicitar_crear_segmento(int socket_umv, uint32_t id_programa, uint32_t tamanio_segmento, t_log *logger)
@@ -167,12 +234,11 @@ uint32_t solicitar_crear_segmento(int socket_umv, uint32_t id_programa, uint32_t
 	char *paqueteSaliente = serializar_paquete(&paq_saliente, logger);
 	
 	bEnv = paq_saliente.tamanio_total;
-	printf("benv: %d\n", bEnv);
 	if(sendAll(socket_umv, paqueteSaliente, &bEnv)){
 		log_error(logger, "[PLP] Error en la solicitud de creación de segmento. Motivo: %s", strerror(errno));
 		free(paqueteSaliente);
 		free(orden);
-		return 1;
+		return 0;
 	}
 
 	free(paqueteSaliente);
@@ -218,4 +284,12 @@ char *codificar_crear_segmento(uint32_t id_programa, uint32_t tamanio)
 	memcpy(orden_completa + offset, tam, tam_len);
 
 	return orden_completa;
+}
+
+void mostrar_datos_cola(void *item)
+{
+	t_pcb *pcb = (t_pcb *) item;
+	printf("ID del Programa: %d\n", pcb->id);
+
+	return;
 }
