@@ -9,6 +9,7 @@ void *atencionConexiones(void *config)
 	t_log *logger = (t_log *) (((t_config_conexion *) config)->logger);
 	int *sock = (int *) (((t_config_conexion *) config)->socket);
 	t_param_memoria *parametros_memoria = (t_param_memoria *) (((t_config_conexion *) config)->parametros_memoria);
+	pthread_t *punteroAEsteHilo = (pthread_t *) (((t_config_conexion *) config)->hilo);
 	t_paquete_programa paq;
 	int bytesRecibidos = 0;
 	int atendiendoSolicitud = 1;
@@ -39,11 +40,14 @@ void *atencionConexiones(void *config)
 				atendiendoSolicitud = 0;
 		}
 
+		free(paq.mensaje);
 		bytesRecibidos = 0;
 	}
 
-	//close(*sock);
-
+	free(sock);
+	free(parametros_memoria);
+	free(punteroAEsteHilo);
+	free(config);
 	pthread_exit(NULL);
 }
 
@@ -76,6 +80,8 @@ void handler_crear_segmento(uint32_t *respuesta, char *orden, t_param_memoria *p
 					algoritmo_compactacion
 				);
 
+	list_destroy_and_destroy_elements(espacios_libres, eliminarEspacioLibre);
+
 	return;
 }
 
@@ -95,6 +101,8 @@ void enviar_respuesta_plp(int *socket, uint32_t respuesta, t_log *logger)
 		log_error(logger, "[UMV] Error en el envío de la respuesta del comando al PLP. Motivo: %s", strerror(errno));
 	}
 	log_info(logger, "[UMV] Ya mandé la respuesta al PLP");
+
+	free(respuesta_serializada);
 
 	return;
 }

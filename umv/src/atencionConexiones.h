@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <pthread.h>
 
 #include <commons/log.h>
@@ -17,6 +18,7 @@ typedef struct config_conexion {
 	int *socket;
 	t_param_memoria *parametros_memoria;
 	t_log *logger;
+	pthread_t *hilo;
 } t_config_conexion;
 
 void *atencionConexiones(void *config);

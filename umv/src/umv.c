@@ -114,6 +114,7 @@ int main(int argc, char *argv[])
 			conf_con->socket = socketNuevo;
 			conf_con->parametros_memoria = param_memoria;
 			conf_con->logger = logger;
+			conf_con->hilo = hiloAtencion;
 
 		if((*socketNuevo = accept(listenningSocket, (struct sockaddr *) &addr, &addrlen)) != -1){
 			if(noTerminar == 0){ //La conexión viene de la consola y tengo que salir.
