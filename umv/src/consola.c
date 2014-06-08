@@ -11,6 +11,7 @@ void *consola(void *consola_init)
 	void *mem_ppal = c_init->mem_ppal;
 	t_list *listaSegmentos = c_init->listaSegmentos;
 	char *algoritmo_comp = c_init->algoritmo_comp;
+	pid_t pid = c_init->umv_pid;	
 
 	char *comando = NULL;
 	int noSalir = 1;
@@ -24,6 +25,7 @@ void *consola(void *consola_init)
 
 		if(strcmp(comando,"q") == 0){
 			noSalir = 0;
+			comando_matar_umv(pid, c_init);
 		
 		} else if(strcmp(comando,"info") == 0){
 			comando_info_memoria(mem_ppal, listaSegmentos, tamanio_mem_ppal, algoritmo_comp);
@@ -63,7 +65,6 @@ void *consola(void *consola_init)
 	}
 
 	printf("UMV> Adiós!\n");
-	return 0;
 	pthread_exit(NULL);
 }
 
@@ -345,4 +346,32 @@ void imprimirArrayDeBytes(void *offset, uint32_t cantidad)
 	}
 
 	return;
+}
+
+void comando_matar_umv(pid_t pid, t_consola_init *c_init)
+{
+//	list_destroy_and_destroy_elements(c_init->listaSegmentos, eliminarSegmento);
+//	free(c_init->mem_ppal);
+//	free(c_init->algoritmo_comp);
+
+	struct addrinfo hints;
+	struct addrinfo *serverInfo;
+	
+	memset(&hints, 0, sizeof(hints));
+	hints.ai_family = AF_UNSPEC;
+	hints.ai_socktype = SOCK_STREAM;
+	char prto[6];
+	sprintf(prto, "%d", c_init->puerto);
+	getaddrinfo("127.0.0.1", prto, &hints, &serverInfo);
+
+	int sock = -1;
+
+	sock = socket(serverInfo->ai_family, serverInfo->ai_socktype, serverInfo->ai_protocol);
+		
+	connect(sock, serverInfo->ai_addr, serverInfo->ai_addrlen);
+	freeaddrinfo(serverInfo);
+	*(c_init->noTerminar) = 0;
+	close(sock);
+
+//	kill(pid, SIGINT);
 }

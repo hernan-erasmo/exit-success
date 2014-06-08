@@ -25,6 +25,8 @@ int main(int argc, char *argv[])
 	//Variables para el manejo de los hilos
 	pthread_t threadConsola;
 	t_consola_init *c_init;
+	pid_t umv_pid;
+	int noTerminar = 1;
 
 	//Variables para las listas de segmentos
 		/*
@@ -71,13 +73,13 @@ int main(int argc, char *argv[])
 	} else {
 		log_info(logger, "[UMV] La memoria principal abarca desde la dirección %p hasta %p", (mem_ppal), (mem_ppal + tamanio_mem_ppal - 1));
 	}
-	
+
 	//Inicializo una lista para los segmentos
 	log_info(logger, "[UMV] Creo la lista de segmentos usando list_create()");
 	listaSegmentos = list_create();
 
 	//Inicializo la configuración de la consola
-	inicializarConfigConsola(&c_init, tamanio_mem_ppal, mem_ppal, listaSegmentos, algoritmo_comp);
+	inicializarConfigConsola(&c_init, tamanio_mem_ppal, mem_ppal, listaSegmentos, algoritmo_comp, &listenningSocket, &noTerminar, config_get_int_value(config, "PUERTO"));
 
 	// Arranca la consola
 	if(pthread_create(&threadConsola, NULL, consola, (void *) c_init)) {
@@ -96,7 +98,7 @@ int main(int argc, char *argv[])
 **	Acá debería escuchar y delegar las conexiones a threads
 */
 
-	while(1){
+	while(noTerminar){
 		log_info(logger, "[UMV] Esperando conexiones entrantes...");
 
 		int *socketNuevo = malloc(sizeof(int));
@@ -114,6 +116,13 @@ int main(int argc, char *argv[])
 			conf_con->logger = logger;
 
 		if((*socketNuevo = accept(listenningSocket, (struct sockaddr *) &addr, &addrlen)) != -1){
+			if(noTerminar == 0){ //La conexión viene de la consola y tengo que salir.
+				free(socketNuevo);
+				free(hiloAtencion);
+				free(param_memoria);
+				free(conf_con);
+				break;
+			}	
 			pthread_create(hiloAtencion, 0, atencionConexiones, (void *) conf_con);
 			pthread_detach(*hiloAtencion);
 		} else {
@@ -199,13 +208,17 @@ void *inicializarMemoria(uint32_t size)
 	return mem;
 }
 
-void inicializarConfigConsola(t_consola_init **c_init, uint32_t sizeMem, void *mem, t_list *listaSegmentos, char *algoritmo_comp)
+void inicializarConfigConsola(t_consola_init **c_init, uint32_t sizeMem, void *mem, t_list *listaSegmentos, char *algoritmo_comp, int *listenningSocket, int *noTerminar, int puerto)
 {
 	*c_init = malloc(sizeof(t_consola_init));
 	(*c_init)->listaSegmentos = listaSegmentos;
 	(*c_init)->tamanio_mem_ppal = sizeMem;
 	(*c_init)->mem_ppal = mem;
 	(*c_init)->algoritmo_comp = algoritmo_comp;
+	(*c_init)->umv_pid = getpid();
+	(*c_init)->listenningSocket = listenningSocket;
+	(*c_init)->noTerminar = noTerminar;
+	(*c_init)->puerto = puerto;
 
 	return;
 }
