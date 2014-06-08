@@ -33,6 +33,9 @@ void *consola(void *consola_init)
 		} else if(strcmp(comando,"cambiar-algoritmo") == 0){
 			comando_cambiar_algoritmo(&algoritmo_comp);
 		
+		} else if(strcmp(comando,"cambiar-proceso-activo") == 0){
+			comando_cambiar_proceso_activo();
+		
 		} else if(strcmp(comando,"compactar") == 0){
 			comando_compactar(listaSegmentos, mem_ppal, tamanio_mem_ppal);
 		
@@ -48,8 +51,8 @@ void *consola(void *consola_init)
 		} else if(strcmp(comando,"dump-segmentos") == 0){
 			comando_dump_segmentos(listaSegmentos);
 		
-		} else if (strcmp(comando,"escribir") == 0) {
-			printf("UMV> Falta implementar el comando \"escribir\".\n");
+		} else if (strcmp(comando,"enviar-bytes") == 0) {
+			printf("UMV> Falta implementar el comando \"enviar-bytes\".\n");
 		
 		} else if (strcmp(comando,"h") == 0) {
 			printf("UMV> Falta implementar la ayuda. Perdón :(\n");
@@ -82,6 +85,21 @@ void comando_cambiar_algoritmo(char **algoritmo)
 		*algoritmo = "WORST_FIT";
 	}
 		
+	//Si no hago este fgetc() entonces se repite dos veces el prompt de UMV> cuando retorna al bucle principal.
+	fgetc(stdin);
+
+	return;
+}
+
+void comando_cambiar_proceso_activo()
+{
+	uint32_t id_nuevo = 0;
+
+	printf("\tIngrese el ID del nuevo proceso activo: ");
+	scanf("%d", &id_nuevo);
+
+	PROCESO_ACTIVO = id_nuevo;
+
 	//Si no hago este fgetc() entonces se repite dos veces el prompt de UMV> cuando retorna al bucle principal.
 	fgetc(stdin);
 
@@ -254,6 +272,7 @@ void comando_info_memoria(void *mem_ppal, t_list *listaSegmentos, uint32_t taman
 {
 	t_list *esp_libre = buscarEspaciosLibres(listaSegmentos, mem_ppal, tamanio_mem_ppal);
 	printf("\tEl algoritmo de compactación actual es: %s\n", algoritmo);
+	printf("\tEl proceso activo tiene ID: %d\n", PROCESO_ACTIVO);
 
 	if(list_is_empty(esp_libre)){
 		printf("\tNo hay espacio libre en memoria.\n");
