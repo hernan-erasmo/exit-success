@@ -116,8 +116,9 @@ void *plp(void *datos_plp)
 						
 								; //¿Por qué un statement vacío? ver http://goo.gl/6SwXRB
 								t_pcb *pcb = malloc(sizeof(t_pcb));
+								pcb->socket = sockActual;
 
-								if(atender_solicitud_programa(socket_umv, &paquete, pcb, logger) == 0){
+								if(atender_solicitud_programa(socket_umv, &paquete, pcb, tamanio_stack, logger) == 0){
 									log_error(logger, "[PLP] No se pudo satisfacer la solicitud del programa");
 
 								/*
@@ -129,6 +130,10 @@ void *plp(void *datos_plp)
 								} else {
 									log_info(logger, "[PLP] Solicitud atendida satisfactoriamente.");
 									list_add(cola_new, pcb);
+
+									//reordenamos la cola de acuerdo al peso
+
+									list_iterate(cola_new, mostrar_datos_cola);
 								}
 								break;
 
@@ -174,27 +179,46 @@ void *plp(void *datos_plp)
 		pthread_mutex_unlock(&fin_plp);
 }
 
-int atender_solicitud_programa(int socket_umv, t_paquete_programa *paquete, t_pcb *pcb, t_log *logger)
+int atender_solicitud_programa(int socket_umv, t_paquete_programa *paquete, t_pcb *pcb, uint32_t tamanio_stack, t_log *logger)
 {
-	contador_id_programa++;
-	uint32_t base_segmento = 0;
-
 	log_info(logger, "[PLP] Un programa envió un mensaje");
 
-	/*
-	**	Extraigo los metadatos usando el mensaje que viene en el paquete y llamo a solicitar_crear_segmento
-	**	cuantas veces sea necesario.
-	*/
-	base_segmento = solicitar_crear_segmento(socket_umv, contador_id_programa, 999, logger);
+	int i, estado_final = 1;
+	uint32_t base_segmento = 0;
+	t_metadata_program *metadatos = NULL;
+
+	pcb->id = contador_id_programa;
+	contador_id_programa++;
 	
-	if(base_segmento == 0){
-		log_error(logger, "[PLP] La UMV no pudo crear un segmento necesario para este programa. Se aborta su creación.");
+	//creo el segmento para el código
+	printf("paquete->mensaje tiene un strlen de %d", strlen(paquete->mensaje));
+	if((pcb->seg_cod = solicitar_crear_segmento(socket_umv, contador_id_programa, strlen(paquete->mensaje), logger)) == 0){
+		log_error(logger, "[PLP] La UMV no pudo crear el segmento de código para este programa. Se aborta su creación.");
 		contador_id_programa--;
-	} else {
-		log_info(logger, "[PLP] La UMV creó un segmento con base %d", base_segmento);
+		//mandar el pcb a exit
+		estado_final = 0;
 	}
 
-	return base_segmento;
+	if((pcb->seg_stack = solicitar_crear_segmento(socket_umv, contador_id_programa, tamanio_stack, logger)) == 0){
+		log_error(logger, "[PLP] La UMV no pudo crear el segmento de stack para este programa. Se aborta su creación.");
+		contador_id_programa--;
+		//mandar el pcb a exit
+		estado_final = 0;
+	}
+
+	metadatos = metadata_desde_literal(paquete->mensaje);
+
+	uint32_t tamanio_indice_codigo = metadatos->instrucciones_size * 8;
+	if((pcb->seg_idx_cod = solicitar_crear_segmento(socket_umv, contador_id_programa, tamanio_indice_codigo, logger)) == 0){
+		log_error(logger, "[PLP] La UMV no pudo crear el segmento para el índice de código de este programa. Se aborta su creación.");
+		contador_id_programa--;
+		//mandar el pcb a exit
+		estado_final = 0;
+	}
+	
+	metadata_destruir(metadatos);
+
+	return estado_final;
 }
 
 uint32_t solicitar_crear_segmento(int socket_umv, uint32_t id_programa, uint32_t tamanio_segmento, t_log *logger)
@@ -214,7 +238,7 @@ uint32_t solicitar_crear_segmento(int socket_umv, uint32_t id_programa, uint32_t
 		log_error(logger, "[PLP] Error en la solicitud de creación de segmento. Motivo: %s", strerror(errno));
 		free(paqueteSaliente);
 		free(orden);
-		return 1;
+		return 0;
 	}
 
 	free(paqueteSaliente);
@@ -260,4 +284,12 @@ char *codificar_crear_segmento(uint32_t id_programa, uint32_t tamanio)
 	memcpy(orden_completa + offset, tam, tam_len);
 
 	return orden_completa;
+}
+
+void mostrar_datos_cola(void *item)
+{
+	t_pcb *pcb = (t_pcb *) item;
+	printf("ID del Programa: %d\n", pcb->id);
+
+	return;
 }
