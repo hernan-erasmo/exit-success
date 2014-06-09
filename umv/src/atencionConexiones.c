@@ -2,7 +2,6 @@
 #include <string.h>
 
 #include "atencionConexiones.h"
-#include "../../utils/comunicacion.h"
 
 void *atencionConexiones(void *config)
 {
@@ -55,8 +54,21 @@ void handler_plp(uint32_t *respuesta, char *orden, t_param_memoria *parametros_m
 	char *savePtr1 = NULL;
 	char *comando = strtok_r(orden, ",", &savePtr1);
 
+	if(strcmp(comando, "cambiar_proceso_activo") == 0)
+		handler_cambiar_proceso_activo(respuesta, orden, parametros_memoria, &savePtr1, logger);
 	if(strcmp(comando,"crear_segmento") == 0)
 		handler_crear_segmento(respuesta, orden, parametros_memoria, &savePtr1, logger);
+	if(strcmp(comando,"enviar_bytes") == 0)
+		handler_enviar_bytes(respuesta, orden, parametros_memoria, &savePtr1, logger);
+
+	return;
+}
+
+void handler_cambiar_proceso_activo(uint32_t *respuesta, char *orden, t_param_memoria *parametros_memoria, char **savePtr1, t_log *logger)
+{
+	char *proceso_activo = strtok_r(NULL, ",", savePtr1);
+
+	cambiar_proceso_activo(atoi(proceso_activo));
 
 	return;
 }

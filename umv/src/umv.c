@@ -6,6 +6,8 @@
 
 #include "umv.h"
 
+static uint32_t PROCESO_ACTIVO = 0;
+
 int main(int argc, char *argv[])
 {
 	int errorLogger = 0;
@@ -109,7 +111,7 @@ int main(int argc, char *argv[])
 			param_memoria->mem_ppal = mem_ppal;
 			param_memoria->tamanio_mem_ppal = tamanio_mem_ppal;
 			param_memoria->algoritmo_comp = algoritmo_comp;
-		
+			
 		t_config_conexion *conf_con = malloc(sizeof(t_config_conexion));
 			conf_con->socket = socketNuevo;
 			conf_con->parametros_memoria = param_memoria;
@@ -297,4 +299,16 @@ int chequear_limites_escritura(t_segmento *seg, uint32_t offset, uint32_t tamani
 	}
 
 	return 1;
+}
+
+uint32_t cambiar_proceso_activo(uint32_t proceso_activo)
+{
+	PROCESO_ACTIVO = proceso_activo;
+	
+	return PROCESO_ACTIVO;
+}
+
+uint32_t get_proceso_activo()
+{
+	return PROCESO_ACTIVO;
 }

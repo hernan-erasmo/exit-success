@@ -98,8 +98,8 @@ void comando_cambiar_proceso_activo()
 	printf("\tIngrese el ID del nuevo proceso activo: ");
 	scanf("%d", &id_nuevo);
 
-	PROCESO_ACTIVO = id_nuevo;
-
+	cambiar_proceso_activo(id_nuevo);
+	
 	//Si no hago este fgetc() entonces se repite dos veces el prompt de UMV> cuando retorna al bucle principal.
 	fgetc(stdin);
 
@@ -272,7 +272,7 @@ void comando_info_memoria(void *mem_ppal, t_list *listaSegmentos, uint32_t taman
 {
 	t_list *esp_libre = buscarEspaciosLibres(listaSegmentos, mem_ppal, tamanio_mem_ppal);
 	printf("\tEl algoritmo de compactación actual es: %s\n", algoritmo);
-	printf("\tEl proceso activo tiene ID: %d\n", PROCESO_ACTIVO);
+	printf("\tEl proceso activo tiene ID: %d\n", get_proceso_activo());
 
 	if(list_is_empty(esp_libre)){
 		printf("\tNo hay espacio libre en memoria.\n");

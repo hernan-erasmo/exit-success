@@ -8,7 +8,7 @@
 
 #include "plp.h"
 
-static uint32_t contador_id_programa = 1;
+static uint32_t contador_id_programa = 0;
 
 void *plp(void *datos_plp)
 {
@@ -191,6 +191,13 @@ int atender_solicitud_programa(int socket_umv, t_paquete_programa *paquete, t_pc
 	pcb->id = contador_id_programa;
 	contador_id_programa++;
 	
+	if(solicitar_cambiar_proceso_activo(socket_umv, contador_id_programa, logger) == 0){
+		log_error(logger, "[PLP] La UMV no permitió cambiar el proceso activo.");
+		contador_id_programa--;
+		//mandar el pcb a exit
+		estado_final = 0;
+	}
+	
 	//creo el segmento para el código
 	printf("paquete->mensaje tiene un strlen de %d", strlen(paquete->mensaje));
 	if((pcb->seg_cod = solicitar_crear_segmento(socket_umv, contador_id_programa, strlen(paquete->mensaje), logger)) == 0){
@@ -223,6 +230,66 @@ int atender_solicitud_programa(int socket_umv, t_paquete_programa *paquete, t_pc
 	metadata_destruir(metadatos);
 
 	return estado_final;
+}
+
+uint32_t solicitar_cambiar_proceso_activo(int socket_umv, uint32_t contador_id_programa, t_log *logger)
+{
+	uint32_t bEnv = 0;
+	char *orden = codificar_cambiar_proceso_activo(contador_id_programa);
+	uint32_t valorRetorno = 0;	
+
+	t_paquete_programa paq_saliente;
+		paq_saliente.id = 'P';
+		paq_saliente.mensaje = orden;
+		paq_saliente.sizeMensaje = strlen(orden);
+
+	char *paqueteSaliente = serializar_paquete(&paq_saliente, logger);
+	
+	bEnv = paq_saliente.tamanio_total;
+	if(sendAll(socket_umv, paqueteSaliente, &bEnv)){
+		log_error(logger, "[PLP] Error en la solicitud de cambio de proceso activo. Motivo: %s", strerror(errno));
+		free(paqueteSaliente);
+		free(orden);
+		return 0;
+	}
+
+	free(paqueteSaliente);
+	free(orden);
+
+	uint32_t bRec = 0;
+	t_paquete_programa respuesta;
+	log_info(logger, "[PLP] Esperando la respuesta de la UMV.");
+	bRec = recvAll(&respuesta, socket_umv);
+	log_info(logger, "[PLP] La UMV respondió %s", respuesta.mensaje);
+
+	valorRetorno = atoi(respuesta.mensaje);
+	free(respuesta.mensaje);
+
+	return valorRetorno;	
+}
+
+char *codificar_cambiar_proceso_activo(uint32_t contador_id_programa)
+{
+	int offset = 0;
+	
+	char proc_activo[5];
+	sprintf(proc_activo, "%d", contador_id_programa);
+	char *comando = "cambiar_proceso_activo";
+
+	int proc_activo_len = strlen(proc_activo);
+	int comando_len = strlen(comando);
+
+	//longitud del comando + el nulo de fin de cadena + la coma que separa + longitud de proc_activo
+	char *orden_completa = calloc(comando_len + 1 + 1 + proc_activo_len, 1);
+	memcpy(orden_completa + offset, comando, comando_len);
+	offset += comando_len;
+
+	memcpy(orden_completa + offset, ",", 1);
+	offset += 1;	
+
+	memcpy(orden_completa + offset, proc_activo, proc_activo_len);
+	
+	return orden_completa;	
 }
 
 uint32_t solicitar_crear_segmento(int socket_umv, uint32_t id_programa, uint32_t tamanio_segmento, t_log *logger)
