@@ -7,6 +7,7 @@
 #include "umv.h"
 
 static uint32_t PROCESO_ACTIVO = 0;
+static pthread_mutex_t modificando_proceso_activo = PTHREAD_MUTEX_INITIALIZER;
 
 int main(int argc, char *argv[])
 {
@@ -282,7 +283,7 @@ bool buscar_por_proceso_activo(void *seg)
 {
 	t_segmento *segmento = (t_segmento *) seg;
 
-	return(segmento->prog_id = get_proceso_activo());
+	return(segmento->prog_id == get_proceso_activo());
 }
 
 int chequear_limites_escritura(t_segmento *seg, uint32_t offset, uint32_t tamanioAEscribir)
@@ -307,8 +308,10 @@ int chequear_limites_escritura(t_segmento *seg, uint32_t offset, uint32_t tamani
 
 uint32_t cambiar_proceso_activo(uint32_t proceso_activo)
 {
-	PROCESO_ACTIVO = proceso_activo;
-	
+	pthread_mutex_lock(&modificando_proceso_activo);
+		PROCESO_ACTIVO = proceso_activo;
+	pthread_mutex_unlock(&modificando_proceso_activo);
+
 	return PROCESO_ACTIVO;
 }
 
