@@ -215,12 +215,11 @@ int atender_solicitud_programa(int socket_umv, t_paquete_programa *paquete, t_pc
 			break;
 		}
 
-		/*
-		if(crear_segmento_etiquetas() == 0){
+		if(crear_segmento_etiquetas(socket_umv, pcb, metadatos, contador_id_programa, logger) == 0){
 			huboUnError = 1;
 			break;
 		}
-		*/
+		
 		break;
 	}
 
@@ -229,7 +228,8 @@ int atender_solicitud_programa(int socket_umv, t_paquete_programa *paquete, t_pc
 	else
 		contador_id_programa--;
 
-	metadata_destruir(metadatos);
+	if(metadatos)
+		metadata_destruir(metadatos);
 
 	return huboUnError;
 }
@@ -339,6 +339,28 @@ uint32_t crear_segmento_indice_codigo(int socket_umv, t_pcb *pcb, t_metadata_pro
 	}
 
 	//escribir datos acá!
+
+	resultado = 1;
+	return resultado;
+}
+
+uint32_t crear_segmento_etiquetas(int socket_umv, t_pcb *pcb, t_metadata_program *metadatos, uint32_t contador_id_programa, t_log *logger)
+{
+	int resultado = 0;
+
+	uint32_t tamanio_indice_etiquetas = metadatos->etiquetas_size;
+
+	if(tamanio_indice_etiquetas == 0){
+		resultado = 1;
+		return resultado;
+	}
+
+	if((pcb->seg_idx_etq = solicitar_crear_segmento(socket_umv, contador_id_programa, tamanio_indice_etiquetas, logger)) == 0){
+		log_error(logger, "[PLP] La UMV no pudo crear el segmento para el índice de etiquetas de este programa. Se aborta su creación.");
+		return resultado;
+	}
+
+	//escribir datos aca
 
 	resultado = 1;
 	return resultado;

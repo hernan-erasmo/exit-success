@@ -23,7 +23,7 @@ typedef struct pcb {
 	uint32_t seg_stack;			//Puntero al comienzo del segmento de stack en la umv
 	void *cursor_stack;			//Puntero al primer byte del contexto de ejcución actual
 	uint32_t seg_idx_cod;		//Puntero al comienzo del índice de código en la umv
-	void *seg_idx_etq;			//Puntero al comienzo del índice de etiquetas en la umv
+	uint32_t seg_idx_etq;		//Puntero al comienzo del índice de etiquetas en la umv
 	uint32_t p_counter;			//Contiene el nro de la próxima instrucción a ejecutar
 	uint32_t size_ctxt_actual;	//Cant de variables (locales y parámetros) del contexto de ejecución actual
 	uint32_t size_idx_etq;		//Cantidad de bytes que ocupa el índice de etiquetas
@@ -43,6 +43,7 @@ char *codificar_enviar_bytes(uint32_t base, uint32_t offset, int tamanio, char *
 uint32_t crear_segmento_codigo(int socket_umv, t_pcb *pcb, t_paquete_programa *paquete, uint32_t contador_id_programa, t_log *logger);
 uint32_t crear_segmento_stack(int socket_umv, t_pcb *pcb, uint32_t tamanio_stack, uint32_t contador_id_programa, t_log *logger);
 uint32_t crear_segmento_indice_codigo(int socket_umv, t_pcb *pcb, t_metadata_program *metadatos, uint32_t contador_id_programa, t_log *logger);
+uint32_t crear_segmento_etiquetas(int socket_umv, t_pcb *pcb, t_metadata_program *metadatos, uint32_t contador_id_programa, t_log *logger);
 
 int atender_solicitud_programa(int socket_umv, t_paquete_programa *paquete, t_pcb *pcb, uint32_t tamanio_stack, t_log *logger);
 
