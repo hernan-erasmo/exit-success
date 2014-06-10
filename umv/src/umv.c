@@ -228,13 +228,13 @@ void inicializarConfigConsola(t_consola_init **c_init, uint32_t sizeMem, void *m
 
 uint32_t enviar_bytes(t_list *listaSegmentos, uint32_t base, uint32_t offset, uint32_t tamanio, char *buffer)
 {
-	int cod_retorno = 0;
+	int cod_retorno = tamanio;
 	int escritura_valida = 0;
 
 	t_segmento *seg = buscar_segmento_solicitado(listaSegmentos, base);
 
 	if(seg == NULL){
-		cod_retorno = -1;
+		cod_retorno = -1;	//Segmentation fault. El proceso activo no tiene un segmento con esa base.
 		return cod_retorno;
 	}
 	
@@ -242,7 +242,7 @@ uint32_t enviar_bytes(t_list *listaSegmentos, uint32_t base, uint32_t offset, ui
 		void *dest = seg->pos_mem_ppal + offset;
 		memcpy(dest, buffer, tamanio);
 	} else {
-		cod_retorno = -1;
+		cod_retorno = -2;	//Segmentation fault. Se quiso escribir por fuera de los límites de la memoria del segmento
 		return;
 	}	
 
@@ -257,6 +257,7 @@ t_segmento *buscar_segmento_solicitado(t_list *listaSegmentos, uint32_t base)
 	size_activos = list_size(segmentosActivos);
 	if(size_activos == 0){
 		//No se encontró un segmento para el proceso activo
+		list_destroy(segmentosActivos);
 		return NULL;
 	}
 
@@ -265,12 +266,15 @@ t_segmento *buscar_segmento_solicitado(t_list *listaSegmentos, uint32_t base)
 	for(i = 0; i < size_activos; i++){
 		seg = list_get(segmentosActivos, i);
 		
-		if(seg->inicio == base)
+		if(seg->inicio == base){
+			list_destroy(segmentosActivos);
 			return seg;
+		}
 		
 	}
 
 	//No se encontró un segmento con base [base] en la lista de segmentos del proceso activo
+	list_destroy(segmentosActivos);
 	return NULL;
 }
 
@@ -278,7 +282,7 @@ bool buscar_por_proceso_activo(void *seg)
 {
 	t_segmento *segmento = (t_segmento *) seg;
 
-	return(segmento->prog_id = PROCESO_ACTIVO);
+	return(segmento->prog_id = get_proceso_activo());
 }
 
 int chequear_limites_escritura(t_segmento *seg, uint32_t offset, uint32_t tamanioAEscribir)

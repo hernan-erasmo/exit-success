@@ -68,7 +68,7 @@ void handler_cambiar_proceso_activo(uint32_t *respuesta, char *orden, t_param_me
 {
 	char *proceso_activo = strtok_r(NULL, ",", savePtr1);
 
-	cambiar_proceso_activo(atoi(proceso_activo));
+	*respuesta = cambiar_proceso_activo(atoi(proceso_activo));
 
 	return;
 }
@@ -93,6 +93,18 @@ void handler_crear_segmento(uint32_t *respuesta, char *orden, t_param_memoria *p
 				);
 
 	list_destroy_and_destroy_elements(espacios_libres, eliminarEspacioLibre);
+
+	return;
+}
+
+void handler_enviar_bytes(uint32_t *respuesta, char *orden, t_param_memoria *parametros_memoria, char **savePtr1, t_log *logger)
+{
+	char *base = strtok_r(NULL, ",", savePtr1);
+	char *offset = strtok_r(NULL, ",", savePtr1);
+	char *tamanio = strtok_r(NULL, ",", savePtr1);
+	char *buffer = strtok_r(NULL, ",", savePtr1);
+
+	*respuesta = enviar_bytes(parametros_memoria->listaSegmentos, atoi(base), atoi(offset), atoi(tamanio), buffer);
 
 	return;
 }
