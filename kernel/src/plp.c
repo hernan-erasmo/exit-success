@@ -119,7 +119,7 @@ void *plp(void *datos_plp)
 								pcb->socket = sockActual;
 								pcb->peso = 0;
 
-								if(atender_solicitud_programa(socket_umv, &paquete, pcb, tamanio_stack, logger) == 0){
+								if(atender_solicitud_programa(socket_umv, &paquete, pcb, tamanio_stack, logger) != 0){
 									log_error(logger, "[PLP] No se pudo satisfacer la solicitud del programa");
 
 								/*
@@ -184,52 +184,54 @@ int atender_solicitud_programa(int socket_umv, t_paquete_programa *paquete, t_pc
 {
 	log_info(logger, "[PLP] Un programa envió un mensaje");
 
-	int i, estado_final = 1;
+	int i, huboUnError = 0;
 	uint32_t base_segmento = 0;
 	t_metadata_program *metadatos = NULL;
 
-	pcb->id = contador_id_programa;
 	contador_id_programa++;
+	pcb->id = contador_id_programa;
 	
-	if(solicitar_cambiar_proceso_activo(socket_umv, contador_id_programa, logger) == 0){
-		log_error(logger, "[PLP] La UMV no permitió cambiar el proceso activo.");
-		contador_id_programa--;
-		//mandar el pcb a exit
-		estado_final = 0;
-	}
+	while(1){
+		if(solicitar_cambiar_proceso_activo(socket_umv, contador_id_programa, logger) == 0){
+			huboUnError = 1;
+			break;
+		}
+
 	
-	//creo el segmento para el código
-	printf("paquete->mensaje tiene un strlen de %d", strlen(paquete->mensaje));
-	if((pcb->seg_cod = solicitar_crear_segmento(socket_umv, contador_id_programa, strlen(paquete->mensaje), logger)) == 0){
-		log_error(logger, "[PLP] La UMV no pudo crear el segmento de código para este programa. Se aborta su creación.");
-		contador_id_programa--;
-		//mandar el pcb a exit
-		estado_final = 0;
+		if(crear_segmento_codigo(socket_umv, pcb, paquete, contador_id_programa, logger) == 0){
+			huboUnError = 1;
+			break;
+		}
+
+		if(crear_segmento_stack(socket_umv, pcb, tamanio_stack, contador_id_programa, logger) == 0){
+			huboUnError = 1;
+			break;
+		}
+
+		metadatos = metadata_desde_literal(paquete->mensaje);
+
+		if(crear_segmento_indice_codigo(socket_umv, pcb, metadatos, contador_id_programa, logger) == 0){
+			huboUnError = 1;
+			break;
+		}
+
+		/*
+		if(crear_segmento_etiquetas() == 0){
+			huboUnError = 1;
+			break;
+		}
+		*/
+		break;
 	}
 
-	if((pcb->seg_stack = solicitar_crear_segmento(socket_umv, contador_id_programa, tamanio_stack, logger)) == 0){
-		log_error(logger, "[PLP] La UMV no pudo crear el segmento de stack para este programa. Se aborta su creación.");
-		contador_id_programa--;
-		//mandar el pcb a exit
-		estado_final = 0;
-	}
-
-	metadatos = metadata_desde_literal(paquete->mensaje);
-
-	uint32_t tamanio_indice_codigo = metadatos->instrucciones_size * 8;
-	if((pcb->seg_idx_cod = solicitar_crear_segmento(socket_umv, contador_id_programa, tamanio_indice_codigo, logger)) == 0){
-		log_error(logger, "[PLP] La UMV no pudo crear el segmento para el índice de código de este programa. Se aborta su creación.");
-		contador_id_programa--;
-		//mandar el pcb a exit
-		estado_final = 0;
-	}
-
-	if(estado_final != 0)
+	if(!huboUnError)
 		calcularPeso(pcb, metadatos);
+	else
+		contador_id_programa--;
 
 	metadata_destruir(metadatos);
 
-	return estado_final;
+	return huboUnError;
 }
 
 uint32_t solicitar_cambiar_proceso_activo(int socket_umv, uint32_t contador_id_programa, t_log *logger)
@@ -290,6 +292,51 @@ char *codificar_cambiar_proceso_activo(uint32_t contador_id_programa)
 	memcpy(orden_completa + offset, proc_activo, proc_activo_len);
 	
 	return orden_completa;	
+}
+
+uint32_t crear_segmento_codigo(int socket_umv, t_pcb *pcb, t_paquete_programa *paquete, uint32_t contador_id_programa, t_log *logger)
+{
+	int resultado = 0;
+	int bytesEscritos = 0;
+
+	if((pcb->seg_cod = solicitar_crear_segmento(socket_umv, contador_id_programa, strlen(paquete->mensaje), logger)) == 0){
+		log_error(logger, "[PLP] La UMV no pudo crear el segmento de código para este programa. Se aborta su creación.");
+		return resultado;
+	}
+
+	//escribir datos acá!
+
+	resultado = 1;
+	return resultado;
+}
+
+uint32_t crear_segmento_stack(int socket_umv, t_pcb *pcb, uint32_t tamanio_stack, uint32_t contador_id_programa, t_log *logger)
+{
+	int resultado = 0;
+
+	if((pcb->seg_stack = solicitar_crear_segmento(socket_umv, contador_id_programa, tamanio_stack, logger)) == 0){
+		log_error(logger, "[PLP] La UMV no pudo crear el segmento de stack para este programa. Se aborta su creación.");
+		return resultado;
+	}
+
+	resultado = 1;
+	return resultado;
+}
+
+uint32_t crear_segmento_indice_codigo(int socket_umv, t_pcb *pcb, t_metadata_program *metadatos, uint32_t contador_id_programa, t_log *logger)
+{
+	int resultado = 0;
+
+	uint32_t tamanio_indice_codigo = metadatos->instrucciones_size * 8;
+	if((pcb->seg_idx_cod = solicitar_crear_segmento(socket_umv, contador_id_programa, tamanio_indice_codigo, logger)) == 0){
+		log_error(logger, "[PLP] La UMV no pudo crear el segmento para el índice de código de este programa. Se aborta su creación.");
+		return resultado;
+	}
+
+	//escribir datos acá!
+
+	resultado = 1;
+	return resultado;
 }
 
 uint32_t solicitar_crear_segmento(int socket_umv, uint32_t id_programa, uint32_t tamanio_segmento, t_log *logger)
