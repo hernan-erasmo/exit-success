@@ -6,6 +6,9 @@
 
 #include <commons/log.h>
 
+#ifndef COMUNICACION_H
+#define COMUNICACION_H
+
 typedef struct paquete_programa {
 	char id;
 	char *mensaje;
@@ -22,3 +25,5 @@ char *serializar_paquete(t_paquete_programa *paquete, t_log *logger);
 int crear_conexion_saliente(int *unSocket, struct sockaddr_in *socketInfo, char *ip, int puerto, t_log *logger, char *id_proceso);
 int crear_conexion_entrante(int *listenningSocket, char *puerto, struct addrinfo **serverInfo, t_log *logger, char *id_proceso);
 int crear_socket(struct sockaddr_in *socketInfo, char *ip, int puerto);
+
+#endif /* COMUNICACION_H */
