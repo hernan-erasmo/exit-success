@@ -103,10 +103,10 @@ uint32_t crearSegmento(uint32_t prog_id,
 	t_segmento *seg = NULL;
 
 	if(strcasecmp(algoritmo, "first_fit") == 0) {
-		//ordenar la lista de espacio libre de menor a mayor por cantidad de espacio libre
-		list_sort(espacios_libres, comparador_esp_libre_tamanio_asc);
+		//ordenar la lista de espacios libres de menor a mayor de acuerdo a su dirección física
+		list_sort(espacios_libres, comparador_esp_libre_dir_asc);
 		
-		//tomar el primer elemento que pueda contner el segmento requerido y crear el segmento ahí
+		//tomar el primer elemento que pueda contener el segmento requerido y crear el segmento ahí
 		esp_libre = buscar_primer_lugar_adecuado(espacios_libres, size);
 		
 		//si no hay ninguno que pueda hacerlo, no hay espacio libre para el nuevo segmento.
@@ -262,6 +262,22 @@ bool comparador_esp_libre_tamanio_desc(void *esp_a, void *esp_b)
 	t_esp_libre *b = (t_esp_libre *) esp_b;
 
 	return ((a->size) > (b->size));
+}
+
+bool comparador_esp_libre_dir_asc(void *esp_a, void *esp_b)
+{
+	t_esp_libre *a = (t_esp_libre *) esp_a;
+	t_esp_libre *b = (t_esp_libre *) esp_b;
+
+	return ((a->dir) < (b->dir));
+}
+
+bool comparador_esp_libre_dir_desc(void *esp_a, void *esp_b)
+{
+	t_esp_libre *a = (t_esp_libre *) esp_a;
+	t_esp_libre *b = (t_esp_libre *) esp_b;
+
+	return ((a->dir) > (b->dir));
 }
 
 uint32_t getSegId(t_list *listaSegmentos, uint32_t prog_id)

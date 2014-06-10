@@ -29,8 +29,10 @@ uint32_t getDirInicio(t_list *listaSegmentos, uint32_t prog_id, uint32_t size);
 bool esAdecuadoInicio(uint32_t candidato, uint32_t candidato_size, uint32_t actual, uint32_t actual_size);
 bool comparador_segmento_direccion_fisica_asc(void *seg_a, void *seg_b);
 bool comparador_segmento_tamanio_asc(void *seg_a, void *seg_b);
-bool comparador_esp_libre_tamanio_asc(void *esp_a, void *esp_b);
+bool comparador_esp_libre_tamanio_asc(void *esp_a, void *esp_b);		//Si querés aplicar best-fit, usas este comparador. Al pedo, pero bueh.
 bool comparador_esp_libre_tamanio_desc(void *esp_a, void *esp_b);
+bool comparador_esp_libre_dir_asc(void *esp_a, void *esp_b);			//Si querés aplicar first-fit, usas este.
+bool comparador_esp_libre_dir_desc(void *esp_a, void *esp_b);
 void *marcar_para_borrar(void *seg);
 bool marcado_para_borrar(void *seg);
 
