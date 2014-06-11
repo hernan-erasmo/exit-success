@@ -3,15 +3,10 @@
 #include <unistd.h>
 #include <sys/types.h>
 
-#include <commons/log.h>
-#include <commons/config.h>
-
 #include <parser/metadata_program.h>
 #include <parser/parser.h>
 
-int checkArgs(int args);
-int crearLogger(t_log **logger);
-int cargarConfig(t_config **config, char *path);
+#include "cpu.h"
 
 void finalizar(void);
 
@@ -37,6 +32,9 @@ int main(int argc, char *argv[])
 	}
 
 	log_info(logger, "Hola, soy la CPU %d", getpid());
+	log_info(logger, "Puedo encontrar la UMV en %s:%s", config_get_string_value(config, "IP_UMV"), config_get_string_value(config, "PUERTO_UMV"));
+	log_info(logger, "Puedo encontrar al Kernel en %s:%s", config_get_string_value(config, "IP_KERNEL"), config_get_string_value(config, "PUERTO_KERNEL"));
+
 /*
 	char* const asd = "end";
 
@@ -64,7 +62,14 @@ liberarRecursos:
 
 int crearLogger(t_log **logger)
 {
-	char *nombreArchivoLog = "cpu_log";
+	char nombreArchivoLog[15];
+	char *nombre = "cpu_log_";
+	char str_pid[7];
+	pid_t pid = getpid();
+
+	sprintf(str_pid, "%d", pid);
+	strcpy(nombreArchivoLog, nombre);
+	strcpy(nombreArchivoLog + strlen(nombre), str_pid);
 
 	if ((*logger = log_create(nombreArchivoLog,"CPU",true,LOG_LEVEL_DEBUG)) == NULL) {
 		printf("No se pudo inicializar un logger.\n");
