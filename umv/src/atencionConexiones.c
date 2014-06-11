@@ -102,7 +102,7 @@ void handler_enviar_bytes(uint32_t *respuesta, char *orden, t_param_memoria *par
 	char *base = strtok_r(NULL, ",", savePtr1);
 	char *offset = strtok_r(NULL, ",", savePtr1);
 	char *tamanio = strtok_r(NULL, ",", savePtr1);
-	char *buffer = strtok_r(NULL, ",", savePtr1);
+	void *buffer = strtok_r(NULL, ",", savePtr1);
 
 	*respuesta = enviar_bytes(parametros_memoria->listaSegmentos, atoi(base), atoi(offset), atoi(tamanio), buffer);
 

@@ -227,7 +227,7 @@ void inicializarConfigConsola(t_consola_init **c_init, uint32_t sizeMem, void *m
 	return;
 }
 
-uint32_t enviar_bytes(t_list *listaSegmentos, uint32_t base, uint32_t offset, uint32_t tamanio, char *buffer)
+uint32_t enviar_bytes(t_list *listaSegmentos, uint32_t base, uint32_t offset, uint32_t tamanio, void *buffer)
 {
 	int cod_retorno = tamanio;
 	int escritura_valida = 0;

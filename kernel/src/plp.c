@@ -304,8 +304,6 @@ uint32_t crear_segmento_codigo(int socket_umv, t_pcb *pcb, t_paquete_programa *p
 		return resultado;
 	}
 
-	//enviar_bytes(base,offset,tamanio,buffer)
-
 	if(solicitar_enviar_bytes(socket_umv, pcb->seg_cod, 0, strlen(paquete->mensaje), paquete->mensaje, logger) == 0){
 		log_error(logger, "[PLP] La UMV no permitió escribir el código en el segmento de código del programa.");
 		return resultado;
@@ -402,7 +400,7 @@ uint32_t solicitar_crear_segmento(int socket_umv, uint32_t id_programa, uint32_t
 	return valorRetorno;
 }
 
-uint32_t solicitar_enviar_bytes(int socket_umv, uint32_t base, uint32_t offset, int tamanio, char *buffer, t_log *logger)
+uint32_t solicitar_enviar_bytes(int socket_umv, uint32_t base, uint32_t offset, int tamanio, void *buffer, t_log *logger)
 {
 	uint32_t bEnv = 0;
 	char *orden = codificar_enviar_bytes(base,offset,tamanio,buffer);
@@ -438,7 +436,7 @@ uint32_t solicitar_enviar_bytes(int socket_umv, uint32_t base, uint32_t offset, 
 	return valorRetorno;
 }
 
-char *codificar_enviar_bytes(uint32_t base, uint32_t offset, int tamanio, char *buffer)
+char *codificar_enviar_bytes(uint32_t base, uint32_t offset, int tamanio, void *buffer)
 {
 	int offset_codificacion = 0;
 
@@ -454,7 +452,7 @@ char *codificar_enviar_bytes(uint32_t base, uint32_t offset, int tamanio, char *
 	int offset_len = strlen(str_offset);
 	int tamanio_len = strlen(str_tamanio);
 	int comando_len = strlen(comando);
-	int buffer_len = strlen(buffer);
+	int buffer_len = tamanio;
 
 	char *orden_completa = calloc(comando_len + 1 + 1 + base_len + 1 + offset_len + 1 + tamanio_len + 1 + buffer_len, 1);
 	memcpy(orden_completa + offset_codificacion, comando, comando_len);
