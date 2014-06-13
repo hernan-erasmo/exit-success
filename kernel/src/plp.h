@@ -38,7 +38,7 @@ uint32_t solicitar_crear_segmento(int socket_umv, uint32_t id_programa, uint32_t
 uint32_t solicitar_enviar_bytes(int socket_umv, uint32_t base, uint32_t offset, int tamanio, void *buffer, t_log *logger);
 char *codificar_cambiar_proceso_activo(uint32_t contador_id_programa);
 char *codificar_crear_segmento(uint32_t id_programa, uint32_t tamanio);
-char *codificar_enviar_bytes(uint32_t base, uint32_t offset, int tamanio, void *buffer);
+char *codificar_enviar_bytes(uint32_t base, uint32_t offset, int tamanio, void *buffer, uint32_t *tamanio_de_la_orden_completa);
 
 uint32_t crear_segmento_codigo(int socket_umv, t_pcb *pcb, t_paquete_programa *paquete, uint32_t contador_id_programa, t_log *logger);
 uint32_t crear_segmento_stack(int socket_umv, t_pcb *pcb, uint32_t tamanio_stack, uint32_t contador_id_programa, t_log *logger);

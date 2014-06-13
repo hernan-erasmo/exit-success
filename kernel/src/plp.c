@@ -425,13 +425,15 @@ uint32_t solicitar_crear_segmento(int socket_umv, uint32_t id_programa, uint32_t
 uint32_t solicitar_enviar_bytes(int socket_umv, uint32_t base, uint32_t offset, int tamanio, void *buffer, t_log *logger)
 {
 	uint32_t bEnv = 0;
-	char *orden = codificar_enviar_bytes(base,offset,tamanio,buffer);
+	uint32_t tamanio_de_la_orden_completa = 0;
+	char *orden = codificar_enviar_bytes(base,offset,tamanio,buffer,&tamanio_de_la_orden_completa);
 	uint32_t valorRetorno = 0;
 
 	t_paquete_programa paq_saliente;
 		paq_saliente.id = 'P';
 		paq_saliente.mensaje = orden;
-		paq_saliente.sizeMensaje = strlen(orden);
+		printf("############## ORDEN ############## : %s", orden);
+		paq_saliente.sizeMensaje = tamanio_de_la_orden_completa;
 	
 	char *paqueteSaliente = serializar_paquete(&paq_saliente, logger);
 
@@ -458,7 +460,7 @@ uint32_t solicitar_enviar_bytes(int socket_umv, uint32_t base, uint32_t offset, 
 	return valorRetorno;
 }
 
-char *codificar_enviar_bytes(uint32_t base, uint32_t offset, int tamanio, void *buffer)
+char *codificar_enviar_bytes(uint32_t base, uint32_t offset, int tamanio, void *buffer, uint32_t *tamanio_de_la_orden_completa)
 {
 	int offset_codificacion = 0;
 
@@ -496,6 +498,10 @@ char *codificar_enviar_bytes(uint32_t base, uint32_t offset, int tamanio, void *
 	offset_codificacion += tamanio_len;
 	memcpy(orden_completa + offset_codificacion, ",", 1);
 	offset_codificacion += 1;
+
+	//hasta acá tengo el control de lo que escribo en orden_completa, después ya no sé si hay comas, nulls, etc. 
+	//y sólo me guío por el tamaño del buffer.
+	*tamanio_de_la_orden_completa = strlen(orden_completa) + tamanio;
 
 	memcpy(orden_completa + offset_codificacion, buffer, buffer_len);
 	offset_codificacion += buffer_len;

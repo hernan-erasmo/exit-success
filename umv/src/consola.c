@@ -382,10 +382,6 @@ void imprimirArrayDeChars(void *offset, uint32_t cantidad)
 
 void comando_matar_umv(pid_t pid, t_consola_init *c_init)
 {
-//	list_destroy_and_destroy_elements(c_init->listaSegmentos, eliminarSegmento);
-//	free(c_init->mem_ppal);
-//	free(c_init->algoritmo_comp);
-
 	struct addrinfo hints;
 	struct addrinfo *serverInfo;
 	
@@ -404,6 +400,4 @@ void comando_matar_umv(pid_t pid, t_consola_init *c_init)
 	freeaddrinfo(serverInfo);
 	*(c_init->noTerminar) = 0;
 	close(sock);
-
-//	kill(pid, SIGINT);
 }

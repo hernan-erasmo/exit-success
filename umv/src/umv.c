@@ -299,7 +299,13 @@ uint32_t enviar_bytes(t_list *listaSegmentos, uint32_t base, uint32_t offset, ui
 	
 	if(escritura_valida = chequear_limites_escritura(seg, offset, tamanio)){
 		void *dest = seg->pos_mem_ppal + offset;
-		memcpy(dest, buffer, tamanio);
+		if(buffer == NULL)
+			//si buffer llega a ser null, porque strtok es una mierda que retorna null con dos token seguidos,
+			//entonces este memset capaz nos salva las papas.
+			//Confirmadísimo. Esta línea salva vidas.
+			memset(dest, '\0', tamanio);
+		else
+			memcpy(dest, buffer, tamanio);	//este debería ser el curso normal de ejecución
 	} else {
 		cod_retorno = -2;	//Segmentation fault. Se quiso escribir por fuera de los límites de la memoria del segmento
 		return;
