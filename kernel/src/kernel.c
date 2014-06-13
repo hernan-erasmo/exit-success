@@ -1,15 +1,7 @@
 #include <errno.h>
 
-#include <commons/log.h>
-#include <commons/config.h>
-
+#include "kernel.h"
 #include "plp.h"
-
-#define PACKAGESIZE 1024
-
-int checkArgs(int args);
-int crearLogger(t_log **logger);
-int cargarConfig(t_config **config, char *path);
 
 int main(int argc, char *argv[])
 {
@@ -37,12 +29,15 @@ int main(int argc, char *argv[])
 		return EXIT_FAILURE;
 	}
 
-	d_plp = malloc(sizeof(t_datos_plp));
-	d_plp->puerto_escucha = config_get_string_value(config, "PUERTO_PROG");
-	d_plp->ip_umv = config_get_string_value(config, "IP_UMV");
-	d_plp->puerto_umv = config_get_int_value(config, "PUERTO_UMV");
-	d_plp->tamanio_stack = config_get_int_value(config, "TAMANIO_STACK");
-	d_plp->logger = logger;
+	//Inicializo las colas
+	/*
+	t_list *cola_new = list_create();
+	t_list *cola_ready = list_create();
+	t_list *cola_exec = list_create();
+	t_list *cola_block = list_create();
+	t_list *cola_exit = list_create();
+*/
+	d_plp = crearConfiguracionPlp(config, logger);
 
 	log_info(logger, "[PLP] Inicializando el hilo PLP");
 	if(pthread_create(&threadPlp, NULL, plp, (void *) d_plp)) {
@@ -98,4 +93,16 @@ int checkArgs(int args)
 	}
 	
 	return 0;	
+}
+
+t_datos_plp *crearConfiguracionPlp(t_config *config, t_log *logger)
+{
+	t_datos_plp *d_plp = malloc(sizeof(t_datos_plp));
+	d_plp->puerto_escucha = config_get_string_value(config, "PUERTO_PROG");
+	d_plp->ip_umv = config_get_string_value(config, "IP_UMV");
+	d_plp->puerto_umv = config_get_int_value(config, "PUERTO_UMV");
+	d_plp->tamanio_stack = config_get_int_value(config, "TAMANIO_STACK");
+	d_plp->logger = logger;
+
+	return d_plp;
 }
