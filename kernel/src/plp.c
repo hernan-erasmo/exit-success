@@ -328,7 +328,7 @@ uint32_t crear_segmento_stack(int socket_umv, t_pcb *pcb, uint32_t tamanio_stack
 
 uint32_t crear_segmento_indice_codigo(int socket_umv, t_pcb *pcb, t_metadata_program *metadatos, uint32_t contador_id_programa, t_log *logger)
 {
-	int resultado = 0;
+	int i, resultado = 0;
 
 	uint32_t tamanio_indice_codigo = metadatos->instrucciones_size * 8;
 	if((pcb->seg_idx_cod = solicitar_crear_segmento(socket_umv, contador_id_programa, tamanio_indice_codigo, logger)) == 0){
@@ -336,7 +336,25 @@ uint32_t crear_segmento_indice_codigo(int socket_umv, t_pcb *pcb, t_metadata_pro
 		return resultado;
 	}
 
-	//escribir datos acá!
+	t_intructions *t = metadatos->instrucciones_serializado;
+
+	uint32_t st;
+	uint32_t off;
+	
+	for(i = 0; i < metadatos->instrucciones_size; i++){
+		st = t[i].start;
+		off = t[i].offset;
+
+		if(solicitar_enviar_bytes(socket_umv, pcb->seg_idx_cod, i*8, sizeof(uint32_t), &st, logger) == 0){
+			log_error(logger, "[PLP] La UMV no permitió escribir el índice de código en el segmento de índice de código del programa.");
+			return resultado;
+		}
+
+		if(solicitar_enviar_bytes(socket_umv, pcb->seg_idx_cod, (i*8 + 4), sizeof(uint32_t), &off, logger) == 0){
+			log_error(logger, "[PLP] La UMV no permitió escribir el índice de código en el segmento de índice de código del programa.");
+			return resultado;
+		}		
+	}
 
 	resultado = 1;
 	return resultado;
