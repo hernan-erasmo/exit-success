@@ -376,7 +376,11 @@ uint32_t crear_segmento_etiquetas(int socket_umv, t_pcb *pcb, t_metadata_program
 		return resultado;
 	}
 
-	//escribir datos aca
+	if(solicitar_enviar_bytes(socket_umv, pcb->seg_idx_etq, 0, metadatos->etiquetas_size, metadatos->etiquetas, logger) == 0)
+	{
+		log_error(logger, "[PLP] La UMV no permitió escribir el serializado de etiquetas para este programa. Se aborta su creación.");
+		return resultado;
+	}
 
 	resultado = 1;
 	return resultado;
