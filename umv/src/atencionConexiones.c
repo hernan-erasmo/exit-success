@@ -84,13 +84,24 @@ void handler_crear_segmento(uint32_t *respuesta, char *orden, t_param_memoria *p
 	char *algoritmo_compactacion = parametros_memoria->algoritmo_comp;
 
 	t_list *espacios_libres = buscarEspaciosLibres(lista_segmentos, mem_ppal, tamanio_mem_ppal);
-	*respuesta = crearSegmento(
-					atoi(id_prog),
-					atoi(tamanio),
-					espacios_libres,
-					lista_segmentos,
-					algoritmo_compactacion
-				);
+	*respuesta = crearSegmento(atoi(id_prog), atoi(tamanio), espacios_libres, lista_segmentos, algoritmo_compactacion);
+
+	if(*respuesta == 0){
+		log_info(logger, "[UMV] No hay espacio para este segmento. Voy a intentar compactar.");
+		compactar(lista_segmentos, mem_ppal, tamanio_mem_ppal);
+
+		if (!list_is_empty(espacios_libres)) {
+			list_clean_and_destroy_elements(espacios_libres, eliminarEspacioLibre);
+		}
+
+		list_destroy(espacios_libres);
+
+		espacios_libres = buscarEspaciosLibres(lista_segmentos, mem_ppal, tamanio_mem_ppal);
+		*respuesta = crearSegmento(atoi(id_prog), atoi(tamanio), espacios_libres, lista_segmentos, algoritmo_compactacion);
+
+		if(*respuesta == 0)
+			log_info(logger, "[UMV] No hay lugar para crear un segmento, incluso después de haber compactado la memoria.");
+	}
 
 	list_destroy_and_destroy_elements(espacios_libres, eliminarEspacioLibre);
 
