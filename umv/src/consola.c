@@ -353,7 +353,7 @@ t_list *buscarSegmentosConId(t_list *listaSegmentos, uint32_t id)
 void imprimirArrayDeBytes(void *offset, uint32_t cantidad)
 {
 	int i;
-	char *c;
+	unsigned char *c;
 
 	for(i = 0; i < cantidad; i++){
 		c = (char *) (offset + i);
