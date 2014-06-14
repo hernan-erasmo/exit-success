@@ -8,6 +8,8 @@
 
 #include "cpu.h"
 
+static t_pcb pcb;
+
 void finalizar(void);
 
 int main(int argc, char *argv[])
@@ -100,9 +102,51 @@ int checkArgs(int args)
 	return 0;	
 }
 
-void finalizar(void)
+char *codificar_enviar_bytes(uint32_t base, uint32_t offset, int tamanio, void *buffer, uint32_t *tamanio_de_la_orden_completa)
 {
-	printf("Estoy adentro de la función finalizar. Adiós para siempre.\n");
+	int offset_codificacion = 0;
 
-	return;
+	char str_base[10];
+	sprintf(str_base, "%d", base);
+	char str_offset[10];
+	sprintf(str_offset, "%d", offset);
+	char str_tamanio[10];
+	sprintf(str_tamanio, "%d", tamanio);
+	char *comando = "enviar_bytes";
+
+	int base_len = strlen(str_base);
+	int offset_len = strlen(str_offset);
+	int tamanio_len = strlen(str_tamanio);
+	int comando_len = strlen(comando);
+	int buffer_len = tamanio;
+
+	char *orden_completa = calloc(comando_len + 1 + 1 + base_len + 1 + offset_len + 1 + tamanio_len + 1 + buffer_len, 1);
+	memcpy(orden_completa + offset_codificacion, comando, comando_len);
+	offset_codificacion += comando_len;
+	memcpy(orden_completa + offset_codificacion, ",", 1);
+	offset_codificacion += 1;
+
+	memcpy(orden_completa + offset_codificacion, str_base, base_len);
+	offset_codificacion += base_len;
+	memcpy(orden_completa + offset_codificacion, ",", 1);
+	offset_codificacion += 1;
+
+	memcpy(orden_completa + offset_codificacion, str_offset, offset_len);
+	offset_codificacion += offset_len;
+	memcpy(orden_completa + offset_codificacion, ",", 1);
+	offset_codificacion += 1;
+
+	memcpy(orden_completa + offset_codificacion, str_tamanio, tamanio_len);
+	offset_codificacion += tamanio_len;
+	memcpy(orden_completa + offset_codificacion, ",", 1);
+	offset_codificacion += 1;
+
+	//hasta acá tengo el control de lo que escribo en orden_completa, después ya no sé si hay comas, nulls, etc. 
+	//y sólo me guío por el tamaño del buffer.
+	*tamanio_de_la_orden_completa = strlen(orden_completa) + tamanio;
+
+	memcpy(orden_completa + offset_codificacion, buffer, buffer_len);
+	offset_codificacion += buffer_len;
+	
+	return orden_completa;
 }

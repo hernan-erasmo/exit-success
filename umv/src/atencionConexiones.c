@@ -13,13 +13,14 @@ void *atencionConexiones(void *config)
 	int bytesRecibidos = 0;
 	int atendiendoSolicitud = 1;
 
+	uint32_t resp;
 	while(atendiendoSolicitud){
 		bytesRecibidos = recvAll(&paq, *sock);
+		resp = -1;
 
 		switch(paq.id){
 			case 'P':
 				log_info(logger, "[UMV] Estoy atendiendo una solicitud del PLP");
-				uint32_t resp = -1;
 				handler_plp(&resp, paq.mensaje, parametros_memoria, logger);
 				
 				enviar_respuesta_plp(sock, resp, logger);
@@ -27,6 +28,10 @@ void *atencionConexiones(void *config)
 				break;
 			case 'C':
 				log_info(logger, "[UMV] Estoy atendiendo una solicitud de una cpu.");
+				handler_cpu(&resp, paq.mensaje, parametros_memoria, logger);
+
+				enviar_respuesta_plp(sock, resp, logger);
+
 				break;
 			case 'H':
 				log_info(logger, "[UMV] Recibí un handshake del Kernel");
@@ -50,7 +55,8 @@ void *atencionConexiones(void *config)
 	pthread_exit(NULL);
 }
 
-void handler_plp(uint32_t *respuesta, char *orden, t_param_memoria *parametros_memoria, t_log *logger){
+void handler_plp(uint32_t *respuesta, char *orden, t_param_memoria *parametros_memoria, t_log *logger)
+{
 	char *savePtr1 = NULL;
 	char *comando = strtok_r(orden, ",", &savePtr1);
 
@@ -62,6 +68,17 @@ void handler_plp(uint32_t *respuesta, char *orden, t_param_memoria *parametros_m
 		handler_enviar_bytes(respuesta, orden, parametros_memoria, &savePtr1, logger);
 
 	return;
+}
+
+void handler_plp(uint32_t *respuesta, char *orden, t_param_memoria *parametros_memoria, t_log *logger)
+{
+	char *savePtr1 = NULL;
+	char *comando = strtok_r(orden, ",", &savePtr1);
+
+	if(strcmp(comando,"enviar_bytes") == 0)
+		handler_enviar_bytes(respuesta, orden, parametros_memoria, &savePtr1, logger);
+
+	return;	
 }
 
 void handler_cambiar_proceso_activo(uint32_t *respuesta, char *orden, t_param_memoria *parametros_memoria, char **savePtr1, t_log *logger)
