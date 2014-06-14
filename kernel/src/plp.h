@@ -7,6 +7,9 @@
 
 #include "../../utils/comunicacion.h"
 
+#ifndef PLP_H
+#define PLP_H
+
 typedef struct datos_plp {
 	char *puerto_escucha;
 	char *ip_umv;
@@ -50,3 +53,5 @@ int atender_solicitud_programa(int socket_umv, t_paquete_programa *paquete, t_pc
 void calcularPeso(t_pcb *pcb, t_metadata_program *metadatos);
 bool ordenar_por_peso(void *a, void *b);
 void mostrar_datos_cola(void *item);
+
+#endif /* PLP_H */
