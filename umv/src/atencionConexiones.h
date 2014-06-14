@@ -28,6 +28,7 @@ typedef struct config_conexion {
 void *atencionConexiones(void *config);
 
 void handler_plp(uint32_t *respuesta, char *orden, t_param_memoria *parametros_memoria, t_log *logger);
+void handler_cpu(uint32_t *respuesta, char *orden, t_param_memoria *parametros_memoria, t_log *logger);
 void handler_cambiar_proceso_activo(uint32_t *respuesta, char *orden, t_param_memoria *parametros_memoria, char **savePtr1, t_log *logger);
 void handler_crear_segmento(uint32_t *respuesta, char *orden, t_param_memoria *parametros_memoria, char **savePtr1, t_log *logger);
 void handler_enviar_bytes(uint32_t *respuesta, char *orden, t_param_memoria *parametros_memoria, char **savePtr1, t_log *logger);

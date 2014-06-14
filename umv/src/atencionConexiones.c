@@ -70,7 +70,7 @@ void handler_plp(uint32_t *respuesta, char *orden, t_param_memoria *parametros_m
 	return;
 }
 
-void handler_plp(uint32_t *respuesta, char *orden, t_param_memoria *parametros_memoria, t_log *logger)
+void handler_cpu(uint32_t *respuesta, char *orden, t_param_memoria *parametros_memoria, t_log *logger)
 {
 	char *savePtr1 = NULL;
 	char *comando = strtok_r(orden, ",", &savePtr1);
