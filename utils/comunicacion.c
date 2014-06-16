@@ -159,7 +159,7 @@ int crear_conexion_entrante(int *listenningSocket, char *puerto_escucha, struct 
 		log_error(logger, "[%s] Error al crear socket. Motivo: %s", id_proceso, strerror(errno));
 		return 1;
 	}
-	log_info(logger, "[%s] Se creó el socket a la escucha del puerto_escucha: %s (Programas)", id_proceso, puerto_escucha);
+	log_info(logger, "[%s] Se creó el socket a la escucha del puerto: %s", id_proceso, puerto_escucha);
 
 	if(setsockopt(*listenningSocket, SOL_SOCKET, SO_REUSEADDR, &reutilizarSocket, sizeof(int)) == -1){
 		log_error(logger, "[%s] Error al hacer que el socket se libere al finalizar el proceos. Motivo: %s", id_proceso, strerror(errno));
