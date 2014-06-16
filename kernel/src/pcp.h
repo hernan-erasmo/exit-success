@@ -15,6 +15,7 @@ typedef struct datos_pcp{
 	t_list *cola_block;
 	t_list *cola_exit;
 	t_log *logger;
+	char *puerto_escucha_cpu;
 } t_datos_pcp;
 
 void *pcp(void *datos_pcp);
