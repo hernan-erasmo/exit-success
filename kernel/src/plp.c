@@ -30,6 +30,8 @@ void *plp(void *datos_plp)
 	int puerto_umv = ((t_datos_plp *) datos_plp)->puerto_umv;
 	uint32_t tamanio_stack = ((t_datos_plp *) datos_plp)->tamanio_stack;
 	t_log *logger = ((t_datos_plp *) datos_plp)->logger;
+	t_list *cola_new = ((t_datos_plp *) datos_plp)->cola_new;
+	t_list *cola_exit = ((t_datos_plp *) datos_plp)->cola_exit;
 
 	//Variables de sockets
 	struct addrinfo *serverInfo = NULL;
@@ -43,9 +45,6 @@ void *plp(void *datos_plp)
 	
 	pthread_mutex_t init_plp = PTHREAD_MUTEX_INITIALIZER;
 	pthread_mutex_t fin_plp = PTHREAD_MUTEX_INITIALIZER;
-
-	t_list *cola_new = list_create();
-	t_list *cola_exit = list_create();
 
 	//Fin variables
 
@@ -134,6 +133,7 @@ void *plp(void *datos_plp)
 
 									list_sort(cola_new, ordenar_por_peso);
 
+									printf("Cola NEW: \n");
 									list_iterate(cola_new, mostrar_datos_cola);
 								}
 								break;
@@ -162,11 +162,6 @@ void *plp(void *datos_plp)
 
 	liberarRecursos:
 		pthread_mutex_lock(&fin_plp);
-			if(list_is_empty(cola_new))
-				list_destroy(cola_new);
-
-			if(list_is_empty(cola_exit))
-				list_destroy(cola_exit);
 
 			if(serverInfo != NULL)
 				freeaddrinfo(serverInfo);

@@ -29,15 +29,17 @@ int main(int argc, char *argv[])
 		return EXIT_FAILURE;
 	}
 
+	t_list *cola_new = list_create();
+	t_list *cola_exit = list_create();
+
 	//Inicializo las colas
 	/*
-	t_list *cola_new = list_create();
 	t_list *cola_ready = list_create();
 	t_list *cola_exec = list_create();
 	t_list *cola_block = list_create();
-	t_list *cola_exit = list_create();
-*/
-	d_plp = crearConfiguracionPlp(config, logger);
+	*/
+	
+	d_plp = crearConfiguracionPlp(config, logger, cola_new, cola_exit);
 
 	log_info(logger, "[PLP] Inicializando el hilo PLP");
 	if(pthread_create(&threadPlp, NULL, plp, (void *) d_plp)) {
@@ -58,6 +60,12 @@ liberarRecursos:
 
 	if(config)
 		config_destroy(config);
+
+	if(list_is_empty(cola_new))
+		list_destroy(cola_new);
+
+	if(list_is_empty(cola_exit))
+		list_destroy(cola_exit);
 
 	free(d_plp);
 }
@@ -95,7 +103,7 @@ int checkArgs(int args)
 	return 0;	
 }
 
-t_datos_plp *crearConfiguracionPlp(t_config *config, t_log *logger)
+t_datos_plp *crearConfiguracionPlp(t_config *config, t_log *logger, t_list *cola_new, t_list *cola_exit)
 {
 	t_datos_plp *d_plp = malloc(sizeof(t_datos_plp));
 	d_plp->puerto_escucha = config_get_string_value(config, "PUERTO_PROG");
@@ -103,6 +111,10 @@ t_datos_plp *crearConfiguracionPlp(t_config *config, t_log *logger)
 	d_plp->puerto_umv = config_get_int_value(config, "PUERTO_UMV");
 	d_plp->tamanio_stack = config_get_int_value(config, "TAMANIO_STACK");
 	d_plp->logger = logger;
+
+	d_plp->cola_new = cola_new;
+	d_plp->cola_exit = cola_exit;
+
 
 	return d_plp;
 }

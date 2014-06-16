@@ -16,6 +16,8 @@ typedef struct datos_plp {
 	int puerto_umv;
 	uint32_t tamanio_stack;
 	t_log *logger;
+	t_list *cola_new;
+	t_list *cola_exit;
 } t_datos_plp;
 
 typedef struct pcb {

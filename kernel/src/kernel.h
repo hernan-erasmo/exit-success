@@ -9,6 +9,6 @@
 int checkArgs(int args);
 int crearLogger(t_log **logger);
 int cargarConfig(t_config **config, char *path);
-t_datos_plp *crearConfiguracionPlp(t_config *config, t_log *logger);
+t_datos_plp *crearConfiguracionPlp(t_config *config, t_log *logger, t_list *cola_new, t_list *cola_exit);
 
 #endif /* KERNEL_H */
