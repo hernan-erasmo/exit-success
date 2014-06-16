@@ -41,13 +41,6 @@ int main(int argc, char *argv[])
 	d_pcp = crearConfiguracionPcp(config, logger, cola_ready, cola_exec, cola_block, cola_exit);
 	d_plp = crearConfiguracionPlp(config, logger, cola_new, cola_exit);
 
-	log_info(logger, "[PCP] Inicializando el hilo PCP");
-	if(pthread_create(&threadPcp, NULL, pcp, (void *) d_pcp)) {
-		log_error(logger, "Error al crear el thread del PCP. Motivo: %s", strerror(errno));
-		goto liberarRecursos;
-		return EXIT_FAILURE;
-	}
-
 	log_info(logger, "[PLP] Inicializando el hilo PLP");
 	if(pthread_create(&threadPlp, NULL, plp, (void *) d_plp)) {
 		log_error(logger, "Error al crear el thread del PLP. Motivo: %s", strerror(errno));
@@ -55,8 +48,14 @@ int main(int argc, char *argv[])
 		return EXIT_FAILURE;
 	}
 
-	pthread_join(threadPcp, NULL);
-	log_info(logger, "El thread PCP finalizó y retornó status: (falta implementar!)");
+	log_info(logger, "[PCP] Inicializando el hilo PCP");
+	if(pthread_create(&threadPcp, NULL, pcp, (void *) d_pcp)) {
+		log_error(logger, "Error al crear el thread del PCP. Motivo: %s", strerror(errno));
+		goto liberarRecursos;
+		return EXIT_FAILURE;
+	}
+
+	pthread_detach(threadPcp);
 
 	pthread_join(threadPlp, NULL);
 	log_info(logger, "El thread PLP finalizó y retornó status: (falta implementar!)");
@@ -142,6 +141,7 @@ t_datos_plp *crearConfiguracionPlp(t_config *config, t_log *logger, t_list *cola
 t_datos_pcp *crearConfiguracionPcp(t_config *config, t_log *logger, t_list *cola_ready, t_list *cola_exec, t_list *cola_block, t_list *cola_exit)
 {
 	t_datos_pcp *d_pcp = malloc(sizeof(t_datos_pcp));
+	d_pcp->puerto_escucha_cpu = config_get_string_value(config, "PUERTO_CPU");
 	d_pcp->cola_ready = cola_ready;
 	d_pcp->cola_exit = cola_exit;
 	d_pcp->cola_exec = cola_exec;
