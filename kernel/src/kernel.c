@@ -11,7 +11,10 @@ int main(int argc, char *argv[])
 
 	//Variables de threads
 	pthread_t threadPlp;
+	pthread_t threadPcp;
 	t_datos_plp *d_plp;
+	t_datos_pcp *d_pcp;
+
 	void *retorno = NULL;
 
 	//Variables para el logger
@@ -30,16 +33,20 @@ int main(int argc, char *argv[])
 	}
 
 	t_list *cola_new = list_create();
-	t_list *cola_exit = list_create();
-
-	//Inicializo las colas
-	/*
 	t_list *cola_ready = list_create();
 	t_list *cola_exec = list_create();
 	t_list *cola_block = list_create();
-	*/
+	t_list *cola_exit = list_create();
 	
+	d_pcp = crearConfiguracionPcp(config, logger, cola_ready, cola_exec, cola_block, cola_exit);
 	d_plp = crearConfiguracionPlp(config, logger, cola_new, cola_exit);
+
+	log_info(logger, "[PCP] Inicializando el hilo PCP");
+	if(pthread_create(&threadPcp, NULL, pcp, (void *) d_pcp)) {
+		log_error(logger, "Error al crear el thread del PCP. Motivo: %s", strerror(errno));
+		goto liberarRecursos;
+		return EXIT_FAILURE;
+	}
 
 	log_info(logger, "[PLP] Inicializando el hilo PLP");
 	if(pthread_create(&threadPlp, NULL, plp, (void *) d_plp)) {
@@ -47,6 +54,9 @@ int main(int argc, char *argv[])
 		goto liberarRecursos;
 		return EXIT_FAILURE;
 	}
+
+	pthread_join(threadPcp, NULL);
+	log_info(logger, "El thread PCP finalizó y retornó status: (falta implementar!)");
 
 	pthread_join(threadPlp, NULL);
 	log_info(logger, "El thread PLP finalizó y retornó status: (falta implementar!)");
@@ -64,9 +74,19 @@ liberarRecursos:
 	if(list_is_empty(cola_new))
 		list_destroy(cola_new);
 
+	if(list_is_empty(cola_ready))
+		list_destroy(cola_ready);
+
+	if(list_is_empty(cola_exec))
+		list_destroy(cola_exec);
+
+	if(list_is_empty(cola_block))
+		list_destroy(cola_block);
+
 	if(list_is_empty(cola_exit))
 		list_destroy(cola_exit);
 
+	free(d_pcp);
 	free(d_plp);
 }
 
@@ -117,4 +137,16 @@ t_datos_plp *crearConfiguracionPlp(t_config *config, t_log *logger, t_list *cola
 
 
 	return d_plp;
+}
+
+t_datos_pcp *crearConfiguracionPcp(t_config *config, t_log *logger, t_list *cola_ready, t_list *cola_exec, t_list *cola_block, t_list *cola_exit)
+{
+	t_datos_pcp *d_pcp = malloc(sizeof(t_datos_pcp));
+	d_pcp->cola_ready = cola_ready;
+	d_pcp->cola_exit = cola_exit;
+	d_pcp->cola_exec = cola_exec;
+	d_pcp->cola_block = cola_block;
+	d_pcp->logger = logger;
+
+	return d_pcp;
 }
