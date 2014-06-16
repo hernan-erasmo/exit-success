@@ -24,6 +24,7 @@
 
 # Archivos log
 *_log
+cpu_log*
 
 # Binarios
 */bin

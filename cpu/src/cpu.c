@@ -8,8 +8,6 @@
 
 #include "cpu.h"
 
-static t_pcb pcb;
-
 void finalizar(void);
 
 int main(int argc, char *argv[])
@@ -36,19 +34,6 @@ int main(int argc, char *argv[])
 	log_info(logger, "Hola, soy la CPU %d", getpid());
 	log_info(logger, "Puedo encontrar la UMV en %s:%s", config_get_string_value(config, "IP_UMV"), config_get_string_value(config, "PUERTO_UMV"));
 	log_info(logger, "Puedo encontrar al Kernel en %s:%s", config_get_string_value(config, "IP_KERNEL"), config_get_string_value(config, "PUERTO_KERNEL"));
-
-/*
-	char* const asd = "end";
-
-	AnSISOP_funciones *funciones = malloc(sizeof(AnSISOP_funciones));
-	funciones->AnSISOP_finalizar = finalizar;
-
-	analizadorLinea(asd, funciones, NULL);
-
-	free(funciones);
-
-	return 0;
-*/
 
 	goto liberarRecursos;
 	return EXIT_SUCCESS;
