@@ -30,8 +30,6 @@ void *plp(void *datos_plp)
 	int puerto_umv = ((t_datos_plp *) datos_plp)->puerto_umv;
 	uint32_t tamanio_stack = ((t_datos_plp *) datos_plp)->tamanio_stack;
 	t_log *logger = ((t_datos_plp *) datos_plp)->logger;
-	t_list *cola_new = ((t_datos_plp *) datos_plp)->cola_new;
-	t_list *cola_exit = ((t_datos_plp *) datos_plp)->cola_exit;
 
 	//Variables de sockets
 	struct addrinfo *serverInfo = NULL;

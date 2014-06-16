@@ -32,14 +32,14 @@ int main(int argc, char *argv[])
 		return EXIT_FAILURE;
 	}
 
-	t_list *cola_new = list_create();
-	t_list *cola_ready = list_create();
-	t_list *cola_exec = list_create();
-	t_list *cola_block = list_create();
-	t_list *cola_exit = list_create();
+	cola_new = list_create();
+	cola_ready = list_create();
+	cola_exec = list_create();
+	cola_block = list_create();
+	cola_exit = list_create();
 	
-	d_pcp = crearConfiguracionPcp(config, logger, cola_ready, cola_exec, cola_block, cola_exit);
-	d_plp = crearConfiguracionPlp(config, logger, cola_new, cola_exit);
+	d_pcp = crearConfiguracionPcp(config, logger);
+	d_plp = crearConfiguracionPlp(config, logger);
 
 	log_info(logger, "[PLP] Inicializando el hilo PLP");
 	if(pthread_create(&threadPlp, NULL, plp, (void *) d_plp)) {
@@ -122,7 +122,7 @@ int checkArgs(int args)
 	return 0;	
 }
 
-t_datos_plp *crearConfiguracionPlp(t_config *config, t_log *logger, t_list *cola_new, t_list *cola_exit)
+t_datos_plp *crearConfiguracionPlp(t_config *config, t_log *logger)
 {
 	t_datos_plp *d_plp = malloc(sizeof(t_datos_plp));
 	d_plp->puerto_escucha = config_get_string_value(config, "PUERTO_PROG");
@@ -131,22 +131,15 @@ t_datos_plp *crearConfiguracionPlp(t_config *config, t_log *logger, t_list *cola
 	d_plp->tamanio_stack = config_get_int_value(config, "TAMANIO_STACK");
 	d_plp->logger = logger;
 
-	d_plp->cola_new = cola_new;
-	d_plp->cola_exit = cola_exit;
-
-
 	return d_plp;
 }
 
-t_datos_pcp *crearConfiguracionPcp(t_config *config, t_log *logger, t_list *cola_ready, t_list *cola_exec, t_list *cola_block, t_list *cola_exit)
+t_datos_pcp *crearConfiguracionPcp(t_config *config, t_log *logger)
 {
 	t_datos_pcp *d_pcp = malloc(sizeof(t_datos_pcp));
 	d_pcp->puerto_escucha_cpu = config_get_string_value(config, "PUERTO_CPU");
-	d_pcp->cola_ready = cola_ready;
-	d_pcp->cola_exit = cola_exit;
-	d_pcp->cola_exec = cola_exec;
-	d_pcp->cola_block = cola_block;
 	d_pcp->logger = logger;
+	d_pcp->multiprogramacion = config_get_int_value(config, "MULTIPROGRAMACION");
 
 	return d_pcp;
 }

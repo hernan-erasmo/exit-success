@@ -27,11 +27,8 @@ void *pcp(void *datos_pcp)
 
 	//Variables de inicializacion
 	t_log *logger = ((t_datos_pcp *) datos_pcp)->logger;
-	t_list *cola_new = ((t_datos_pcp *) datos_pcp)->cola_ready;
-	t_list *cola_block = ((t_datos_pcp *) datos_pcp)->cola_block;
-	t_list *cola_exec = ((t_datos_pcp *) datos_pcp)->cola_exec;
-	t_list *cola_exit = ((t_datos_pcp *) datos_pcp)->cola_exit;
 	char *puerto_escucha_cpu = ((t_datos_pcp *) datos_pcp)->puerto_escucha_cpu;
+	uint32_t multiprogramacion = ((t_datos_pcp *) datos_pcp)->multiprogramacion;
 
 	pthread_mutex_t init_pcp = PTHREAD_MUTEX_INITIALIZER;
 	pthread_mutex_t fin_pcp = PTHREAD_MUTEX_INITIALIZER;
@@ -44,6 +41,8 @@ void *pcp(void *datos_pcp)
 		}		
 
 	log_info(logger, "[PCP] Estoy escuchando conexiones de CPUs en el puerto %s", puerto_escucha_cpu);
+	log_info(logger, "[PCP] El nivel de multiprogramación está configurado en: %d", multiprogramacion);
+
 	pthread_mutex_unlock(&init_pcp);
 
 	FD_SET(listenningSocket, &master);
