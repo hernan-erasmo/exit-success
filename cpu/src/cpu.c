@@ -15,12 +15,22 @@ int main(int argc, char *argv[])
 	int errorArgumentos = 0;
 	int errorLogger = 0;
 	int errorConfig = 0;
+	int errorConexion = 0;
 
 	//Variables para el logger
 	t_log *logger = NULL;
 
 	//Variables para la carga de la configuración
 	t_config *config = NULL;
+
+	//Variables para las conexiones
+	int socket_pcp = -1;
+	int puerto_pcp = -1;
+	char *ip_pcp = NULL;
+	int socket_umv = -1;
+	int puerto_umv = -1;
+	char *ip_umv = NULL;
+	struct sockaddr_in socketInfo;
 
 	errorArgumentos = checkArgs(argc);
 	errorLogger = crearLogger(&logger);
@@ -31,9 +41,31 @@ int main(int argc, char *argv[])
 		return EXIT_FAILURE;
 	}
 
+	ip_pcp = config_get_string_value(config,"IP_PCP");
+	puerto_pcp = config_get_int_value(config,"PUERTO_PCP");
+	ip_umv = config_get_string_value(config,"IP_UMV");
+	puerto_umv = config_get_int_value(config, "PUERTO_UMV");
+
 	log_info(logger, "Hola, soy la CPU %d", getpid());
-	log_info(logger, "Puedo encontrar la UMV en %s:%s", config_get_string_value(config, "IP_UMV"), config_get_string_value(config, "PUERTO_UMV"));
-	log_info(logger, "Puedo encontrar al Kernel en %s:%s", config_get_string_value(config, "IP_KERNEL"), config_get_string_value(config, "PUERTO_KERNEL"));
+
+	//Me conecto al hilo PCP del Kernel
+	errorConexion = crear_conexion_saliente(&socket_pcp, &socketInfo, ip_pcp, puerto_pcp, logger, "CPU");
+	if (errorConexion) {
+		log_error(logger, "[CPU] Error al conectar con el Kernel (Hilo PCP).");
+		goto liberarRecursos;
+		return EXIT_FAILURE;
+	}
+
+
+	/*
+	**	Acá habría que realizar la conexion con la UMV
+	*/
+
+	/*
+	**	Acá habría que poner el productor-consumidor con la cola de exec de esta cpu y que bloquée acá
+	**	(Adentro de un bucle infinito posiblemente, cuya condición de salida se modifiqué con 
+	**	 la famosa SIGUSR1 que debe atender este proceso):
+	*/
 
 	goto liberarRecursos;
 	return EXIT_SUCCESS;
@@ -44,6 +76,9 @@ liberarRecursos:
 
 	if(config)
 		config_destroy(config);
+
+	if(socket_pcp != -1)
+		close(socket_pcp);
 
 }
 
@@ -85,53 +120,4 @@ int checkArgs(int args)
 	}
 	
 	return 0;	
-}
-
-char *codificar_enviar_bytes(uint32_t base, uint32_t offset, int tamanio, void *buffer, uint32_t *tamanio_de_la_orden_completa)
-{
-	int offset_codificacion = 0;
-
-	char str_base[10];
-	sprintf(str_base, "%d", base);
-	char str_offset[10];
-	sprintf(str_offset, "%d", offset);
-	char str_tamanio[10];
-	sprintf(str_tamanio, "%d", tamanio);
-	char *comando = "enviar_bytes";
-
-	int base_len = strlen(str_base);
-	int offset_len = strlen(str_offset);
-	int tamanio_len = strlen(str_tamanio);
-	int comando_len = strlen(comando);
-	int buffer_len = tamanio;
-
-	char *orden_completa = calloc(comando_len + 1 + 1 + base_len + 1 + offset_len + 1 + tamanio_len + 1 + buffer_len, 1);
-	memcpy(orden_completa + offset_codificacion, comando, comando_len);
-	offset_codificacion += comando_len;
-	memcpy(orden_completa + offset_codificacion, ",", 1);
-	offset_codificacion += 1;
-
-	memcpy(orden_completa + offset_codificacion, str_base, base_len);
-	offset_codificacion += base_len;
-	memcpy(orden_completa + offset_codificacion, ",", 1);
-	offset_codificacion += 1;
-
-	memcpy(orden_completa + offset_codificacion, str_offset, offset_len);
-	offset_codificacion += offset_len;
-	memcpy(orden_completa + offset_codificacion, ",", 1);
-	offset_codificacion += 1;
-
-	memcpy(orden_completa + offset_codificacion, str_tamanio, tamanio_len);
-	offset_codificacion += tamanio_len;
-	memcpy(orden_completa + offset_codificacion, ",", 1);
-	offset_codificacion += 1;
-
-	//hasta acá tengo el control de lo que escribo en orden_completa, después ya no sé si hay comas, nulls, etc. 
-	//y sólo me guío por el tamaño del buffer.
-	*tamanio_de_la_orden_completa = strlen(orden_completa) + tamanio;
-
-	memcpy(orden_completa + offset_codificacion, buffer, buffer_len);
-	offset_codificacion += buffer_len;
-	
-	return orden_completa;
 }
