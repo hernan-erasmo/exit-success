@@ -13,24 +13,23 @@ void *atencionConexiones(void *config)
 	int bytesRecibidos = 0;
 	int atendiendoSolicitud = 1;
 
-	uint32_t resp;
+	
 	while(atendiendoSolicitud){
 		bytesRecibidos = recvAll(&paq, *sock);
-		resp = -1;
 
 		switch(paq.id){
 			case 'P':
+				;
+				uint32_t resp = -1;
 				log_info(logger, "[UMV] Estoy atendiendo una solicitud del PLP");
-				handler_plp(&resp, paq.mensaje, parametros_memoria, logger);
-				
-				enviar_respuesta_plp(sock, resp, logger);
+				handler_plp(*sock, &resp, paq.mensaje, parametros_memoria, logger);
 
 				break;
 			case 'C':
+				;
+				void *resp_buf = NULL;
 				log_info(logger, "[UMV] Estoy atendiendo una solicitud de una cpu.");
-				handler_cpu(&resp, paq.mensaje, parametros_memoria, logger);
-
-				enviar_respuesta_plp(sock, resp, logger);
+				handler_cpu(*sock, resp_buf, paq.mensaje, parametros_memoria, logger);
 
 				break;
 			case 'H':
@@ -55,28 +54,44 @@ void *atencionConexiones(void *config)
 	pthread_exit(NULL);
 }
 
-void handler_plp(uint32_t *respuesta, char *orden, t_param_memoria *parametros_memoria, t_log *logger)
+void handler_plp(int sock, uint32_t *respuesta, char *orden, t_param_memoria *parametros_memoria, t_log *logger)
 {
 	char *savePtr1 = NULL;
 	char *comando = strtok_r(orden, ",", &savePtr1);
 
-	if(strcmp(comando, "cambiar_proceso_activo") == 0)
+	if(strcmp(comando, "cambiar_proceso_activo") == 0){
 		handler_cambiar_proceso_activo(respuesta, orden, parametros_memoria, &savePtr1, logger);
-	if(strcmp(comando,"crear_segmento") == 0)
+		enviar_respuesta_numerica(&sock, *respuesta, logger);
+	}
+
+	if(strcmp(comando,"crear_segmento") == 0){
 		handler_crear_segmento(respuesta, orden, parametros_memoria, &savePtr1, logger);
-	if(strcmp(comando,"enviar_bytes") == 0)
+		enviar_respuesta_numerica(&sock, *respuesta, logger);
+	}
+	
+	if(strcmp(comando,"enviar_bytes") == 0){
 		handler_enviar_bytes(respuesta, orden, parametros_memoria, &savePtr1, logger);
+		enviar_respuesta_numerica(&sock, *respuesta, logger);
+	}
+	
+	if(strcmp(comando,"solicitar_bytes") == 0){
+		//enviar_respuesta_buffer(socket, tamanio, respuesta, logger);
+	}
 
 	return;
 }
 
-void handler_cpu(uint32_t *respuesta, char *orden, t_param_memoria *parametros_memoria, t_log *logger)
+void handler_cpu(int sock, void *respuesta, char *orden, t_param_memoria *parametros_memoria, t_log *logger)
 {
 	char *savePtr1 = NULL;
 	char *comando = strtok_r(orden, ",", &savePtr1);
 
-	if(strcmp(comando,"enviar_bytes") == 0)
-		handler_enviar_bytes(respuesta, orden, parametros_memoria, &savePtr1, logger);
+	uint32_t tamanio_buffer_respuesta = 0;
+
+	if(strcmp(comando,"solicitar_bytes") == 0)
+		handler_solicitar_bytes(respuesta, parametros_memoria, &tamanio_buffer_respuesta, &savePtr1, logger);
+	
+	enviar_respuesta_buffer(&sock, respuesta, &tamanio_buffer_respuesta, logger);
 
 	return;	
 }
@@ -137,7 +152,19 @@ void handler_enviar_bytes(uint32_t *respuesta, char *orden, t_param_memoria *par
 	return;
 }
 
-void enviar_respuesta_plp(int *socket, uint32_t respuesta, t_log *logger)
+void handler_solicitar_bytes(void *respuesta, t_param_memoria *parametros_memoria, uint32_t *tam, char **savePtr1, t_log *logger)
+{
+	char *base = strtok_r(NULL, ",", savePtr1);
+	char *offset = strtok_r(NULL, ",", savePtr1);
+	char *tamanio = strtok_r(NULL, ",", savePtr1);
+	*tam = atoi(tamanio);
+
+	respuesta = solicitar_bytes(parametros_memoria->listaSegmentos, atoi(base), atoi(offset), tam);
+
+	return;
+}
+
+void enviar_respuesta_numerica(int *socket, uint32_t respuesta, t_log *logger)
 {
 	t_paquete_programa respuestaAlComando;
 	char r[5];
@@ -150,11 +177,31 @@ void enviar_respuesta_plp(int *socket, uint32_t respuesta, t_log *logger)
 	int bEnv = respuestaAlComando.tamanio_total;
 	
 	if(sendAll(*socket, respuesta_serializada, &bEnv)){
-		log_error(logger, "[UMV] Error en el envío de la respuesta del comando al PLP. Motivo: %s", strerror(errno));
+		log_error(logger, "[UMV] Error en el envío de la respuesta al comando. Motivo: %s", strerror(errno));
 	}
-	log_info(logger, "[UMV] Ya mandé la respuesta al PLP");
+	log_info(logger, "[UMV] Ya envié la respuesta al comando.");
 
 	free(respuesta_serializada);
 
 	return;
+}
+
+void enviar_respuesta_buffer(int *socket, uint32_t *tam_buffer, void *respuesta, t_log *logger)
+{
+	t_paquete_programa respuestaAlComando;
+		respuestaAlComando.id = 'U';
+		respuestaAlComando.mensaje = (char *) respuesta;
+		respuestaAlComando.sizeMensaje = *tam_buffer;
+
+	char *respuesta_serializada = serializar_paquete(&respuestaAlComando, logger);
+	int bEnv = respuestaAlComando.tamanio_total;
+
+	if(sendAll(*socket, respuesta_serializada, &bEnv)){
+		log_error(logger, "[UMV] Error en el envío de la respuesta al comando. Motivo: %s", strerror(errno));		
+	}
+	log_info(logger, "[UMV] Ya envié la respuesta al comando.");
+
+	free(respuesta_serializada);
+
+	return;	
 }
