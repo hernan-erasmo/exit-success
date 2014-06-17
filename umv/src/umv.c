@@ -297,7 +297,7 @@ uint32_t enviar_bytes(t_list *listaSegmentos, uint32_t base, uint32_t offset, ui
 		return cod_retorno;
 	}
 	
-	if(escritura_valida = chequear_limites_escritura(seg, offset, tamanio)){
+	if(escritura_valida = chequear_limites_lectoescritura(seg, offset, tamanio)){
 		void *dest = seg->pos_mem_ppal + offset;
 		if(buffer == NULL)
 			//si buffer llega a ser null, porque strtok es una mierda que retorna null con dos token seguidos,
@@ -350,20 +350,20 @@ bool buscar_por_proceso_activo(void *seg)
 	return(segmento->prog_id == get_proceso_activo());
 }
 
-int chequear_limites_escritura(t_segmento *seg, uint32_t offset, uint32_t tamanioAEscribir)
+int chequear_limites_lectoescritura(t_segmento *seg, uint32_t offset, uint32_t tamanio)
 {
 	uint32_t comienzo_segmento = seg->inicio;
 	uint32_t fin_segmento = comienzo_segmento + seg->size - 1;
-	uint32_t pos_comienzo_escritura = comienzo_segmento + offset;
-	uint32_t pos_fin_escritura = pos_comienzo_escritura + tamanioAEscribir - 1;
+	uint32_t pos_comienzo_lectoescritura = comienzo_segmento + offset;
+	uint32_t pos_fin_lectoescritura = pos_comienzo_lectoescritura + tamanio - 1;
 
-	//Quiero escribir fuera del fin de segmento
-	if(pos_comienzo_escritura > fin_segmento){
+	//Quiero leer/escribir fuera del fin de segmento
+	if(pos_comienzo_lectoescritura > fin_segmento){
 		return 0;
 	}
 
-	//Quiero escribir un tamanio que va a terminar afuera del segmento
-	if(pos_fin_escritura > fin_segmento){
+	//Quiero leer/escribir un tamanio que va a terminar afuera del segmento
+	if(pos_fin_lectoescritura > fin_segmento){
 		return 0;
 	}
 
@@ -382,4 +382,27 @@ uint32_t cambiar_proceso_activo(uint32_t proceso_activo)
 uint32_t get_proceso_activo()
 {
 	return PROCESO_ACTIVO;
+}
+
+void *solicitar_bytes(t_list *listaSegmentos, uint32_t base, uint32_t offset, uint32_t *tamanio)
+{
+	char *retorno = NULL;
+	int lectura_valida = 0;
+
+	t_segmento *seg = buscar_segmento_solicitado(listaSegmentos, base);
+
+	if(seg == NULL){
+		//Segmentation fault. El proceso activo no tiene un segmento con esa base.
+		return retorno;
+	}
+	
+	if(lectura_valida = chequear_limites_lectoescritura(seg, offset, *tamanio)){
+		retorno = calloc(*tamanio, 1);
+		memcpy(retorno, seg->pos_mem_ppal, *tamanio);
+	} else {
+		//Segmentation fault. Se quiso leer/escribir por fuera de los límites de la memoria del segmento
+		return retorno;
+	}	
+
+	return (void *) retorno;
 }

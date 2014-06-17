@@ -24,9 +24,10 @@ void manejar_salida(int sig);
 
 uint32_t compactar(t_list *segmentos, void *mem_ppal, uint32_t size_mem_ppal);
 uint32_t enviar_bytes(t_list *listaSegmentos, uint32_t base, uint32_t offset, uint32_t tamanio, void *buffer);
+void *solicitar_bytes(t_list *listaSegmentos, uint32_t base, uint32_t offset, uint32_t *tamanio);
 t_segmento *buscar_segmento_solicitado(t_list *listaSegmentos, uint32_t base);
 bool buscar_por_proceso_activo(void *seg);
-int chequear_limites_escritura(t_segmento *seg, uint32_t offset, uint32_t tamanioAEscribir);
+int chequear_limites_lectoescritura(t_segmento *seg, uint32_t offset, uint32_t tamanio);
 uint32_t cambiar_proceso_activo(uint32_t proceso_activo);
 uint32_t get_proceso_activo();
 
