@@ -75,7 +75,10 @@ void handler_plp(int sock, uint32_t *respuesta, char *orden, t_param_memoria *pa
 	}
 	
 	if(strcmp(comando,"solicitar_bytes") == 0){
-		//enviar_respuesta_buffer(socket, tamanio, respuesta, logger);
+		uint32_t tamanio_buffer_respuesta = 0;
+		void *resp;
+		handler_solicitar_bytes(resp, parametros_memoria, &tamanio_buffer_respuesta, &savePtr1, logger);
+		enviar_respuesta_buffer(&sock, resp, &tamanio_buffer_respuesta, logger);
 	}
 
 	return;
