@@ -3,12 +3,8 @@
 #include <unistd.h>
 #include <sys/types.h>
 
-#include <parser/metadata_program.h>
-#include <parser/parser.h>
-
 #include "cpu.h"
-
-t_pcb pcb;
+#include "implementacion_primitivas.h"
 
 int main(int argc, char *argv[])
 {
@@ -35,7 +31,24 @@ int main(int argc, char *argv[])
 
 	//Variables para el funcionamiento del parser
 	AnSISOP_funciones *funciones_comunes = malloc(sizeof(AnSISOP_funciones));
+		funciones_comunes->AnSISOP_definirVariable = definirVariable;
+		funciones_comunes->AnSISOP_obtenerPosicionVariable = obtenerPosicionVariable;
+		funciones_comunes->AnSISOP_dereferenciar = dereferenciar;
+		funciones_comunes->AnSISOP_asignar = asignar;
+		funciones_comunes->AnSISOP_obtenerValorCompartida = obtenerValorCompartida;
+		funciones_comunes->AnSISOP_asignarValorCompartida = asignarValorCompartida;
+		funciones_comunes->AnSISOP_irAlLabel = irAlLabel;
+		funciones_comunes->AnSISOP_llamarSinRetorno = llamarSinRetorno;
+		funciones_comunes->AnSISOP_llamarConRetorno = llamarConRetorno;
+		funciones_comunes->AnSISOP_finalizar = finalizar;
+		funciones_comunes->AnSISOP_retornar = retornar;
+		funciones_comunes->AnSISOP_imprimir = imprimir;
+		funciones_comunes->AnSISOP_imprimirTexto = imprimirTexto;
+		funciones_comunes->AnSISOP_entradaSalida = entradaSalida;
+
 	AnSISOP_kernel *funciones_kernel = malloc(sizeof(AnSISOP_kernel));
+		funciones_kernel->AnSISOP_wait = wait;
+		funciones_kernel->AnSISOP_signal = signal;
 
 	errorArgumentos = checkArgs(argc);
 	errorLogger = crearLogger(&logger);
