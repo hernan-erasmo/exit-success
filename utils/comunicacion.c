@@ -73,6 +73,12 @@ int recvAll(t_paquete_programa *paquete, int sock)
 	return bytesRecibidos;
 }
 
+int recvPcb(t_pcb *pcb, int sock)
+{
+	//Implementame!
+	return 0;
+}
+
 void inicializar_paquete(t_paquete_programa *paq)
 {
 	paq->id = 'X';
