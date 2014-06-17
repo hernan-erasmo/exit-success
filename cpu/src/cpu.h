@@ -3,6 +3,8 @@
 #include <commons/log.h>
 #include <commons/config.h>
 
+#include <parser/parser.h>
+
 #include "../../utils/comunicacion.h"
 
 #ifndef CPU_H

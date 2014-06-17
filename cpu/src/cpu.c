@@ -8,7 +8,7 @@
 
 #include "cpu.h"
 
-void finalizar(void);
+t_pcb pcb;
 
 int main(int argc, char *argv[])
 {
@@ -31,6 +31,11 @@ int main(int argc, char *argv[])
 	int puerto_umv = -1;
 	char *ip_umv = NULL;
 	struct sockaddr_in socketInfo;
+	int status = 0;
+
+	//Variables para el funcionamiento del parser
+	AnSISOP_funciones *funciones_comunes = malloc(sizeof(AnSISOP_funciones));
+	AnSISOP_kernel *funciones_kernel = malloc(sizeof(AnSISOP_kernel));
 
 	errorArgumentos = checkArgs(argc);
 	errorLogger = crearLogger(&logger);
@@ -61,12 +66,25 @@ int main(int argc, char *argv[])
 	**	Acá habría que realizar la conexion con la UMV
 	*/
 
-	/*
-	**	Acá habría que poner el productor-consumidor con la cola de exec de esta cpu y que bloquée acá
-	**	(Adentro de un bucle infinito posiblemente, cuya condición de salida se modifiqué con 
-	**	 la famosa SIGUSR1 que debe atender este proceso):
-	*/
+	int q;
+	char *proxima_instruccion = NULL;
+	while(1){		//Asumo que todo lo que venga del PCP va a ser un PCB, asi que lo proceso como tal.
+		status = recvPcb(&pcb, socket_pcp);
+		
+		if(status){
+			//Comenzá a procesar el pcb
+			log_info(logger,"[PCP] Me acaba de llegar un PCB correspondiente al programa con ID: %d.", pcb.id);
+			
+			for(q = pcb.quantum; q > 0; q--){
+				
+				analizadorLinea(proxima_instruccion, funciones_comunes, funciones_kernel);
+			}
 
+		} else {	//Falló la recepción del pcb.
+			log_error(logger, "[PCP] Hubo una falla en la recepción del PCB.");
+		}
+	}
+		
 	goto liberarRecursos;
 	return EXIT_SUCCESS;
 
