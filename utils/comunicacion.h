@@ -12,6 +12,7 @@
 typedef struct pcb {
 	uint32_t id;				//Identificador del programa
 	int socket;					//Socket de conexión al programa
+	uint32_t quantum;			//Valor del quantum (lo utiliza la CPU)
 	uint32_t peso;				//Resultado del cálculo del peso para ordenarlo al entrar a la cola ready.
 	uint32_t seg_cod;			//Puntero al comienzo del segmento de código en la umv
 	uint32_t seg_stack;			//Puntero al comienzo del segmento de stack en la umv
