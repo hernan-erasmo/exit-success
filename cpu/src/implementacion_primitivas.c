@@ -3,7 +3,7 @@
 t_puntero definirVariable(t_nombre_variable identificador_variable)
 {
 	//t_puntero == u_int32_t
-	pcb.id = 3;
+	
 	return 0;
 }
 

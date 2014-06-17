@@ -74,7 +74,6 @@ int main(int argc, char *argv[])
 		return EXIT_FAILURE;
 	}
 
-
 	/*
 	**	Acá habría que realizar la conexion con la UMV
 	*/
@@ -88,16 +87,19 @@ int main(int argc, char *argv[])
 			//Comenzá a procesar el pcb
 			log_info(logger,"[PCP] Me acaba de llegar un PCB correspondiente al programa con ID: %d.", pcb.id);
 			
+			generarDiccionarioVariables(&pcb);
+
 			for(q = pcb.quantum; q > 0; q--){
-				
 				analizadorLinea(proxima_instruccion, funciones_comunes, funciones_kernel);
 			}
 
 		} else {	//Falló la recepción del pcb.
 			log_error(logger, "[PCP] Hubo una falla en la recepción del PCB.");
 		}
+
+		dictionary_destroy_and_destroy_elements(diccionario_variables, destructor_elementos_diccionario);
 	}
-		
+
 	goto liberarRecursos;
 	return EXIT_SUCCESS;
 
@@ -111,6 +113,11 @@ liberarRecursos:
 	if(socket_pcp != -1)
 		close(socket_pcp);
 
+	if(funciones_comunes)
+		free(funciones_comunes);
+
+	if(funciones_kernel)
+		free(funciones_kernel);
 }
 
 int crearLogger(t_log **logger)
@@ -151,4 +158,22 @@ int checkArgs(int args)
 	}
 	
 	return 0;	
+}
+
+void generarDiccionarioVariables(t_pcb *pcb)
+{
+	diccionario_variables = dictionary_create();
+
+	//paré acá porque voy a necesitar demasiado tener implementada la funcionalidad de solicitar bytes
+	//a la umv. Voy a implementar eso primero aver que necesito y despues sigo con esto y con la implementación
+	//de las primitivas
+
+	return;
+}
+
+void destructor_elementos_diccionario(void *elemento)
+{
+	free(elemento);
+
+	return;
 }
