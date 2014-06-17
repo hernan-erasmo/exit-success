@@ -42,6 +42,7 @@ void *plp(void *datos_plp)
 	socklen_t addrlen = sizeof(addr);	
 	
 	pthread_mutex_t init_plp = PTHREAD_MUTEX_INITIALIZER;
+	pthread_mutex_t crear_programa_nuevo = PTHREAD_MUTEX_INITIALIZER;
 	pthread_mutex_t fin_plp = PTHREAD_MUTEX_INITIALIZER;
 
 	//Fin variables
@@ -116,9 +117,9 @@ void *plp(void *datos_plp)
 								pcb->socket = sockActual;
 								pcb->peso = 0;
 
-								if(atender_solicitud_programa(socket_umv, &paquete, pcb, tamanio_stack, logger) != 0){
+								if(atender_solicitud_programa(socket_umv, &paquete, pcb, tamanio_stack, &crear_programa_nuevo, logger) != 0){
 									log_error(logger, "[PLP] No se pudo satisfacer la solicitud del programa");
-
+								
 								/*
 								**	mando el pcb a la cola de exit, y que ahí se encarge de liberar toda la memoria
 								**	(la que alocó el pcb por su cuenta, y los segmentos que están en la umv. Que invoque
@@ -173,7 +174,7 @@ void *plp(void *datos_plp)
 		pthread_mutex_unlock(&fin_plp);
 }
 
-int atender_solicitud_programa(int socket_umv, t_paquete_programa *paquete, t_pcb *pcb, uint32_t tamanio_stack, t_log *logger)
+int atender_solicitud_programa(int socket_umv, t_paquete_programa *paquete, t_pcb *pcb, uint32_t tamanio_stack, pthread_mutex_t *mutex, t_log *logger)
 {
 	log_info(logger, "[PLP] Un programa envió un mensaje");
 
@@ -184,37 +185,42 @@ int atender_solicitud_programa(int socket_umv, t_paquete_programa *paquete, t_pc
 	contador_id_programa++;
 	pcb->id = contador_id_programa;
 	
-	while(1){
-		if(solicitar_cambiar_proceso_activo(socket_umv, contador_id_programa, logger) == 0){
-			huboUnError = 1;
-			break;
-		}
-
+	pthread_mutex_lock(mutex);
 	
-		if(crear_segmento_codigo(socket_umv, pcb, paquete, contador_id_programa, logger) == 0){
-			huboUnError = 1;
-			break;
-		}
+		while(1){
 
-		if(crear_segmento_stack(socket_umv, pcb, tamanio_stack, contador_id_programa, logger) == 0){
-			huboUnError = 1;
-			break;
-		}
+			if(solicitar_cambiar_proceso_activo(socket_umv, contador_id_programa, logger) == 0){
+				huboUnError = 1;
+				break;
+			}
 
-		metadatos = metadata_desde_literal(paquete->mensaje);
-
-		if(crear_segmento_indice_codigo(socket_umv, pcb, metadatos, contador_id_programa, logger) == 0){
-			huboUnError = 1;
-			break;
-		}
-
-		if(crear_segmento_etiquetas(socket_umv, pcb, metadatos, contador_id_programa, logger) == 0){
-			huboUnError = 1;
-			break;
-		}
 		
-		break;
-	}
+			if(crear_segmento_codigo(socket_umv, pcb, paquete, contador_id_programa, logger) == 0){
+				huboUnError = 1;
+				break;
+			}
+
+			if(crear_segmento_stack(socket_umv, pcb, tamanio_stack, contador_id_programa, logger) == 0){
+				huboUnError = 1;
+				break;
+			}
+
+			metadatos = metadata_desde_literal(paquete->mensaje);
+
+			if(crear_segmento_indice_codigo(socket_umv, pcb, metadatos, contador_id_programa, logger) == 0){
+				huboUnError = 1;
+				break;
+			}
+
+			if(crear_segmento_etiquetas(socket_umv, pcb, metadatos, contador_id_programa, logger) == 0){
+				huboUnError = 1;
+				break;
+			}
+			
+			break;
+		}
+	
+	pthread_mutex_unlock(mutex);
 
 	if(!huboUnError)
 		calcularPeso(pcb, metadatos);

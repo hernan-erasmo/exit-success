@@ -36,7 +36,7 @@ uint32_t crear_segmento_stack(int socket_umv, t_pcb *pcb, uint32_t tamanio_stack
 uint32_t crear_segmento_indice_codigo(int socket_umv, t_pcb *pcb, t_metadata_program *metadatos, uint32_t contador_id_programa, t_log *logger);
 uint32_t crear_segmento_etiquetas(int socket_umv, t_pcb *pcb, t_metadata_program *metadatos, uint32_t contador_id_programa, t_log *logger);
 
-int atender_solicitud_programa(int socket_umv, t_paquete_programa *paquete, t_pcb *pcb, uint32_t tamanio_stack, t_log *logger);
+int atender_solicitud_programa(int socket_umv, t_paquete_programa *paquete, t_pcb *pcb, uint32_t tamanio_stack, pthread_mutex_t *mutex, t_log *logger);
 
 void calcularPeso(t_pcb *pcb, t_metadata_program *metadatos);
 bool ordenar_por_peso(void *a, void *b);
