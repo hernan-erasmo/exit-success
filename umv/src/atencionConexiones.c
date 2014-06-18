@@ -76,8 +76,9 @@ void handler_plp(int sock, uint32_t *respuesta, char *orden, t_param_memoria *pa
 	
 	if(strcmp(comando,"solicitar_bytes") == 0){
 		uint32_t tamanio_buffer_respuesta = 0;
-		void *resp;
-		handler_solicitar_bytes(resp, parametros_memoria, &tamanio_buffer_respuesta, &savePtr1, logger);
+		void *resp = NULL;
+		handler_solicitar_bytes(&resp, parametros_memoria, &tamanio_buffer_respuesta, &savePtr1, logger);
+
 		enviar_respuesta_buffer(&sock, resp, &tamanio_buffer_respuesta, logger);
 	}
 
@@ -155,14 +156,14 @@ void handler_enviar_bytes(uint32_t *respuesta, char *orden, t_param_memoria *par
 	return;
 }
 
-void handler_solicitar_bytes(void *respuesta, t_param_memoria *parametros_memoria, uint32_t *tam, char **savePtr1, t_log *logger)
+void handler_solicitar_bytes(void **respuesta, t_param_memoria *parametros_memoria, uint32_t *tam, char **savePtr1, t_log *logger)
 {
 	char *base = strtok_r(NULL, ",", savePtr1);
 	char *offset = strtok_r(NULL, ",", savePtr1);
 	char *tamanio = strtok_r(NULL, ",", savePtr1);
 	*tam = atoi(tamanio);
 
-	respuesta = solicitar_bytes(parametros_memoria->listaSegmentos, atoi(base), atoi(offset), tam);
+	*respuesta = solicitar_bytes(parametros_memoria->listaSegmentos, atoi(base), atoi(offset), tam);
 
 	return;
 }
@@ -189,7 +190,7 @@ void enviar_respuesta_numerica(int *socket, uint32_t respuesta, t_log *logger)
 	return;
 }
 
-void enviar_respuesta_buffer(int *socket, uint32_t *tam_buffer, void *respuesta, t_log *logger)
+void enviar_respuesta_buffer(int *socket, void *respuesta, uint32_t *tam_buffer, t_log *logger)
 {
 	t_paquete_programa respuestaAlComando;
 		respuestaAlComando.id = 'U';

@@ -32,8 +32,8 @@ void handler_cpu(int sock, void *respuesta, char *orden, t_param_memoria *parame
 void handler_cambiar_proceso_activo(uint32_t *respuesta, char *orden, t_param_memoria *parametros_memoria, char **savePtr1, t_log *logger);
 void handler_crear_segmento(uint32_t *respuesta, char *orden, t_param_memoria *parametros_memoria, char **savePtr1, t_log *logger);
 void handler_enviar_bytes(uint32_t *respuesta, char *orden, t_param_memoria *parametros_memoria, char **savePtr1, t_log *logger);
-void handler_solicitar_bytes(void *respuesta, t_param_memoria *parametros_memoria, uint32_t *tam, char **savePtr1, t_log *logger);
+void handler_solicitar_bytes(void **respuesta, t_param_memoria *parametros_memoria, uint32_t *tam, char **savePtr1, t_log *logger);
 void enviar_respuesta_numerica(int *socket, uint32_t respuesta, t_log *logger);
-void enviar_respuesta_buffer(int *socket, uint32_t *tam_buffer, void *respuesta, t_log *logger);
+void enviar_respuesta_buffer(int *socket, void *respuesta, uint32_t *tam_buffer, t_log *logger);
 
 #endif /* ATENCIONCONEXIONES_H */
