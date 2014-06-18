@@ -14,6 +14,7 @@
 
 t_pcb pcb;
 t_dictionary *diccionario_variables;
+int socket_umv;
 
 int checkArgs(int args);
 int crearLogger(t_log **logger);

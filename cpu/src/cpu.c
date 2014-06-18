@@ -23,7 +23,6 @@ int main(int argc, char *argv[])
 	int socket_pcp = -1;
 	int puerto_pcp = -1;
 	char *ip_pcp = NULL;
-	int socket_umv = -1;
 	int puerto_umv = -1;
 	char *ip_umv = NULL;
 	struct sockaddr_in socketInfo;
@@ -73,10 +72,16 @@ int main(int argc, char *argv[])
 		goto liberarRecursos;
 		return EXIT_FAILURE;
 	}
+	log_info(logger, "[CPU] Conecté correctamente con el PCP.");
 
-	/*
-	**	Acá habría que realizar la conexion con la UMV
-	*/
+	socket_umv = -1;
+	errorConexion = crear_conexion_saliente(&socket_umv, &socketInfo, ip_umv, puerto_umv, logger, "CPU");
+	if (errorConexion) {
+		log_error(logger, "[CPU] Error al conectar con la UMV.");
+		goto liberarRecursos;
+		return EXIT_FAILURE;
+	}
+	log_info(logger, "[CPU] Conecté correctamente con la UMV.");
 
 	int q;
 	char *proxima_instruccion = NULL;
@@ -112,6 +117,9 @@ liberarRecursos:
 
 	if(socket_pcp != -1)
 		close(socket_pcp);
+
+	if(socket_umv != -1)
+		close(socket_umv);
 
 	if(funciones_comunes)
 		free(funciones_comunes);
