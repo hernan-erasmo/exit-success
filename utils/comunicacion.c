@@ -5,6 +5,8 @@
 
 #include "comunicacion.h"
 
+#define SIZEOF_PCB 48
+
 /*
 **	Copia descarada de la guía Beej.
 */
@@ -75,8 +77,72 @@ int recvAll(t_paquete_programa *paquete, int sock)
 
 int recvPcb(t_pcb *pcb, int sock)
 {
-	//Implementame!
-	return 0;
+	uint32_t recibido = 0;
+	uint32_t bytesRecibidos = 0;
+	uint32_t bytesARecibir = SIZEOF_PCB;	//(En el PCB, 12 campos * 4 bytes cada uno)
+	uint32_t offset = 0;
+	void *buffer = NULL;
+
+	buffer = calloc(bytesARecibir, 1);
+
+	while(bytesARecibir > 0){
+		recibido = recv(sock, buffer, bytesARecibir, 0);
+		bytesRecibidos += recibido;
+		bytesARecibir -= recibido;
+	}
+	printf("Recibí %d bytes por el socket %d.\n", bytesRecibidos, sock);
+
+	//Cargamos el id del programa en el pcb
+	uint32_t id;
+	memcpy(&(pcb->id), buffer + offset, 4);
+	offset += 4;
+
+	int socket;
+	memcpy(&(pcb->socket), buffer + offset, sizeof(int));
+	offset += sizeof(int);
+
+	uint32_t quantum;
+	memcpy(&(pcb->quantum), buffer + offset, 4);
+	offset += 4;	
+	
+	uint32_t peso;
+	memcpy(&(pcb->peso), buffer + offset, 4);
+	offset += 4;
+
+	uint32_t seg_cod;
+	memcpy(&(pcb->seg_cod), buffer + offset, 4);	
+	offset += 4;
+
+	uint32_t seg_stack;
+	memcpy(&(pcb->seg_stack), buffer + offset, 4);
+	offset += 4;
+
+	uint32_t cursor_stack;
+	memcpy(&(pcb->cursor_stack), buffer + offset, 4);
+	offset += 4;
+
+	uint32_t seg_idx_cod;
+	memcpy(&(pcb->seg_idx_cod), buffer + offset, 4);
+	offset += 4;
+
+	uint32_t seg_idx_etq;
+	memcpy(&(pcb->seg_idx_etq), buffer + offset, 4);
+	offset += 4;
+
+	uint32_t p_counter;
+	memcpy(&(pcb->p_counter), buffer + offset, 4);
+	offset += 4;
+
+	uint32_t size_ctxt_actual;
+	memcpy(&(pcb->size_ctxt_actual), buffer + offset, 4);
+	offset += 4;
+
+	uint32_t size_idx_etq;
+	memcpy(&(pcb->size_idx_etq), buffer + offset, 4);
+
+	free(buffer);
+
+	return bytesRecibidos;
 }
 
 void inicializar_paquete(t_paquete_programa *paq)
@@ -115,6 +181,65 @@ char *serializar_paquete(t_paquete_programa *paquete, t_log *logger)
 	memcpy(serializedPackage + offset, paquete->mensaje, sizeToSend);
 
 	return serializedPackage;
+}
+
+char *serializar_pcb(t_pcb *pcb, t_log *logger)
+{
+	int tamanio_total = SIZEOF_PCB;
+
+	void *serializedPackage = calloc(tamanio_total, 1);
+	uint32_t offset = 0;
+	uint32_t sizeToSend;
+
+	sizeToSend = 4;
+	memcpy(serializedPackage + offset, &(pcb->id), 4);
+	offset += sizeToSend;
+
+	sizeToSend = sizeof(int);
+	memcpy(serializedPackage + offset, &(pcb->socket), sizeof(int));
+	offset += sizeToSend;
+
+	sizeToSend = 4;
+	memcpy(serializedPackage + offset, &(pcb->quantum), 4);
+	offset += sizeToSend;
+	
+	sizeToSend = 4;
+	memcpy(serializedPackage + offset, &(pcb->peso), 4);
+	offset += sizeToSend;
+
+	sizeToSend = 4;
+	memcpy(serializedPackage + offset, &(pcb->seg_cod), 4);
+	offset += sizeToSend;
+
+	sizeToSend = 4;
+	memcpy(serializedPackage + offset, &(pcb->seg_stack), 4);
+	offset += sizeToSend;
+
+	sizeToSend = 4;
+	memcpy(serializedPackage + offset, &(pcb->cursor_stack), 4);
+	offset += sizeToSend;
+
+	sizeToSend = 4;
+	memcpy(serializedPackage + offset, &(pcb->seg_idx_cod), 4);
+	offset += sizeToSend;	
+	
+	sizeToSend = 4;
+	memcpy(serializedPackage + offset, &(pcb->seg_idx_etq), 4);
+	offset += sizeToSend;	
+	
+	sizeToSend = 4;
+	memcpy(serializedPackage + offset, &(pcb->p_counter), 4);
+	offset += sizeToSend;	
+
+	sizeToSend = 4;
+	memcpy(serializedPackage + offset, &(pcb->size_ctxt_actual), 4);
+	offset += sizeToSend;
+		
+	sizeToSend = 4;
+	memcpy(serializedPackage + offset, &(pcb->size_idx_etq), 4);
+	offset += sizeToSend;	
+
+	return ((char *) serializedPackage);
 }
 
 int crear_conexion_saliente(int *unSocket, struct sockaddr_in *socketInfo, char *ip, int puerto, t_log *logger, char* id_proceso)

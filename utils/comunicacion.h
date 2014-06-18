@@ -16,7 +16,7 @@ typedef struct pcb {
 	uint32_t peso;				//Resultado del cálculo del peso para ordenarlo al entrar a la cola ready.
 	uint32_t seg_cod;			//Puntero al comienzo del segmento de código en la umv
 	uint32_t seg_stack;			//Puntero al comienzo del segmento de stack en la umv
-	void *cursor_stack;			//Puntero al primer byte del contexto de ejcución actual
+	uint32_t cursor_stack;		//Puntero al primer byte del contexto de ejcución actual
 	uint32_t seg_idx_cod;		//Puntero al comienzo del índice de código en la umv
 	uint32_t seg_idx_etq;		//Puntero al comienzo del índice de etiquetas en la umv
 	uint32_t p_counter;			//Contiene el nro de la próxima instrucción a ejecutar
@@ -36,6 +36,7 @@ int recvAll(t_paquete_programa *paquete, int sock);
 int recvPcb(t_pcb *pcb, int sock);
 void inicializar_paquete(t_paquete_programa *paq);
 char *serializar_paquete(t_paquete_programa *paquete, t_log *logger);
+char *serializar_pcb(t_pcb *pcb, t_log *logger);
 
 //Sockets
 int crear_conexion_saliente(int *unSocket, struct sockaddr_in *socketInfo, char *ip, int puerto, t_log *logger, char *id_proceso);
