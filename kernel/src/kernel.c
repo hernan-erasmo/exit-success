@@ -38,6 +38,9 @@ int main(int argc, char *argv[])
 	cola_block = list_create();
 	cola_exit = list_create();
 	
+	multiprogramacion = config_get_int_value(config, "MULTIPROGRAMACION");
+	log_info(logger, "[KERNEL] El nivel de multiprogramacion del sistema es: %d", multiprogramacion);
+
 	d_pcp = crearConfiguracionPcp(config, logger);
 	d_plp = crearConfiguracionPlp(config, logger);
 
@@ -139,7 +142,6 @@ t_datos_pcp *crearConfiguracionPcp(t_config *config, t_log *logger)
 	t_datos_pcp *d_pcp = malloc(sizeof(t_datos_pcp));
 	d_pcp->puerto_escucha_cpu = config_get_string_value(config, "PUERTO_CPU");
 	d_pcp->logger = logger;
-	d_pcp->multiprogramacion = config_get_int_value(config, "MULTIPROGRAMACION");
 
 	return d_pcp;
 }

@@ -12,7 +12,6 @@
 typedef struct datos_pcp{
 	t_log *logger;
 	char *puerto_escucha_cpu;
-	uint32_t multiprogramacion;
 } t_datos_pcp;
 
 void *pcp(void *datos_pcp);

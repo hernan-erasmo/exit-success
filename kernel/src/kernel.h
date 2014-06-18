@@ -13,6 +13,8 @@ t_list *cola_exec;
 t_list *cola_block;
 t_list *cola_exit;
 
+uint32_t multiprogramacion;
+
 int checkArgs(int args);
 int crearLogger(t_log **logger);
 int cargarConfig(t_config **config, char *path);
