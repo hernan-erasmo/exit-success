@@ -73,6 +73,11 @@ void handler_plp(int sock, uint32_t *respuesta, char *orden, t_param_memoria *pa
 		handler_enviar_bytes(respuesta, orden, parametros_memoria, &savePtr1, logger);
 		enviar_respuesta_numerica(&sock, *respuesta, logger);
 	}
+
+	if(strcmp(comando,"destruir_segmentos") == 0){
+		handler_destruir_segmentos(respuesta, parametros_memoria, &savePtr1, logger);
+		enviar_respuesta_numerica(&sock, *respuesta, logger);
+	}
 	
 	if(strcmp(comando,"solicitar_bytes") == 0){
 		uint32_t tamanio_buffer_respuesta = 0;
@@ -164,6 +169,14 @@ void handler_solicitar_bytes(void **respuesta, t_param_memoria *parametros_memor
 	*tam = atoi(tamanio);
 
 	*respuesta = solicitar_bytes(parametros_memoria->listaSegmentos, atoi(base), atoi(offset), tam);
+
+	return;
+}
+
+void handler_destruir_segmentos(void *respuesta, t_param_memoria *parametros_memoria, char **savePtr1, t_log *logger){
+	char *id_proceso = strtok_r(NULL, ",", savePtr1);
+
+	destruirSegmentos(parametros_memoria->listaSegmentos, atoi(id_proceso));
 
 	return;
 }

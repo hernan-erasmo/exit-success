@@ -41,7 +41,9 @@ void *plp(void *datos_plp)
 	struct sockaddr_in dir_umv;
 	socklen_t addrlen = sizeof(addr);	
 	
+	pthread_t thread_vaciar_exit;
 	pthread_mutex_t init_plp = PTHREAD_MUTEX_INITIALIZER;
+	pthread_mutex_t encolar = PTHREAD_MUTEX_INITIALIZER;
 	pthread_mutex_t crear_programa_nuevo = PTHREAD_MUTEX_INITIALIZER;
 	pthread_mutex_t fin_plp = PTHREAD_MUTEX_INITIALIZER;
 
@@ -63,6 +65,24 @@ void *plp(void *datos_plp)
 			pthread_exit(NULL);
 		}
 		log_info(logger, "[PLP] Conexión establecida con la UMV!");
+
+		log_info(logger, "[PLP] Estoy creando el semáforo para la cola de Exit");
+		if(sem_init(&s_exit, 0, 0)){
+			log_info(logger, "[PLP] No se pudo inicializar el semáforo para la cola Exit");
+			goto liberarRecursos;
+			pthread_exit(NULL);
+		}
+		log_info(logger, "[PLP] Se creó el semáforo para la cola de Exit.");
+
+		log_info(logger, "[PLP] Estoy creando el worker thread para eliminar elementos de Exit");
+/*
+		if(pthread_create(&thread_vaciar_exit, NULL, vaciar_exit, NULL)) {
+			log_error(logger, "[PLP] Error al crear el worker thread del PLP que elimina elementos de Exit. Motivo: %s", strerror(errno));
+			goto liberarRecursos;
+			return EXIT_FAILURE;
+		}
+*/
+		log_info(logger, "[PLP] Se creó el worker thread para eliminar elementos de Exit");
 
 		log_info(logger, "[PLP] Esperando conexiones de programas...");
 	pthread_mutex_unlock(&init_plp);
@@ -120,19 +140,24 @@ void *plp(void *datos_plp)
 								if(atender_solicitud_programa(socket_umv, &paquete, pcb, tamanio_stack, &crear_programa_nuevo, logger) != 0){
 									log_error(logger, "[PLP] No se pudo satisfacer la solicitud del programa");
 								
-								/*
-								**	mando el pcb a la cola de exit, y que ahí se encarge de liberar toda la memoria
-								**	(la que alocó el pcb por su cuenta, y los segmentos que están en la umv. Que invoque
-								**	funciones de la umv si es necesario). La cola de exit se encarga de liberar los segmentos.
-								*/
-									list_add(cola_exit, pcb);
+									pthread_mutex_lock(&encolar);
+										list_add(cola_exit, pcb);
+										sem_post(&s_exit);
+									pthread_mutex_unlock(&encolar);
 								} else {
 									log_info(logger, "[PLP] Solicitud atendida satisfactoriamente.");
-									list_add(cola_new, pcb);
 									
-									list_sort(cola_new, ordenar_por_peso);
-
-									printf("Cola NEW: \n");
+									//if (bloquearía ponerlo en ready)
+										//lo pongo en new
+										//list_sort(cola_new, ordenar_por_peso);
+										//creo nuevo worker thread cuyo unico propósito sea quitar el primer elemento de new y ponerlo en ready
+									//else
+										pthread_mutex_lock(&encolar);
+											list_add(cola_ready, pcb);
+											//¿hay que modificar algún semáforo acá?
+										pthread_mutex_unlock(&encolar);
+														
+									log_info(logger, "[PLP] Los siguientes procesos están en la cola New:");
 									list_iterate(cola_new, mostrar_datos_cola);
 								}
 								break;
@@ -171,6 +196,8 @@ void *plp(void *datos_plp)
 			if(socketCliente != -1)
 				close(socketCliente);
 
+			sem_destroy(&s_exit);
+			
 		pthread_mutex_unlock(&fin_plp);
 }
 
@@ -189,7 +216,7 @@ int atender_solicitud_programa(int socket_umv, t_paquete_programa *paquete, t_pc
 	
 		while(1){
 
-			if(solicitar_cambiar_proceso_activo(socket_umv, contador_id_programa, logger) == 0){
+			if(solicitar_cambiar_proceso_activo(socket_umv, contador_id_programa, 'P', logger) == 0){
 				huboUnError = 1;
 				break;
 			}
@@ -238,12 +265,12 @@ uint32_t crear_segmento_codigo(int socket_umv, t_pcb *pcb, t_paquete_programa *p
 	int resultado = 0;
 	int bytesEscritos = 0;
 
-	if((pcb->seg_cod = solicitar_crear_segmento(socket_umv, contador_id_programa, strlen(paquete->mensaje), logger)) == 0){
+	if((pcb->seg_cod = solicitar_crear_segmento(socket_umv, contador_id_programa, strlen(paquete->mensaje), 'P', logger)) == 0){
 		log_error(logger, "[PLP] La UMV no pudo crear el segmento de código para este programa. Se aborta su creación.");
 		return resultado;
 	}
 
-	if(solicitar_enviar_bytes(socket_umv, pcb->seg_cod, 0, strlen(paquete->mensaje), paquete->mensaje, logger) == 0){
+	if(solicitar_enviar_bytes(socket_umv, pcb->seg_cod, 0, strlen(paquete->mensaje), paquete->mensaje, 'P', logger) == 0){
 		log_error(logger, "[PLP] La UMV no permitió escribir el código en el segmento de código del programa.");
 		return resultado;
 	}
@@ -256,7 +283,7 @@ uint32_t crear_segmento_stack(int socket_umv, t_pcb *pcb, uint32_t tamanio_stack
 {
 	int resultado = 0;
 
-	if((pcb->seg_stack = solicitar_crear_segmento(socket_umv, contador_id_programa, tamanio_stack, logger)) == 0){
+	if((pcb->seg_stack = solicitar_crear_segmento(socket_umv, contador_id_programa, tamanio_stack, 'P', logger)) == 0){
 		log_error(logger, "[PLP] La UMV no pudo crear el segmento de stack para este programa. Se aborta su creación.");
 		return resultado;
 	}
@@ -270,7 +297,7 @@ uint32_t crear_segmento_indice_codigo(int socket_umv, t_pcb *pcb, t_metadata_pro
 	int i, resultado = 0;
 
 	uint32_t tamanio_indice_codigo = metadatos->instrucciones_size * 8;
-	if((pcb->seg_idx_cod = solicitar_crear_segmento(socket_umv, contador_id_programa, tamanio_indice_codigo, logger)) == 0){
+	if((pcb->seg_idx_cod = solicitar_crear_segmento(socket_umv, contador_id_programa, tamanio_indice_codigo, 'P', logger)) == 0){
 		log_error(logger, "[PLP] La UMV no pudo crear el segmento para el índice de código de este programa. Se aborta su creación.");
 		return resultado;
 	}
@@ -284,12 +311,12 @@ uint32_t crear_segmento_indice_codigo(int socket_umv, t_pcb *pcb, t_metadata_pro
 		st = t[i].start;
 		off = t[i].offset;
 
-		if(solicitar_enviar_bytes(socket_umv, pcb->seg_idx_cod, i*8, sizeof(uint32_t), &st, logger) == 0){
+		if(solicitar_enviar_bytes(socket_umv, pcb->seg_idx_cod, i*8, sizeof(uint32_t), &st, 'P', logger) == 0){
 			log_error(logger, "[PLP] La UMV no permitió escribir el índice de código en el segmento de índice de código del programa.");
 			return resultado;
 		}
 
-		if(solicitar_enviar_bytes(socket_umv, pcb->seg_idx_cod, (i*8 + 4), sizeof(uint32_t), &off, logger) == 0){
+		if(solicitar_enviar_bytes(socket_umv, pcb->seg_idx_cod, (i*8 + 4), sizeof(uint32_t), &off, 'P', logger) == 0){
 			log_error(logger, "[PLP] La UMV no permitió escribir el índice de código en el segmento de índice de código del programa.");
 			return resultado;
 		}		
@@ -310,12 +337,12 @@ uint32_t crear_segmento_etiquetas(int socket_umv, t_pcb *pcb, t_metadata_program
 		return resultado;
 	}
 
-	if((pcb->seg_idx_etq = solicitar_crear_segmento(socket_umv, contador_id_programa, tamanio_indice_etiquetas, logger)) == 0){
+	if((pcb->seg_idx_etq = solicitar_crear_segmento(socket_umv, contador_id_programa, tamanio_indice_etiquetas, 'P', logger)) == 0){
 		log_error(logger, "[PLP] La UMV no pudo crear el segmento para el índice de etiquetas de este programa. Se aborta su creación.");
 		return resultado;
 	}
 
-	if(solicitar_enviar_bytes(socket_umv, pcb->seg_idx_etq, 0, metadatos->etiquetas_size, metadatos->etiquetas, logger) == 0)
+	if(solicitar_enviar_bytes(socket_umv, pcb->seg_idx_etq, 0, metadatos->etiquetas_size, metadatos->etiquetas, 'P', logger) == 0)
 	{
 		log_error(logger, "[PLP] La UMV no permitió escribir el serializado de etiquetas para este programa. Se aborta su creación.");
 		return resultado;
