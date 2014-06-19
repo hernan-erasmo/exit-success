@@ -1,0 +1,21 @@
+- El PLP termina de inicializar un PCB y se fija si ponerlo en Ready causaría que se bloquée:
+	Si no se bloquearía:
+		Lo pone en Ready e incrementa el nivel de multiprogramación. Luego sigue operando normalmente.
+
+	Si se bloquearía:
+		-Reordena la cola de New de acuerdo al peso del proceso.
+		-Crea un worker thread (WT) cuya única tarea es tratar de poner el primer elemento de la cola de New en Ready.
+
+- El PLP debe disparar un hilo que monitorée la cola de Exit y en cuanto se agrega un PCB, disminuir el nivel de multiprogramación y
+  proceder a la eliminación de los segmentos invocando a las funciones correspondientes de la UMV.
+
+
+  en wt_exit:
+  	while(1)
+  		wait(cola_exit)
+  			remover_y_eliminar_elemento();
+
+  en plp
+  	//cuando haya que agregar un elemento a exit
+	  	agregar_elemento_a_exit();
+	  	signal(cola_exit);
