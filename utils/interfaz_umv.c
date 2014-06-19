@@ -1,13 +1,13 @@
 #include "interfaz_umv.h"
 
-uint32_t solicitar_cambiar_proceso_activo(int socket_umv, uint32_t contador_id_programa, t_log *logger)
+uint32_t solicitar_cambiar_proceso_activo(int socket_umv, uint32_t contador_id_programa, char origen, t_log *logger)
 {
 	uint32_t bEnv = 0;
 	char *orden = codificar_cambiar_proceso_activo(contador_id_programa);
 	uint32_t valorRetorno = 0;	
 
 	t_paquete_programa paq_saliente;
-		paq_saliente.id = 'P';
+		paq_saliente.id = origen;
 		paq_saliente.mensaje = orden;
 		paq_saliente.sizeMensaje = strlen(orden);
 
@@ -36,14 +36,14 @@ uint32_t solicitar_cambiar_proceso_activo(int socket_umv, uint32_t contador_id_p
 	return valorRetorno;	
 }
 
-uint32_t solicitar_crear_segmento(int socket_umv, uint32_t id_programa, uint32_t tamanio_segmento, t_log *logger)
+uint32_t solicitar_crear_segmento(int socket_umv, uint32_t id_programa, uint32_t tamanio_segmento, char origen, t_log *logger)
 {
 	uint32_t bEnv = 0;
 	char *orden = codificar_crear_segmento(id_programa, tamanio_segmento);
 	uint32_t valorRetorno = 0;
 
 	t_paquete_programa paq_saliente;
-		paq_saliente.id = 'P';
+		paq_saliente.id = origen;
 		paq_saliente.mensaje = orden;
 		paq_saliente.sizeMensaje = strlen(orden);
 	
@@ -72,7 +72,7 @@ uint32_t solicitar_crear_segmento(int socket_umv, uint32_t id_programa, uint32_t
 	return valorRetorno;
 }
 
-uint32_t solicitar_enviar_bytes(int socket_umv, uint32_t base, uint32_t offset, int tamanio, void *buffer, t_log *logger)
+uint32_t solicitar_enviar_bytes(int socket_umv, uint32_t base, uint32_t offset, int tamanio, void *buffer, char origen, t_log *logger)
 {
 	uint32_t bEnv = 0;
 	uint32_t tamanio_de_la_orden_completa = 0;
@@ -80,7 +80,7 @@ uint32_t solicitar_enviar_bytes(int socket_umv, uint32_t base, uint32_t offset, 
 	uint32_t valorRetorno = 0;
 
 	t_paquete_programa paq_saliente;
-		paq_saliente.id = 'P';
+		paq_saliente.id = origen;
 		paq_saliente.mensaje = orden;
 		printf("############## ORDEN ############## : %s", orden);
 		paq_saliente.sizeMensaje = tamanio_de_la_orden_completa;
@@ -110,14 +110,50 @@ uint32_t solicitar_enviar_bytes(int socket_umv, uint32_t base, uint32_t offset, 
 	return valorRetorno;
 }
 
-void *solicitar_solicitar_bytes(int socket_umv, uint32_t base, uint32_t offset, int tamanio, t_log *logger)
+uint32_t solicitar_destruir_segmentos(int socket_umv, uint32_t id_programa, char origen, t_log *logger)
+{
+	uint32_t bEnv = 0;
+	char *orden = codificar_destruir_segmentos(id_programa);
+	uint32_t valorRetorno = 0;	
+
+	t_paquete_programa paq_saliente;
+		paq_saliente.id = origen;
+		paq_saliente.mensaje = orden;
+		paq_saliente.sizeMensaje = strlen(orden);
+
+	char *paqueteSaliente = serializar_paquete(&paq_saliente, logger);
+	
+	bEnv = paq_saliente.tamanio_total;
+	if(sendAll(socket_umv, paqueteSaliente, &bEnv)){
+		log_error(logger, "[PLP] Error en la solicitud de destrucción de segmentos. Motivo: %s", strerror(errno));
+		free(paqueteSaliente);
+		free(orden);
+		return 0;
+	}
+
+	free(paqueteSaliente);
+	free(orden);
+
+	uint32_t bRec = 0;
+	t_paquete_programa respuesta;
+	log_info(logger, "[PLP] Esperando la respuesta de la UMV.");
+	bRec = recvAll(&respuesta, socket_umv);
+	log_info(logger, "[PLP] La UMV respondió %s", respuesta.mensaje);
+
+	valorRetorno = atoi(respuesta.mensaje);
+	free(respuesta.mensaje);
+
+	return valorRetorno;	
+}
+
+void *solicitar_solicitar_bytes(int socket_umv, uint32_t base, uint32_t offset, int tamanio, char origen, t_log *logger)
 {
 	uint32_t bEnv = 0;
 	char *orden = codificar_solicitar_bytes(base,offset,tamanio);
 	void *valorRetorno = NULL;
 
 	t_paquete_programa paq_saliente;
-		paq_saliente.id = 'P';
+		paq_saliente.id = origen;
 		paq_saliente.mensaje = orden;
 		printf("############## ORDEN ############## : %s", orden);
 		paq_saliente.sizeMensaje = strlen(orden);
@@ -287,6 +323,31 @@ char *codificar_solicitar_bytes(uint32_t base, uint32_t offset, int tamanio)
 
 	memcpy(orden_completa + offset_codificacion, str_tamanio, tamanio_len);
 	offset_codificacion += tamanio_len;
+	
+	return orden_completa;	
+}
+
+char *codificar_destruir_segmentos(uint32_t id_programa)
+{
+	int offset_codificacion = 0;
+
+	char str_id_programa[10];
+	sprintf(str_id_programa, "%d", id_programa);
+	char *comando = "destruir_segmentos";
+
+	int id_programa_len = strlen(str_id_programa);
+	int comando_len = strlen(comando);
+	
+	char *orden_completa = calloc(comando_len + 1 + 1 + id_programa_len, 1);
+	memcpy(orden_completa + offset_codificacion, comando, comando_len);
+	offset_codificacion += comando_len;
+	memcpy(orden_completa + offset_codificacion, ",", 1);
+	offset_codificacion += 1;
+
+	memcpy(orden_completa + offset_codificacion, str_id_programa, id_programa_len);
+	offset_codificacion += id_programa_len;
+	memcpy(orden_completa + offset_codificacion, ",", 1);
+	offset_codificacion += 1;
 	
 	return orden_completa;	
 }
