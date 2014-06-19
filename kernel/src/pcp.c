@@ -33,14 +33,21 @@ void *pcp(void *datos_pcp)
 	pthread_mutex_t fin_pcp = PTHREAD_MUTEX_INITIALIZER;
 
 	pthread_mutex_lock(&init_pcp);
-		log_info(logger, "[PLP] Creando el socket que escucha conexiones de CPUs.");
+		log_info(logger, "[PCP] Creando el socket que escucha conexiones de CPUs.");
 		if(crear_conexion_entrante(&listenningSocket, puerto_escucha_cpu, &serverInfo, logger, "PCP") != 0){
 			goto liberarRecursos;
 			pthread_exit(NULL);
 		}		
 
-	log_info(logger, "[PCP] Estoy escuchando conexiones de CPUs en el puerto %s", puerto_escucha_cpu);
+		log_info(logger, "[PCP] Estoy escuchando conexiones de CPUs en el puerto %s", puerto_escucha_cpu);
 
+		log_info(logger, "[PCP] Estoy creando el semáforo para la cola de Ready");
+		if(sem_init(&s_ready, 0, multiprogramacion)){
+			log_info(logger, "[PCP] No se pudo inicializar el semáforo para la cola Ready");
+			goto liberarRecursos;
+			pthread_exit(NULL);
+		}
+		log_info(logger, "[PCP] Se creó el semáforo para la cola de ready, con un valor de %d", multiprogramacion);
 	pthread_mutex_unlock(&init_pcp);
 
 	FD_SET(listenningSocket, &master);
@@ -116,6 +123,7 @@ void *pcp(void *datos_pcp)
 
 	liberarRecursos:
 		pthread_mutex_lock(&fin_pcp);
+			sem_destroy(&s_ready);
 
 			if(serverInfo != NULL)
 				freeaddrinfo(serverInfo);

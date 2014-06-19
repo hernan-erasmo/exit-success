@@ -5,6 +5,7 @@
 #include <commons/collections/list.h>
 
 #include "../../utils/comunicacion.h"
+#include "kernel.h"
 
 #ifndef PCP_H
 #define PCP_H

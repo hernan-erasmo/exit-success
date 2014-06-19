@@ -1,3 +1,4 @@
+#include <semaphore.h>
 #include <commons/log.h>
 #include <commons/config.h>
 
@@ -14,6 +15,9 @@ t_list *cola_block;
 t_list *cola_exit;
 
 uint32_t multiprogramacion;
+
+sem_t s_ready;
+sem_t s_exit;
 
 int checkArgs(int args);
 int crearLogger(t_log **logger);
