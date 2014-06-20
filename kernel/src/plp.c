@@ -153,11 +153,12 @@ void *plp(void *datos_plp)
 									log_info(logger, "[PLP] Solicitud atendida satisfactoriamente.");
 									
 									// ¿bloquearía ponerlo en ready?
-									if(sem_trywait(&s_ready) == 0){		//NO, entonces lo pongo en Ready
+									if(sem_trywait(&s_ready_max) == 0){		//NO, entonces lo pongo en Ready
 										log_info(logger, "[PLP] Mando el PCB a Ready directamente.");
-										pthread_mutex_lock(&encolar);
-											list_add(cola_ready, pcb);
-										pthread_mutex_unlock(&encolar);
+											pthread_mutex_lock(&encolar);
+												list_add(cola_ready, pcb);
+											pthread_mutex_unlock(&encolar);
+										sem_post(&s_ready_nuevo);
 									} else {							//SI, entonces lo pongo en New
 										log_info(logger, "[PLP] Ready está al palo, entonces este PCB queda en New.");
 										pthread_mutex_lock(&encolar);

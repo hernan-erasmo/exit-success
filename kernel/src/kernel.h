@@ -16,8 +16,10 @@ t_list *cola_exit;
 
 uint32_t multiprogramacion;
 
-sem_t s_ready;
+sem_t s_ready_max;
+sem_t s_ready_nuevo;
 sem_t s_exit;
+sem_t s_hay_cpus;
 
 int checkArgs(int args);
 int crearLogger(t_log **logger);
