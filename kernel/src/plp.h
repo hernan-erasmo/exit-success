@@ -9,9 +9,12 @@
 #include "../../utils/comunicacion.h"
 #include "../../utils/interfaz_umv.h"
 #include "kernel.h"
+#include "vaciar_exit.h"
 
 #ifndef PLP_H
 #define PLP_H
+
+int socket_umv;
 
 typedef struct datos_plp {
 	char *puerto_escucha;
@@ -20,6 +23,11 @@ typedef struct datos_plp {
 	uint32_t tamanio_stack;
 	t_log *logger;
 } t_datos_plp;
+
+typedef struct worker_th {
+	t_list *cola_exit;
+	t_log *logger;
+} t_worker_th;
 
 void *plp(void *puerto_prog);
 

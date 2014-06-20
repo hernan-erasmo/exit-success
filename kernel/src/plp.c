@@ -33,7 +33,7 @@ void *plp(void *datos_plp)
 
 	//Variables de sockets
 	struct addrinfo *serverInfo = NULL;
-	int socket_umv = -1;
+	socket_umv = -1;
 	int listenningSocket = -1;
 	int socketCliente = -1;
 	int status = 1;		// Estructura que manjea el status de los recieve.
@@ -75,13 +75,16 @@ void *plp(void *datos_plp)
 		log_info(logger, "[PLP] Se creó el semáforo para la cola de Exit.");
 
 		log_info(logger, "[PLP] Estoy creando el worker thread para eliminar elementos de Exit");
-/*
-		if(pthread_create(&thread_vaciar_exit, NULL, vaciar_exit, NULL)) {
+
+		t_worker_th *wt = malloc(sizeof(t_worker_th));
+			wt->logger = logger;
+			wt->cola_exit = cola_exit;
+		if(pthread_create(&thread_vaciar_exit, NULL, vaciar_exit, (void *) wt)) {
 			log_error(logger, "[PLP] Error al crear el worker thread del PLP que elimina elementos de Exit. Motivo: %s", strerror(errno));
 			goto liberarRecursos;
-			return EXIT_FAILURE;
+			pthread_exit(NULL);
 		}
-*/
+
 		log_info(logger, "[PLP] Se creó el worker thread para eliminar elementos de Exit");
 
 		log_info(logger, "[PLP] Esperando conexiones de programas...");
