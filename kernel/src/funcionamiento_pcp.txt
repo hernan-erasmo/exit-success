@@ -1,0 +1,51 @@
+funcionamiento pcp:
+
+//Representación de una CPU dentro del PCP
+
+//Esto es lo que hace el hilo PCP dentro del select
+while(1)
+	bloquea en select;
+	t_header_cpu *header = malloc blah blah
+
+	if(conexion_nueva){
+		//Entró una CPU nueva
+		//Acá labura el select, que agrega el socket al listado de FDs, etc. 
+		//Yo no hago más que eso acá.
+	} else {
+		//La CPU dice que está ociosa.
+		if(header->id == 'O'){
+			list_add(cpus_ociosas, header);
+			signal(hay una cpu lista)
+			//vuelvo a bloquear en select.
+		}
+
+		//La cpu quiere hacer algo
+		if(header->mensaje == "quiero hacer algo"){
+			//manejalo. Como lo maneja la interfaz umv. Convengamos que el PCP también
+			//tiene una interfaz que permite a la CPU invocar las operaciones que el
+			//script quiera, y que el PCP debe atender.
+		}
+	}
+
+###########################################################
+###########################################################
+###########################################################
+
+//Esto es lo que hace el hilo que se encarga de manejar las colas
+
+while(1)
+	sem_wait(s_ready_nuevo) 	//Si no hay pcbs en new, se bloquea acá
+		sem_wait(s_hay_cpus)			//Si no hay cpus disponibles, entonces bloqueo acá.
+			//envío al pcb a una cpu
+
+		//... pasa tiempo
+		//recién cuando un proceso finaliza
+		if(pcb finaliza ejecucion){
+			list_add(cola_exit, pcb)
+			sem_post(s_exit)
+			sem_post(s_ready_max)
+		}
+
+
+
+
