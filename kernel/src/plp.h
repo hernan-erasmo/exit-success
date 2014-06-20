@@ -10,6 +10,7 @@
 #include "../../utils/interfaz_umv.h"
 #include "kernel.h"
 #include "vaciar_exit.h"
+#include "wt_nar.h"
 
 #ifndef PLP_H
 #define PLP_H

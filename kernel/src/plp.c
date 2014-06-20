@@ -42,6 +42,7 @@ void *plp(void *datos_plp)
 	socklen_t addrlen = sizeof(addr);	
 	
 	pthread_t thread_vaciar_exit;
+	pthread_t thread_wt_nar;
 	pthread_mutex_t init_plp = PTHREAD_MUTEX_INITIALIZER;
 	pthread_mutex_t encolar = PTHREAD_MUTEX_INITIALIZER;
 	pthread_mutex_t crear_programa_nuevo = PTHREAD_MUTEX_INITIALIZER;
@@ -84,6 +85,7 @@ void *plp(void *datos_plp)
 			goto liberarRecursos;
 			pthread_exit(NULL);
 		}
+		pthread_detach(thread_vaciar_exit);
 
 		log_info(logger, "[PLP] Se creó el worker thread para eliminar elementos de Exit");
 
@@ -150,16 +152,28 @@ void *plp(void *datos_plp)
 								} else {
 									log_info(logger, "[PLP] Solicitud atendida satisfactoriamente.");
 									
-									//if (bloquearía ponerlo en ready)
-										//lo pongo en new
-										//list_sort(cola_new, ordenar_por_peso);
-										//creo nuevo worker thread cuyo unico propósito sea quitar el primer elemento de new y ponerlo en ready
-									//else
+									// ¿bloquearía ponerlo en ready?
+									if(sem_trywait(&s_ready) == 0){		//NO, entonces lo pongo en Ready
+										log_info(logger, "[PLP] Mando el PCB a Ready directamente.");
 										pthread_mutex_lock(&encolar);
 											list_add(cola_ready, pcb);
-											//¿hay que modificar algún semáforo acá?
 										pthread_mutex_unlock(&encolar);
-														
+									} else {							//SI, entonces lo pongo en New
+										log_info(logger, "[PLP] Ready está al palo, entonces este PCB queda en New.");
+										pthread_mutex_lock(&encolar);
+											list_add(cola_new, pcb);
+											list_sort(cola_new, ordenar_por_peso);
+									
+											if(pthread_create(&thread_wt_nar, NULL, wt_nar, NULL)) {
+												log_error(logger, "[PLP] Error al crear el worker thread que saca de New y pone en Ready: %s", strerror(errno));
+												goto liberarRecursos;
+												pthread_exit(NULL);
+											}
+											pthread_detach(thread_wt_nar);
+									
+										pthread_mutex_unlock(&encolar);
+									}
+									
 									log_info(logger, "[PLP] Los siguientes procesos están en la cola New:");
 									list_iterate(cola_new, mostrar_datos_cola);
 								}
