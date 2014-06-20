@@ -32,7 +32,7 @@ typedef struct paquete_programa {
 } t_paquete_programa;
 
 typedef struct header_cpu{
-	int *socket;
+	int socket;
 	char estado;	//'O' = ociosa, 'T' = trabajando, 'X' = se va por señal SIGUSR1
 	char *operacion;
 	uint32_t tamanio_total;
