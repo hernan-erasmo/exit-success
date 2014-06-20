@@ -178,7 +178,9 @@ char *serializar_paquete(t_paquete_programa *paquete, t_log *logger)
 	offset += sizeToSend;
 
 	sizeToSend = paquete->sizeMensaje;
-	memcpy(serializedPackage + offset, paquete->mensaje, sizeToSend);
+	
+	if(sizeToSend > 0)
+		memcpy(serializedPackage + offset, paquete->mensaje, sizeToSend);
 
 	return serializedPackage;
 }

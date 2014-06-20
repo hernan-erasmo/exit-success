@@ -31,6 +31,13 @@ typedef struct paquete_programa {
 	uint32_t tamanio_total;
 } t_paquete_programa;
 
+typedef struct header_cpu{
+	int *socket;
+	char estado;	//'O' = ociosa, 'T' = trabajando, 'X' = se va por señal SIGUSR1
+	char *operacion;
+	uint32_t tamanio_total;
+} t_header_cpu;
+
 int sendAll(int sock, char *buf, int *len);
 int recvAll(t_paquete_programa *paquete, int sock);
 int recvPcb(t_pcb *pcb, int sock);
