@@ -18,6 +18,7 @@ typedef struct datos_pcp{
 
 typedef struct init_dispatcher {
 	t_log *logger;
+	t_list *cpus_ociosas;
 }t_init_dispatcher;
 
 void *pcp(void *datos_pcp);

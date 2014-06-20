@@ -41,6 +41,9 @@ int main(int argc, char *argv[])
 	multiprogramacion = config_get_int_value(config, "MULTIPROGRAMACION");
 	log_info(logger, "[KERNEL] El nivel de multiprogramacion del sistema es: %d", multiprogramacion);
 
+	tamanio_quantum = config_get_int_value(config, "QUANTUM");
+	log_info(logger, "[KERNEL] El tamaño de quantum es: %d", tamanio_quantum);
+
 	d_pcp = crearConfiguracionPcp(config, logger);
 	d_plp = crearConfiguracionPlp(config, logger);
 

@@ -141,6 +141,7 @@ void *plp(void *datos_plp)
 								t_pcb *pcb = malloc(sizeof(t_pcb));
 								pcb->socket = sockActual;
 								pcb->peso = 0;
+								pcb->quantum = tamanio_quantum;
 
 								if(atender_solicitud_programa(socket_umv, &paquete, pcb, tamanio_stack, &crear_programa_nuevo, logger) != 0){
 									log_error(logger, "[PLP] No se pudo satisfacer la solicitud del programa");

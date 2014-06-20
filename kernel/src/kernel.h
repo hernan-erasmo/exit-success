@@ -15,6 +15,7 @@ t_list *cola_block;
 t_list *cola_exit;
 
 uint32_t multiprogramacion;
+uint32_t tamanio_quantum;
 
 sem_t s_ready_max;
 sem_t s_ready_nuevo;

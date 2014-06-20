@@ -25,6 +25,8 @@ void *pcp(void *datos_pcp)
 	struct sockaddr_in addr; // Esta estructura contendra los datos de la conexion del cliente. IP, puerto, etc.
 	socklen_t addrlen = sizeof(addr);
 
+	t_list *cpus_ociosas = NULL;
+
 	//Variables de inicializacion
 	t_log *logger = ((t_datos_pcp *) datos_pcp)->logger;
 	char *puerto_escucha_cpu = ((t_datos_pcp *) datos_pcp)->puerto_escucha_cpu;
@@ -51,8 +53,10 @@ void *pcp(void *datos_pcp)
 		log_info(logger, "[PCP] Se creó el semáforo para la cola de ready, con un valor de %d", multiprogramacion);
 
 		log_info(logger, "[PCP] Creando el hilo Dispatcher, que va a manejar las colas de ready, block y exec.");
+		cpus_ociosas = list_create();
 		t_init_dispatcher *disp = malloc(sizeof(t_init_dispatcher));
 			disp->logger = logger;
+			disp->cpus_ociosas = cpus_ociosas;
 		if(pthread_create(&thread_dispatcher, NULL, dispatcher, (void *) disp)) {
 			log_error(logger, "[PLP] Error al crear el hilo dispatcher. Motivo: %s", strerror(errno));
 			goto liberarRecursos;
@@ -99,17 +103,22 @@ void *pcp(void *datos_pcp)
 
 					log_info(logger, "[PCP] Conexión vieja");
 					
-					t_paquete_programa head_cpu;
-					status = recvAll(&head_cpu, sockActual);
+					t_paquete_programa mensaje_cpu;
+					t_header_cpu *head_cpu;
+					status = recvAll(&mensaje_cpu, sockActual);
 
 					if(status){
-						switch(head_cpu.id)		//Reciclo el campo id de paquete_programa y lo uso para saber qué quiere hacer la CPU
+						switch(mensaje_cpu.id)		//Reciclo el campo id de paquete_programa y lo uso para saber qué quiere hacer la CPU
 						{						//No hace falta filtrar por identificador de programa. Acá sólo se conectan las CPUs.
 							case 'O':	//La cpu dice que está ociosa
 								; //¿Por qué un statement vacío? ver http://goo.gl/6SwXRB
-														
+								
+								head_cpu = malloc(sizeof(t_header_cpu));
+									head_cpu->socket = sockActual;
+									head_cpu->estado = mensaje_cpu.id;	//Me parece que es medio al pedo esto, pero bueno, seguime la corriente.
+
 								//Agrego la cpu a la lista de ociosas
-								//list_add(cpus_ociosas, head_cpu);
+								list_add(cpus_ociosas, head_cpu);
 
 								//Informo al thread que despacha que hay una cpu disponible
 								sem_post(&s_hay_cpus);
@@ -141,8 +150,8 @@ void *pcp(void *datos_pcp)
 						FD_CLR(sockActual, &master);
 					}
 
-					if(head_cpu.mensaje)
-						free(head_cpu.mensaje);	
+					if(mensaje_cpu.mensaje)
+						free(mensaje_cpu.mensaje);	
 				}
 			}
 		}
@@ -154,6 +163,9 @@ void *pcp(void *datos_pcp)
 		pthread_mutex_lock(&fin_pcp);
 			sem_destroy(&s_ready_nuevo);
 			sem_destroy(&s_ready_max);
+
+			if(cpus_ociosas)
+				list_destroy(cpus_ociosas);
 
 			if(serverInfo != NULL)
 				freeaddrinfo(serverInfo);
