@@ -74,6 +74,7 @@ int main(int argc, char *argv[])
 	}
 	log_info(logger, "[CPU] Conecté correctamente con el PCP.");
 
+	//Me conecto a la UMV
 	socket_umv = -1;
 	errorConexion = crear_conexion_saliente(&socket_umv, &socketInfo, ip_umv, puerto_umv, logger, "CPU");
 	if (errorConexion) {
@@ -83,23 +84,41 @@ int main(int argc, char *argv[])
 	}
 	log_info(logger, "[CPU] Conecté correctamente con la UMV.");
 
-	int q;
+	int q, bEnv = 0;
 	char *proxima_instruccion = NULL;
 	while(1){		//Asumo que todo lo que venga del PCP va a ser un PCB, asi que lo proceso como tal.
+		t_paquete_programa paq;
+			paq.id = 'O';
+			paq.sizeMensaje = 0;
+			paq.mensaje = NULL;
+
+		//Le digo al PCP que estoy ociosa (porque soy una cpu, no el programador, que es bien hombre, y no está ociosa, a diferencia de la cpu)
+		char *paqueteSerializado = serializar_paquete(&paq, logger);
+		bEnv = paq.tamanio_total;
+		if(sendAll(socket_pcp, paqueteSerializado, &bEnv)){
+			log_error(logger, "[CPU] Error en la transmisión hacia el PCP. Motivo: %s", strerror(errno));
+			goto liberarRecursos;
+			return EXIT_FAILURE;		
+		}
+
+		free(paqueteSerializado);
+
+		//bloqueo acá! esperando el pcb que me va a mandar el pcp cuando se le cante.
+		log_info(logger, "[CPU] Me bloqueo esperando algún PCB del PCP");
 		status = recvPcb(&pcb, socket_pcp);
+			
+		generarDiccionarioVariables(&pcb);
 		
 		if(status){
 			//Comenzá a procesar el pcb
-			log_info(logger,"[PCP] Me acaba de llegar un PCB correspondiente al programa con ID: %d.", pcb.id);
-			
-			generarDiccionarioVariables(&pcb);
-
+			log_info(logger,"[CPU] Me acaba de llegar un PCB correspondiente al programa con ID: %d.", pcb.id);
+		
 			for(q = pcb.quantum; q > 0; q--){
 				analizadorLinea(proxima_instruccion, funciones_comunes, funciones_kernel);
 			}
 
 		} else {	//Falló la recepción del pcb.
-			log_error(logger, "[PCP] Hubo una falla en la recepción del PCB.");
+			log_error(logger, "[CPU] Hubo una falla en la recepción del PCB.");
 		}
 
 		dictionary_destroy_and_destroy_elements(diccionario_variables, destructor_elementos_diccionario);
