@@ -338,7 +338,7 @@ char *codificar_destruir_segmentos(uint32_t id_programa)
 	int id_programa_len = strlen(str_id_programa);
 	int comando_len = strlen(comando);
 	
-	char *orden_completa = calloc(comando_len + 1 + 1 + id_programa_len, 1);
+	char *orden_completa = calloc(comando_len + 1 + 1 + 1 + id_programa_len, 1);
 	memcpy(orden_completa + offset_codificacion, comando, comando_len);
 	offset_codificacion += comando_len;
 	memcpy(orden_completa + offset_codificacion, ",", 1);
