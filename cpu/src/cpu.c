@@ -13,9 +13,6 @@ int main(int argc, char *argv[])
 	int errorConfig = 0;
 	int errorConexion = 0;
 
-	//Variables para el logger
-	t_log *logger = NULL;
-
 	//Variables para la carga de la configuración
 	t_config *config = NULL;
 
@@ -106,16 +103,29 @@ int main(int argc, char *argv[])
 		//bloqueo acá! esperando el pcb que me va a mandar el pcp cuando se le cante.
 		log_info(logger, "[CPU] Me bloqueo esperando algún PCB del PCP");
 		status = recvPcb(&pcb, socket_pcp);
-			
-		generarDiccionarioVariables(&pcb);
 		
 		if(status){
 			//Comenzá a procesar el pcb
 			log_info(logger,"[CPU] Me acaba de llegar un PCB correspondiente al programa con ID: %d.", pcb.id);
-		
+			printf("pcb->socket = %d\n", pcb.socket);
+			printf("pcb->quantum = %d\n", pcb.quantum);
+			printf("pcb->peso = %d\n", pcb.peso);
+			printf("pcb->seg_cod = %d\n", pcb.seg_cod);
+			printf("pcb->seg_stack = %d\n", pcb.seg_stack);
+			printf("pcb->cursor_stack = %d\n", pcb.cursor_stack);
+			printf("pcb->seg_idx_cod = %d\n", pcb.seg_idx_cod);
+			printf("pcb->seg_idx_etq = %d\n", pcb.seg_idx_etq);
+			printf("pcb->p_counter = %d\n", pcb.p_counter);
+			printf("pcb->size_ctxt_actual = %d\n", pcb.size_ctxt_actual);
+			printf("pcb->size_idx_etq = %d\n", pcb.size_idx_etq);
+			
+			generarDiccionarioVariables(&pcb);
+
+			/*		
 			for(q = pcb.quantum; q > 0; q--){
 				analizadorLinea(proxima_instruccion, funciones_comunes, funciones_kernel);
 			}
+			*/
 
 		} else {	//Falló la recepción del pcb.
 			log_error(logger, "[CPU] Hubo una falla en la recepción del PCB.");
@@ -190,11 +200,16 @@ int checkArgs(int args)
 void generarDiccionarioVariables(t_pcb *pcb)
 {
 	diccionario_variables = dictionary_create();
+	int i;
+	char *respuesta_umv;
+	uint32_t cursor = 0;
 
-	//paré acá porque voy a necesitar demasiado tener implementada la funcionalidad de solicitar bytes
-	//a la umv. Voy a implementar eso primero aver que necesito y despues sigo con esto y con la implementación
-	//de las primitivas
-
+	for(i = 0; i < pcb->size_ctxt_actual; i++){
+		cursor = pcb->cursor_stack + i*5;
+		respuesta_umv = (char *) solicitar_solicitar_bytes(socket_umv, pcb->seg_stack, cursor, 1, 'C', logger);
+		dictionary_put(diccionario_variables, respuesta_umv, (void *) cursor);
+	}
+	
 	return;
 }
 

@@ -8,6 +8,7 @@
 #include <parser/parser.h>
 
 #include "../../utils/comunicacion.h"
+#include "../../utils/interfaz_umv.h"
 
 #ifndef CPU_H
 #define CPU_H
@@ -15,6 +16,7 @@
 t_pcb pcb;
 t_dictionary *diccionario_variables;
 int socket_umv;
+t_log *logger;
 
 int checkArgs(int args);
 int crearLogger(t_log **logger);
