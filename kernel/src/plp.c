@@ -263,6 +263,8 @@ int atender_solicitud_programa(int socket_umv, t_paquete_programa *paquete, t_pc
 				break;
 			}
 			
+			pcb->p_counter = metadatos->instruccion_inicio;
+
 			break;
 		}
 	
