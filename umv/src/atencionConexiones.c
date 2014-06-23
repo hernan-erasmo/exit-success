@@ -104,6 +104,9 @@ void handler_cpu(int sock, void *respuesta, char *orden, t_param_memoria *parame
 	} else if(strcmp(comando,"solicitar_bytes") == 0){
 		handler_solicitar_bytes(&respuesta, parametros_memoria, &tamanio_buffer_respuesta, &savePtr1, logger);
 		enviar_respuesta_buffer(&sock, respuesta, &tamanio_buffer_respuesta, logger);
+	} else if(strcmp(comando,"enviar_bytes") == 0){
+		handler_enviar_bytes(&resp_num, orden, parametros_memoria, &savePtr1, logger);
+		enviar_respuesta_numerica(&sock, resp_num, logger);
 	}
 
 	return;	
