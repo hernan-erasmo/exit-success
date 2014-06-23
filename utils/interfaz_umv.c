@@ -15,7 +15,7 @@ uint32_t solicitar_cambiar_proceso_activo(int socket_umv, uint32_t contador_id_p
 	
 	bEnv = paq_saliente.tamanio_total;
 	if(sendAll(socket_umv, paqueteSaliente, &bEnv)){
-		log_error(logger, "[PLP] Error en la solicitud de cambio de proceso activo. Motivo: %s", strerror(errno));
+		log_error(logger, "[INTERFAZ_UMV] Error en la solicitud de cambio de proceso activo. Motivo: %s", strerror(errno));
 		free(paqueteSaliente);
 		free(orden);
 		return 0;
@@ -26,9 +26,9 @@ uint32_t solicitar_cambiar_proceso_activo(int socket_umv, uint32_t contador_id_p
 
 	uint32_t bRec = 0;
 	t_paquete_programa respuesta;
-	log_info(logger, "[PLP] Esperando la respuesta de la UMV.");
+	log_info(logger, "[INTERFAZ_UMV] Esperando la respuesta de la UMV.");
 	bRec = recvAll(&respuesta, socket_umv);
-	log_info(logger, "[PLP] La UMV respondió %s", respuesta.mensaje);
+	log_info(logger, "[INTERFAZ_UMV] La UMV respondió %s", respuesta.mensaje);
 
 	valorRetorno = atoi(respuesta.mensaje);
 	free(respuesta.mensaje);
@@ -51,7 +51,7 @@ uint32_t solicitar_crear_segmento(int socket_umv, uint32_t id_programa, uint32_t
 	
 	bEnv = paq_saliente.tamanio_total;
 	if(sendAll(socket_umv, paqueteSaliente, &bEnv)){
-		log_error(logger, "[PLP] Error en la solicitud de creación de segmento. Motivo: %s", strerror(errno));
+		log_error(logger, "[INTERFAZ_UMV] Error en la solicitud de creación de segmento. Motivo: %s", strerror(errno));
 		free(paqueteSaliente);
 		free(orden);
 		return 0;
@@ -62,9 +62,9 @@ uint32_t solicitar_crear_segmento(int socket_umv, uint32_t id_programa, uint32_t
 
 	uint32_t bRec = 0;
 	t_paquete_programa respuesta;
-	log_info(logger, "[PLP] Esperando la respuesta de la UMV.");
+	log_info(logger, "[INTERFAZ_UMV] Esperando la respuesta de la UMV.");
 	bRec = recvAll(&respuesta, socket_umv);
-	log_info(logger, "[PLP] La UMV respondió %s", respuesta.mensaje);
+	log_info(logger, "[INTERFAZ_UMV] La UMV respondió %s", respuesta.mensaje);
 
 	valorRetorno = atoi(respuesta.mensaje);
 	free(respuesta.mensaje);
@@ -89,7 +89,7 @@ uint32_t solicitar_enviar_bytes(int socket_umv, uint32_t base, uint32_t offset, 
 
 	bEnv = paq_saliente.tamanio_total;
 	if(sendAll(socket_umv, paqueteSaliente, &bEnv)){
-		log_error(logger, "[PLP] Error en la solicitud de enviar bytes para el segmento de código. Motivo: %s", strerror(errno));
+		log_error(logger, "[INTERFAZ_UMV] Error en la solicitud de enviar bytes para el segmento de código. Motivo: %s", strerror(errno));
 		free(paqueteSaliente);
 		free(orden);
 		return 0;
@@ -100,9 +100,9 @@ uint32_t solicitar_enviar_bytes(int socket_umv, uint32_t base, uint32_t offset, 
 
 	uint32_t bRec = 0;
 	t_paquete_programa respuesta;
-	log_info(logger, "[PLP] Esperando la respuesta de la UMV.");
+	log_info(logger, "[INTERFAZ_UMV] Esperando la respuesta de la UMV.");
 	bRec = recvAll(&respuesta, socket_umv);
-	log_info(logger, "[PLP] La UMV respondió %s", respuesta.mensaje);
+	log_info(logger, "[INTERFAZ_UMV] La UMV respondió %s", respuesta.mensaje);
 
 	valorRetorno = atoi(respuesta.mensaje);
 	free(respuesta.mensaje);
@@ -125,7 +125,7 @@ uint32_t solicitar_destruir_segmentos(int socket_umv, uint32_t id_programa, char
 	
 	bEnv = paq_saliente.tamanio_total;
 	if(sendAll(socket_umv, paqueteSaliente, &bEnv)){
-		log_error(logger, "[PLP] Error en la solicitud de destrucción de segmentos. Motivo: %s", strerror(errno));
+		log_error(logger, "[INTERFAZ_UMV] Error en la solicitud de destrucción de segmentos. Motivo: %s", strerror(errno));
 		free(paqueteSaliente);
 		free(orden);
 		return 0;
@@ -136,9 +136,9 @@ uint32_t solicitar_destruir_segmentos(int socket_umv, uint32_t id_programa, char
 
 	uint32_t bRec = 0;
 	t_paquete_programa respuesta;
-	log_info(logger, "[PLP] Esperando la respuesta de la UMV.");
+	log_info(logger, "[INTERFAZ_UMV] Esperando la respuesta de la UMV.");
 	bRec = recvAll(&respuesta, socket_umv);
-	log_info(logger, "[PLP] La UMV respondió %s", respuesta.mensaje);
+	log_info(logger, "[INTERFAZ_UMV] La UMV respondió %s", respuesta.mensaje);
 
 	valorRetorno = atoi(respuesta.mensaje);
 	free(respuesta.mensaje);
@@ -162,7 +162,7 @@ void *solicitar_solicitar_bytes(int socket_umv, uint32_t base, uint32_t offset, 
 
 	bEnv = paq_saliente.tamanio_total;
 	if(sendAll(socket_umv, paqueteSaliente, &bEnv)){
-		log_error(logger, "[PLP] Error en la solicitud de solicitar_bytes. Motivo: %s", strerror(errno));
+		log_error(logger, "[INTERFAZ_UMV] Error en la solicitud de solicitar_bytes. Motivo: %s", strerror(errno));
 		free(paqueteSaliente);
 		free(orden);
 		return 0;
@@ -173,9 +173,9 @@ void *solicitar_solicitar_bytes(int socket_umv, uint32_t base, uint32_t offset, 
 
 	uint32_t bRec = 0;
 	t_paquete_programa respuesta;
-	log_info(logger, "[PLP] Esperando la respuesta de la UMV.");
+	log_info(logger, "[INTERFAZ_UMV] Esperando la respuesta de la UMV.");
 	bRec = recvAll(&respuesta, socket_umv);
-	log_info(logger, "[PLP] La UMV respondió %s", respuesta.mensaje);
+	log_info(logger, "[INTERFAZ_UMV] La UMV respondió %s", respuesta.mensaje);
 
 	valorRetorno = (void *) respuesta.mensaje;
 

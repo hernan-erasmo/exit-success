@@ -398,7 +398,7 @@ void *solicitar_bytes(t_list *listaSegmentos, uint32_t base, uint32_t offset, ui
 	
 	if(lectura_valida = chequear_limites_lectoescritura(seg, offset, *tamanio)){
 		retorno = calloc(*tamanio, 1);
-		memcpy(retorno, seg->pos_mem_ppal, *tamanio);
+		memcpy(retorno, seg->pos_mem_ppal + offset, *tamanio);
 	} else {
 		//Segmentation fault. Se quiso leer/escribir por fuera de los límites de la memoria del segmento
 		return retorno;

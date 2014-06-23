@@ -94,13 +94,17 @@ void handler_cpu(int sock, void *respuesta, char *orden, t_param_memoria *parame
 {
 	char *savePtr1 = NULL;
 	char *comando = strtok_r(orden, ",", &savePtr1);
+	uint32_t resp_num = 0;
 
 	uint32_t tamanio_buffer_respuesta = 0;
 
-	if(strcmp(comando,"solicitar_bytes") == 0)
-		handler_solicitar_bytes(respuesta, parametros_memoria, &tamanio_buffer_respuesta, &savePtr1, logger);
-	
-	enviar_respuesta_buffer(&sock, respuesta, &tamanio_buffer_respuesta, logger);
+	if(strcmp(comando, "cambiar_proceso_activo") == 0){
+		handler_cambiar_proceso_activo(&resp_num, orden, parametros_memoria, &savePtr1, logger);
+		enviar_respuesta_numerica(&sock, resp_num, logger);
+	} else if(strcmp(comando,"solicitar_bytes") == 0){
+		handler_solicitar_bytes(&respuesta, parametros_memoria, &tamanio_buffer_respuesta, &savePtr1, logger);
+		enviar_respuesta_buffer(&sock, respuesta, &tamanio_buffer_respuesta, logger);
+	}
 
 	return;	
 }
