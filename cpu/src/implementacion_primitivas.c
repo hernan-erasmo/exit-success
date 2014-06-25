@@ -44,6 +44,7 @@ t_puntero definirVariable(t_nombre_variable identificador_variable)
 		}
 	pthread_mutex_unlock(&operacion);
 
+	log_info(logger, "[PRIMITIVA] _definirVariable retorna: %d.", identificador_variable);
 	return *puntero_al_valor;
 }
 
@@ -77,7 +78,31 @@ t_valor_variable dereferenciar(t_puntero direccion_variable)
 
 void asignar(t_puntero direccion_variable, t_valor_variable valor)
 {
-	log_info(logger, "[PRIMITIVA] Estoy dentro de _asignar");
+	log_info(logger, "[PRIMITIVA] Estoy dentro de _asignar (direccion_variable = %d, valor = %d)", direccion_variable, valor);
+	pthread_mutex_t operacion = PTHREAD_MUTEX_INITIALIZER;
+	int tamanio_escritura = sizeof(t_valor_variable);
+	int respuesta = 0;
+	t_valor_variable *v = malloc(tamanio_escritura);
+	*v = valor;
+
+	pthread_mutex_lock(&operacion);
+
+		solicitar_cambiar_proceso_activo(socket_umv, pcb.id, 'C', logger);
+		
+		respuesta = solicitar_enviar_bytes(socket_umv, pcb.seg_stack, direccion_variable, tamanio_escritura, v, 'C', logger);
+		if(respuesta == -1){
+			log_error(logger, "[CPU] Segmentation fault. La UMV dice que este proceso no tiene ningún segmento con base %d.", pcb.seg_stack);
+			//acá hay que terminar la ejecución del programa
+			return;
+		} else if(respuesta == -2) {
+			log_error(logger, "[CPU] Segmentation fault. La UMV dice que intentar escribir %d bytes en la base %d, offset %d, quedaría fuera de rango.", tamanio_escritura, pcb.seg_stack, direccion_variable);
+			//acá hay que terminar la ejecución del programa
+			return;
+		} else {
+			log_info(logger, "[PRIMITIVA] _asignar cambió correctamente el valor en la posición %d a %d.", direccion_variable, valor);
+		}
+
+	pthread_mutex_unlock(&operacion);
 
 	return;
 }
