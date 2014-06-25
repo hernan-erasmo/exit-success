@@ -132,6 +132,7 @@ int main(int argc, char *argv[])
 			} else {
 				
 				if(salimosPorFin){
+					salimosPorFin = 0;
 					log_info(logger, "[CPU] Finalizó normalmente la ejecución del proceso con ID = %d.", pcb.id);
 					
 					if(enviarPcbProcesado(socket_pcp, 'F', logger) > 0){
