@@ -387,13 +387,15 @@ uint32_t get_proceso_activo()
 void *solicitar_bytes(t_list *listaSegmentos, uint32_t base, uint32_t offset, uint32_t *tamanio)
 {
 	char *retorno = NULL;
+	char *noHaySegmento = "-1";
+	char *violacionLimite = "-2";
 	int lectura_valida = 0;
 
 	t_segmento *seg = buscar_segmento_solicitado(listaSegmentos, base);
 
 	if(seg == NULL){
 		//Segmentation fault. El proceso activo no tiene un segmento con esa base.
-		return retorno;
+		return noHaySegmento;
 	}
 	
 	if(lectura_valida = chequear_limites_lectoescritura(seg, offset, *tamanio)){
@@ -401,7 +403,7 @@ void *solicitar_bytes(t_list *listaSegmentos, uint32_t base, uint32_t offset, ui
 		memcpy(retorno, seg->pos_mem_ppal + offset, *tamanio);
 	} else {
 		//Segmentation fault. Se quiso leer/escribir por fuera de los límites de la memoria del segmento
-		return retorno;
+		return violacionLimite;
 	}	
 
 	return (void *) retorno;
