@@ -44,6 +44,7 @@ int recvPcb(t_pcb *pcb, int sock);
 void inicializar_paquete(t_paquete_programa *paq);
 char *serializar_paquete(t_paquete_programa *paquete, t_log *logger);
 char *serializar_pcb(t_pcb *pcb, t_log *logger);
+void deserializarPcb(t_pcb *pcb, void *buffer);
 
 //Sockets
 int crear_conexion_saliente(int *unSocket, struct sockaddr_in *socketInfo, char *ip, int puerto, t_log *logger, char *id_proceso);

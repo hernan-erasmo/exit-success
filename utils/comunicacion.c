@@ -80,7 +80,6 @@ int recvPcb(t_pcb *pcb, int sock)
 	uint32_t recibido = 0;
 	uint32_t bytesRecibidos = 0;
 	uint32_t bytesARecibir = SIZEOF_PCB;	//(En el PCB, 12 campos * 4 bytes cada uno)
-	uint32_t offset = 0;
 	void *buffer = NULL;
 
 	buffer = calloc(bytesARecibir, 1);
@@ -91,6 +90,15 @@ int recvPcb(t_pcb *pcb, int sock)
 		bytesARecibir -= recibido;
 	}
 	printf("Recibí %d bytes por el socket %d.\n", bytesRecibidos, sock);
+
+	deserializarPcb(pcb, buffer);
+
+	return bytesRecibidos;
+}
+
+void deserializarPcb(t_pcb *pcb, void *buffer)
+{
+	uint32_t offset = 0;
 
 	//Cargamos el id del programa en el pcb
 	uint32_t id;
@@ -142,7 +150,7 @@ int recvPcb(t_pcb *pcb, int sock)
 
 	free(buffer);
 
-	return bytesRecibidos;
+	return;
 }
 
 void inicializar_paquete(t_paquete_programa *paq)
