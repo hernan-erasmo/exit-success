@@ -6,12 +6,20 @@
 #include "cpu.h"
 #include "implementacion_primitivas.h"
 
+void mostrarElementosDiccionario(char *k, void *v);
+
 int main(int argc, char *argv[])
 {
 	int errorArgumentos = 0;
 	int errorLogger = 0;
 	int errorConfig = 0;
 	int errorConexion = 0;
+
+	salimosPorBloqueo = 0;
+	salimosPorError = 0;
+	salimosPorFin = 0;
+
+	pthread_mutex_t operar_con_umv = PTHREAD_MUTEX_INITIALIZER;
 
 	//Variables para la carga de la configuración
 	t_config *config = NULL;
@@ -100,38 +108,56 @@ int main(int argc, char *argv[])
 
 		free(paqueteSerializado);
 
-		//bloqueo acá! esperando el pcb que me va a mandar el pcp cuando se le cante.
 		log_info(logger, "[CPU] Me bloqueo esperando algún PCB del PCP");
 		status = recvPcb(&pcb, socket_pcp);
 		
-		if(status){
-			//Comenzá a procesar el pcb
+		if(status){		//Comenzá a procesar el pcb
+
 			log_info(logger,"[CPU] Me acaba de llegar un PCB correspondiente al programa con ID: %d.", pcb.id);
-			printf("pcb->socket = %d\n", pcb.socket);
-			printf("pcb->quantum = %d\n", pcb.quantum);
-			printf("pcb->peso = %d\n", pcb.peso);
-			printf("pcb->seg_cod = %d\n", pcb.seg_cod);
-			printf("pcb->seg_stack = %d\n", pcb.seg_stack);
-			printf("pcb->cursor_stack = %d\n", pcb.cursor_stack);
-			printf("pcb->seg_idx_cod = %d\n", pcb.seg_idx_cod);
-			printf("pcb->seg_idx_etq = %d\n", pcb.seg_idx_etq);
-			printf("pcb->p_counter = %d\n", pcb.p_counter);
-			printf("pcb->size_ctxt_actual = %d\n", pcb.size_ctxt_actual);
-			printf("pcb->size_idx_etq = %d\n", pcb.size_idx_etq);
-			
-			generarDiccionarioVariables(&pcb);
+			generarDiccionarioVariables();
 
-			/*		
 			for(q = pcb.quantum; q > 0; q--){
+				proxima_instruccion = obtener_proxima_instruccion(socket_umv, &operar_con_umv, logger);
+				pcb.p_counter = pcb.p_counter + 1;
 				analizadorLinea(proxima_instruccion, funciones_comunes, funciones_kernel);
-			}
-			*/
 
+				if(salimosPorFin)
+					break;
+			}
+			
+			if(salimosPorBloqueo){
+				// Falta implementar!
+			} else if(salimosPorError) {
+				// Falta implementar!
+			} else {
+				
+				if(salimosPorFin){
+					log_info(logger, "[CPU] Finalizó normalmente la ejecución del proceso con ID = %d.", pcb.id);
+					
+					if(enviarPcbProcesado(socket_pcp, 'F', logger) > 0){
+						log_error(logger, "[CPU] Error en la transmisión hacia el PCP. Motivo: %s", strerror(errno));
+						goto liberarRecursos;
+						return EXIT_FAILURE;
+					}
+				} else {
+					log_info(logger, "[CPU] Finalizó el quantum. Enviando PCB al Kernel.");
+					
+					if(enviarPcbProcesado(socket_pcp, 'P', logger) > 0){
+						log_error(logger, "[CPU] Error en la transmisión hacia el PCP. Motivo: %s", strerror(errno));
+						goto liberarRecursos;
+						return EXIT_FAILURE;
+					}
+				}
+			}
+
+			log_info(logger, "[CPU] Se envió al Kernel el PCB actualizado.");
+			
 		} else {	//Falló la recepción del pcb.
 			log_error(logger, "[CPU] Hubo una falla en la recepción del PCB.");
 		}
 
-		dictionary_destroy_and_destroy_elements(diccionario_variables, destructor_elementos_diccionario);
+		//Vaciamos el diccionario de variables.
+		dictionary_clean(diccionario_variables);
 	}
 
 	goto liberarRecursos;
@@ -197,25 +223,80 @@ int checkArgs(int args)
 	return 0;	
 }
 
-void generarDiccionarioVariables(t_pcb *pcb)
+void generarDiccionarioVariables()
 {
+	diccionario_variables = NULL;
 	diccionario_variables = dictionary_create();
 	int i;
 	char *respuesta_umv;
 	uint32_t cursor = 0;
+	uint32_t *valor;
 
-	for(i = 0; i < pcb->size_ctxt_actual; i++){
-		cursor = pcb->cursor_stack + i*5;
-		respuesta_umv = (char *) solicitar_solicitar_bytes(socket_umv, pcb->seg_stack, cursor, 1, 'C', logger);
-		dictionary_put(diccionario_variables, respuesta_umv, (void *) cursor);
-	}
+	for(i = 0; i < pcb.size_ctxt_actual; i++){
+		cursor = pcb.cursor_stack + i*5;
+		valor = malloc(sizeof(uint32_t));
+		*valor = cursor + 1;
+		respuesta_umv = (char *) solicitar_solicitar_bytes(socket_umv, pcb.seg_stack, cursor, 1, 'C', logger);
+		dictionary_put(diccionario_variables, respuesta_umv, valor);
 	
+	//para debug - mostrar todo el diccionario de variables
+		dictionary_iterator(diccionario_variables, mostrarElementosDiccionario);
+	}
+
 	return;
 }
 
-void destructor_elementos_diccionario(void *elemento)
+char *obtener_proxima_instruccion(int socket_umv, pthread_mutex_t *mutex, t_log *logger)
 {
-	free(elemento);
+	char *inst = NULL;
+	uint32_t offset = pcb.p_counter * 8;
+	uint32_t *offset_inst = 0;
+	uint32_t *tamanio_inst = 0;
+
+	pthread_mutex_lock(mutex);
+		solicitar_cambiar_proceso_activo(socket_umv, pcb.id, 'C', logger);
+		//offset_inst = (uint32_t *) solicitar_solicitar_bytes(socket_umv, pcb.seg_idx_cod, offset, 8, 'C', logger);
+		offset_inst = (uint32_t *) solicitar_solicitar_bytes(socket_umv, pcb.seg_idx_cod, offset, 4, 'C', logger);
+		tamanio_inst = (uint32_t *) solicitar_solicitar_bytes(socket_umv, pcb.seg_idx_cod, offset + 4, 4, 'C', logger);
+		printf("OFFSET_INST: %d\n", *offset_inst);
+		printf("TAMANIO_INST: %d\n", *tamanio_inst);
+		inst = (char *) solicitar_solicitar_bytes(socket_umv, pcb.seg_cod, *offset_inst, *tamanio_inst, 'C', logger);
+	pthread_mutex_unlock(mutex);
+
+	return inst;
+}
+
+int enviarPcbProcesado(int socket_pcp, char evento, t_log *logger)
+{
+	int bEnv = 0;
+
+	t_paquete_programa paq;
+			paq.id = evento; 	//'P' = te mando un pcb que salió por quantum, 'F' = te mando un pcb que salió por fin de operación
+			paq.mensaje = serializar_pcb(&pcb, logger);
+			paq.sizeMensaje = 48;
+
+		//Le digo al PCP que estoy ociosa (porque soy una cpu, no el programador, que es bien hombre, y no está ociosa, a diferencia de la cpu)
+		char *paqueteSerializado = serializar_paquete(&paq, logger);
+		bEnv = paq.tamanio_total;
+		if(sendAll(socket_pcp, paqueteSerializado, &bEnv)){
+			free(paqueteSerializado);
+			return 1;
+		}
+
+		free(paq.mensaje);
+		return 0;
+}
+
+void mostrarElementosDiccionario(char *k, void *v)
+{
+	printf("\t\t KEY: %c -------- VALUE: %d\n", *k, *((uint32_t *) v));
+	printf("\t\t KEY: %c -------- VALUE: %d\n", *k, *((uint32_t *) v));
+	printf("\t\t KEY: %c -------- VALUE: %d\n", *k, *((uint32_t *) v));
+	printf("\t\t KEY: %c -------- VALUE: %d\n", *k, *((uint32_t *) v));
+	printf("\t\t KEY: %c -------- VALUE: %d\n", *k, *((uint32_t *) v));
+	printf("\t\t KEY: %c -------- VALUE: %d\n", *k, *((uint32_t *) v));
+	printf("\t\t KEY: %c -------- VALUE: %d\n", *k, *((uint32_t *) v));
+	printf("\t\t KEY: %c -------- VALUE: %d\n", *k, *((uint32_t *) v));
 
 	return;
 }
