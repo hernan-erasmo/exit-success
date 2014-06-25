@@ -1,4 +1,5 @@
 #include <parser/parser.h>
+#include <pthread.h>
 
 #include "cpu.h"
 
