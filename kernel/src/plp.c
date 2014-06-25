@@ -309,6 +309,8 @@ uint32_t crear_segmento_stack(int socket_umv, t_pcb *pcb, uint32_t tamanio_stack
 		return resultado;
 	}
 
+	pcb->cursor_stack = 0;
+
 	resultado = 1;
 	return resultado;
 }

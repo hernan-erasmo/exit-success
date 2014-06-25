@@ -34,6 +34,7 @@ void *pcp(void *datos_pcp)
 	pthread_t thread_dispatcher;
 	pthread_mutex_t init_pcp = PTHREAD_MUTEX_INITIALIZER;
 	pthread_mutex_t fin_pcp = PTHREAD_MUTEX_INITIALIZER;
+	pthread_mutex_t encolar = PTHREAD_MUTEX_INITIALIZER;
 
 	pthread_mutex_lock(&init_pcp);
 		log_info(logger, "[PCP] Creando el socket que escucha conexiones de CPUs.");
@@ -106,6 +107,7 @@ void *pcp(void *datos_pcp)
 					t_paquete_programa mensaje_cpu;
 					t_header_cpu *head_cpu;
 					status = recvAll(&mensaje_cpu, sockActual);
+					t_pcb *pcb_modificado = malloc(sizeof(t_pcb));
 
 					if(status){
 						switch(mensaje_cpu.id)		//Reciclo el campo id de paquete_programa y lo uso para saber qué quiere hacer la CPU
@@ -124,7 +126,7 @@ void *pcp(void *datos_pcp)
 								sem_post(&s_hay_cpus);
 
 								break;
-							case 'T':	//La cpu dice que está trabajando. O quiere solicitar un servicio o me está mandando el pcb para guardar
+							case 'T':	//La cpu dice que está trabajando, quiere solicitar un servicio.
 								;
 
 								/*
@@ -132,7 +134,33 @@ void *pcp(void *datos_pcp)
 								*	Un pijazo.
 								*/
 								break;
+							case 'P':	//Terminó la ráfaga de CPU (por quantum, o por block) y me está mandando el PCB para guardar
+								;
+								int tamanio_ready = 0;
+								deserializarPcb(pcb_modificado, (void *) mensaje_cpu.mensaje);
 
+								log_info(logger, "[PCP] Una CPU me mandó el PCB del proceso: %d. (program counter=%d)", pcb_modificado->id, pcb_modificado->p_counter);
+								pthread_mutex_lock(&encolar);
+									tamanio_ready = list_size(cola_ready);
+									list_add_in_index(cola_ready, tamanio_ready, pcb_modificado);	//Lo mando al fondo de la cola, es Round-Robin.
+									sem_post(&s_ready_nuevo);
+								pthread_mutex_unlock(&encolar);
+
+								break;
+							case 'F':	//La CPU informa que llegó al final de la ejecución de este proceso.
+								;
+								//Informamos a quien haya que informar (Como el programa, por ejemplo, leemos el stack y retornamos
+								// la cantidad de variables y el valor de cada una. Soñar es gratis.)
+								deserializarPcb(pcb_modificado, (void *) mensaje_cpu.mensaje);
+
+								log_info(logger, "[PCP] Una CPU me mandó el PCB del proceso: %d. (program counter=%d)", pcb_modificado->id, pcb_modificado->p_counter);
+								pthread_mutex_lock(&encolar);
+									list_add(cola_exit, pcb_modificado);
+									sem_post(&s_ready_max);
+									sem_post(&s_exit);
+								pthread_mutex_unlock(&encolar);
+
+								break;
 							case 'X':	//La CPU me avisa que se va, asi que ya no la considero más.
 								;
 
@@ -151,7 +179,7 @@ void *pcp(void *datos_pcp)
 					}
 
 					if(mensaje_cpu.mensaje)
-						free(mensaje_cpu.mensaje);	
+						free(mensaje_cpu.mensaje);
 				}
 			}
 		}
