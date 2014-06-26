@@ -387,15 +387,28 @@ uint32_t get_proceso_activo()
 void *solicitar_bytes(t_list *listaSegmentos, uint32_t base, uint32_t offset, uint32_t *tamanio)
 {
 	char *retorno = NULL;
-	char *noHaySegmento = "-1";
-	char *violacionLimite = "-2";
+	
+	/*
+		Para enviar_bytes no hay problema en asignar un código de retorno, pero no sé si será posible que solicitar_bytes retorne
+		valores negativos (asumo que si, que se pueden almacenar valores negativos para las variables, y que solicitar_bytes puede
+		retornar valores negativos). La única forma de avisar de un error al usuario es haciendo que el puntero que retorna esta 
+		función sea NULL. La desventaja es que el código que nos llama no puede distinguir el tipo de fallo (si no existe el segmento
+		o si se pasó del tamaño de lectura). Si esto llega a romper, volvemos a como estaba y que Dios se apiade de nosotros si tenemos
+		que devolver un valor de -1 o -2.
+	*/
+
+	//char *noHaySegmento = "-1";
+	//char *violacionLimite = "-2";
+
+	
 	int lectura_valida = 0;
 
 	t_segmento *seg = buscar_segmento_solicitado(listaSegmentos, base);
 
 	if(seg == NULL){
 		//Segmentation fault. El proceso activo no tiene un segmento con esa base.
-		return noHaySegmento;
+		//return noHaySegmento;
+		return retorno;
 	}
 	
 	if(lectura_valida = chequear_limites_lectoescritura(seg, offset, *tamanio)){
@@ -403,7 +416,8 @@ void *solicitar_bytes(t_list *listaSegmentos, uint32_t base, uint32_t offset, ui
 		memcpy(retorno, seg->pos_mem_ppal + offset, *tamanio);
 	} else {
 		//Segmentation fault. Se quiso leer/escribir por fuera de los límites de la memoria del segmento
-		return violacionLimite;
+		//return violacionLimite;
+		return retorno;
 	}	
 
 	return (void *) retorno;
