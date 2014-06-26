@@ -45,7 +45,6 @@ void *plp(void *datos_plp)
 	pthread_t thread_wt_nar;
 	pthread_mutex_t init_plp = PTHREAD_MUTEX_INITIALIZER;
 	pthread_mutex_t encolar = PTHREAD_MUTEX_INITIALIZER;
-	pthread_mutex_t crear_programa_nuevo = PTHREAD_MUTEX_INITIALIZER;
 	pthread_mutex_t fin_plp = PTHREAD_MUTEX_INITIALIZER;
 
 	//Fin variables
@@ -143,7 +142,7 @@ void *plp(void *datos_plp)
 								pcb->peso = 0;
 								pcb->quantum = tamanio_quantum;
 
-								if(atender_solicitud_programa(socket_umv, &paquete, pcb, tamanio_stack, &crear_programa_nuevo, logger) != 0){
+								if(atender_solicitud_programa(socket_umv, &paquete, pcb, tamanio_stack, logger) != 0){
 									log_error(logger, "[PLP] No se pudo satisfacer la solicitud del programa");
 								
 									pthread_mutex_lock(&encolar);
@@ -220,7 +219,7 @@ void *plp(void *datos_plp)
 		pthread_mutex_unlock(&fin_plp);
 }
 
-int atender_solicitud_programa(int socket_umv, t_paquete_programa *paquete, t_pcb *pcb, uint32_t tamanio_stack, pthread_mutex_t *mutex, t_log *logger)
+int atender_solicitud_programa(int socket_umv, t_paquete_programa *paquete, t_pcb *pcb, uint32_t tamanio_stack, t_log *logger)
 {
 	log_info(logger, "[PLP] Un programa envió un mensaje");
 
@@ -230,8 +229,9 @@ int atender_solicitud_programa(int socket_umv, t_paquete_programa *paquete, t_pc
 
 	contador_id_programa++;
 	pcb->id = contador_id_programa;
-	
-	pthread_mutex_lock(mutex);
+
+	pthread_mutex_t crear_programa = PTHREAD_MUTEX_INITIALIZER;	
+	pthread_mutex_lock(&crear_programa);
 	
 		while(1){
 
@@ -268,7 +268,7 @@ int atender_solicitud_programa(int socket_umv, t_paquete_programa *paquete, t_pc
 			break;
 		}
 	
-	pthread_mutex_unlock(mutex);
+	pthread_mutex_unlock(&crear_programa);
 
 	if(!huboUnError)
 		calcularPeso(pcb, metadatos);
