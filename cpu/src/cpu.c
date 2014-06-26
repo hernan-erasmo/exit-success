@@ -19,8 +19,6 @@ int main(int argc, char *argv[])
 	salimosPorError = 0;
 	salimosPorFin = 0;
 
-	pthread_mutex_t operar_con_umv = PTHREAD_MUTEX_INITIALIZER;
-
 	//Variables para la carga de la configuración
 	t_config *config = NULL;
 
@@ -117,7 +115,7 @@ int main(int argc, char *argv[])
 			generarDiccionarioVariables();
 
 			for(q = pcb.quantum; q > 0; q--){
-				proxima_instruccion = obtener_proxima_instruccion(socket_umv, &operar_con_umv, logger);
+				proxima_instruccion = obtener_proxima_instruccion(socket_umv, logger);
 				pcb.p_counter = pcb.p_counter + 1;
 				analizadorLinea(proxima_instruccion, funciones_comunes, funciones_kernel);
 
@@ -228,33 +226,47 @@ void generarDiccionarioVariables()
 {
 	diccionario_variables = NULL;
 	diccionario_variables = dictionary_create();
-	int i;
+	log_info(logger, "[CPU] Generando diccionario de variables.");
+	
+	int i, hayQueCambiarElProcesoActivo = 1;
+	pthread_mutex_t operar = PTHREAD_MUTEX_INITIALIZER;
 	char *respuesta_umv;
 	uint32_t cursor = 0;
 	uint32_t *valor;
 
-	for(i = 0; i < pcb.size_ctxt_actual; i++){
-		cursor = pcb.cursor_stack + i*5;
-		valor = malloc(sizeof(uint32_t));
-		*valor = cursor + 1;
-		respuesta_umv = (char *) solicitar_solicitar_bytes(socket_umv, pcb.seg_stack, cursor, 1, 'C', logger);
-		dictionary_put(diccionario_variables, respuesta_umv, valor);
-	
-	//para debug - mostrar todo el diccionario de variables
-		dictionary_iterator(diccionario_variables, mostrarElementosDiccionario);
-	}
+	pthread_mutex_lock(&operar);
+		
+		log_info(logger, "[CPU] El tamaño del contexto actual es de: %d.", pcb.size_ctxt_actual);		
+		for(i = 0; i < pcb.size_ctxt_actual; i++){
+		
+			if(hayQueCambiarElProcesoActivo){
+				solicitar_cambiar_proceso_activo(socket_umv, pcb.id, 'C', logger);
+				hayQueCambiarElProcesoActivo = 0;
+			}
+
+			cursor = pcb.cursor_stack + i*5;
+			valor = malloc(sizeof(uint32_t));
+			*valor = cursor + 1;
+			respuesta_umv = (char *) solicitar_solicitar_bytes(socket_umv, pcb.seg_stack, cursor, 1, 'C', logger);
+			dictionary_put(diccionario_variables, respuesta_umv, valor);
+
+		//para debug - mostrar todo el diccionario de variables
+		//dictionary_iterator(diccionario_variables, mostrarElementosDiccionario);
+		}
+	pthread_mutex_unlock(&operar);
 
 	return;
 }
 
-char *obtener_proxima_instruccion(int socket_umv, pthread_mutex_t *mutex, t_log *logger)
+char *obtener_proxima_instruccion(int socket_umv, t_log *logger)
 {
 	char *inst = NULL;
 	uint32_t offset = pcb.p_counter * 8;
 	uint32_t *offset_inst = 0;
 	uint32_t *tamanio_inst = 0;
+	pthread_mutex_t prox_instruccion = PTHREAD_MUTEX_INITIALIZER;
 
-	pthread_mutex_lock(mutex);
+	pthread_mutex_lock(&prox_instruccion);
 		solicitar_cambiar_proceso_activo(socket_umv, pcb.id, 'C', logger);
 		//offset_inst = (uint32_t *) solicitar_solicitar_bytes(socket_umv, pcb.seg_idx_cod, offset, 8, 'C', logger);
 		offset_inst = (uint32_t *) solicitar_solicitar_bytes(socket_umv, pcb.seg_idx_cod, offset, 4, 'C', logger);
@@ -262,7 +274,7 @@ char *obtener_proxima_instruccion(int socket_umv, pthread_mutex_t *mutex, t_log 
 		printf("OFFSET_INST: %d\n", *offset_inst);
 		printf("TAMANIO_INST: %d\n", *tamanio_inst);
 		inst = (char *) solicitar_solicitar_bytes(socket_umv, pcb.seg_cod, *offset_inst, *tamanio_inst, 'C', logger);
-	pthread_mutex_unlock(mutex);
+	pthread_mutex_unlock(&prox_instruccion);
 
 	return inst;
 }

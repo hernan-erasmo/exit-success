@@ -27,7 +27,7 @@ int checkArgs(int args);
 int crearLogger(t_log **logger);
 int cargarConfig(t_config **config, char *path);
 void generarDiccionarioVariables();
-char *obtener_proxima_instruccion(int socket_umv, pthread_mutex_t *mutex, t_log *logger);
+char *obtener_proxima_instruccion(int socket_umv, t_log *logger);
 int enviarPcbProcesado(int socket_pcp, char evento, t_log *logger);
 
 #endif /* CPU_H */
