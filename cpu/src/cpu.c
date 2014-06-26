@@ -228,7 +228,7 @@ void generarDiccionarioVariables()
 	diccionario_variables = dictionary_create();
 	log_info(logger, "[CPU] Generando diccionario de variables.");
 	
-	int i, hayQueCambiarElProcesoActivo = 1;
+	int i;
 	pthread_mutex_t operar = PTHREAD_MUTEX_INITIALIZER;
 	char *respuesta_umv;
 	uint32_t cursor = 0;
@@ -239,15 +239,10 @@ void generarDiccionarioVariables()
 		log_info(logger, "[CPU] El tamaño del contexto actual es de: %d.", pcb.size_ctxt_actual);		
 		for(i = 0; i < pcb.size_ctxt_actual; i++){
 		
-			if(hayQueCambiarElProcesoActivo){
-				solicitar_cambiar_proceso_activo(socket_umv, pcb.id, 'C', logger);
-				hayQueCambiarElProcesoActivo = 0;
-			}
-
 			cursor = pcb.cursor_stack + i*5;
 			valor = malloc(sizeof(uint32_t));
 			*valor = cursor + 1;
-			respuesta_umv = (char *) solicitar_solicitar_bytes(socket_umv, pcb.seg_stack, cursor, 1, 'C', logger);
+			respuesta_umv = (char *) solicitar_solicitar_bytes(socket_umv, pcb.seg_stack, cursor, 1, pcb.id, 'C', logger);
 			dictionary_put(diccionario_variables, respuesta_umv, valor);
 
 		//para debug - mostrar todo el diccionario de variables
@@ -267,13 +262,11 @@ char *obtener_proxima_instruccion(int socket_umv, t_log *logger)
 	pthread_mutex_t prox_instruccion = PTHREAD_MUTEX_INITIALIZER;
 
 	pthread_mutex_lock(&prox_instruccion);
-		solicitar_cambiar_proceso_activo(socket_umv, pcb.id, 'C', logger);
-		//offset_inst = (uint32_t *) solicitar_solicitar_bytes(socket_umv, pcb.seg_idx_cod, offset, 8, 'C', logger);
-		offset_inst = (uint32_t *) solicitar_solicitar_bytes(socket_umv, pcb.seg_idx_cod, offset, 4, 'C', logger);
-		tamanio_inst = (uint32_t *) solicitar_solicitar_bytes(socket_umv, pcb.seg_idx_cod, offset + 4, 4, 'C', logger);
+		offset_inst = (uint32_t *) solicitar_solicitar_bytes(socket_umv, pcb.seg_idx_cod, offset, 4, pcb.id, 'C', logger);
+		tamanio_inst = (uint32_t *) solicitar_solicitar_bytes(socket_umv, pcb.seg_idx_cod, offset + 4, 4, pcb.id, 'C', logger);
 		printf("OFFSET_INST: %d\n", *offset_inst);
 		printf("TAMANIO_INST: %d\n", *tamanio_inst);
-		inst = (char *) solicitar_solicitar_bytes(socket_umv, pcb.seg_cod, *offset_inst, *tamanio_inst, 'C', logger);
+		inst = (char *) solicitar_solicitar_bytes(socket_umv, pcb.seg_cod, *offset_inst, *tamanio_inst, pcb.id, 'C', logger);
 	pthread_mutex_unlock(&prox_instruccion);
 
 	return inst;

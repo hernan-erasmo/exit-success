@@ -181,9 +181,15 @@ void handler_solicitar_bytes(void **respuesta, t_param_memoria *parametros_memor
 	char *base = strtok_r(NULL, ",", savePtr1);
 	char *offset = strtok_r(NULL, ",", savePtr1);
 	char *tamanio = strtok_r(NULL, ",", savePtr1);
+	char *id_prog = strtok_r(NULL, ",", savePtr1);
 	*tam = atoi(tamanio);
 
-	*respuesta = solicitar_bytes(parametros_memoria->listaSegmentos, atoi(base), atoi(offset), tam);
+	pthread_mutex_t op_atomica = PTHREAD_MUTEX_INITIALIZER;
+	
+	pthread_mutex_lock(&op_atomica);
+		cambiar_proceso_activo(atoi(id_prog));
+		*respuesta = solicitar_bytes(parametros_memoria->listaSegmentos, atoi(base), atoi(offset), tam);
+	pthread_mutex_unlock(&op_atomica);
 
 	return;
 }

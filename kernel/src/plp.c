@@ -235,11 +235,14 @@ int atender_solicitud_programa(int socket_umv, t_paquete_programa *paquete, t_pc
 	
 		while(1){
 
+			//Creo que esto ya no importa, porque solicitar_solicitar y solicitar_enviar ya cambian el proceso activo
+			//Y a crear_segmento no le importa el proceso activo.
+			/*
 			if(solicitar_cambiar_proceso_activo(socket_umv, contador_id_programa, 'P', logger) == 0){
 				huboUnError = 1;
 				break;
 			}
-
+			*/
 		
 			if(crear_segmento_codigo(socket_umv, pcb, paquete, contador_id_programa, logger) == 0){
 				huboUnError = 1;

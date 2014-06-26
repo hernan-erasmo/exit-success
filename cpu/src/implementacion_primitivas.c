@@ -1,10 +1,8 @@
 #include "implementacion_primitivas.h"
 
 /*
-uint32_t solicitar_cambiar_proceso_activo(int socket_umv, uint32_t contador_id_programa, char origen, t_log *logger);
 uint32_t solicitar_crear_segmento(int socket_umv, uint32_t id_programa, uint32_t tamanio_segmento, char origen, t_log *logger);
 uint32_t solicitar_destruir_segmentos(int socket_umv, uint32_t id_programa, char origen, t_log *logger);
-void *solicitar_solicitar_bytes(int socket_umv, uint32_t base, uint32_t offset, int tamanio, char origen, t_log *logger);
 */
 
 t_puntero definirVariable(t_nombre_variable identificador_variable)
@@ -25,7 +23,7 @@ t_puntero definirVariable(t_nombre_variable identificador_variable)
 	memset((nom_var + 1), '\0', 1);
 
 	pthread_mutex_lock(&operacion);
-		solicitar_cambiar_proceso_activo(socket_umv, pcb.id, 'C', logger);
+		//solicitar_cambiar_proceso_activo(socket_umv, pcb.id, 'C', logger);
 		
 		respuesta = solicitar_enviar_bytes(socket_umv, pcb.seg_stack, offset, 1, nom_var, pcb.id, 'C', logger);
 		if(respuesta == -1){
@@ -76,9 +74,9 @@ t_valor_variable dereferenciar(t_puntero direccion_variable)
 	int tamanio_lectura = sizeof(t_valor_variable);
 	
 	pthread_mutex_lock(&operacion);
-		solicitar_cambiar_proceso_activo(socket_umv, pcb.id, 'C', logger);
+		//solicitar_cambiar_proceso_activo(socket_umv, pcb.id, 'C', logger);
 		
-		ret = (t_valor_variable *) solicitar_solicitar_bytes(socket_umv, pcb.seg_stack, direccion_variable, tamanio_lectura, 'C', logger);
+		ret = (t_valor_variable *) solicitar_solicitar_bytes(socket_umv, pcb.seg_stack, direccion_variable, tamanio_lectura, pcb.id, 'C', logger);
 		if(ret == NULL){
 			log_error(logger, "[CPU] Segmentation fault. La UMV dice que no se pudo leer. (base=%d, offset=%d, tamaño=%d).", pcb.seg_stack, direccion_variable, tamanio_lectura);
 			//acá hay que terminar la ejecución del programa
@@ -102,7 +100,7 @@ void asignar(t_puntero direccion_variable, t_valor_variable valor)
 
 	pthread_mutex_lock(&operacion);
 
-		solicitar_cambiar_proceso_activo(socket_umv, pcb.id, 'C', logger);
+		//solicitar_cambiar_proceso_activo(socket_umv, pcb.id, 'C', logger);
 		
 		respuesta = solicitar_enviar_bytes(socket_umv, pcb.seg_stack, direccion_variable, tamanio_escritura, v, pcb.id, 'C', logger);
 		if(respuesta == -1){

@@ -146,10 +146,10 @@ uint32_t solicitar_destruir_segmentos(int socket_umv, uint32_t id_programa, char
 	return valorRetorno;	
 }
 
-void *solicitar_solicitar_bytes(int socket_umv, uint32_t base, uint32_t offset, int tamanio, char origen, t_log *logger)
+void *solicitar_solicitar_bytes(int socket_umv, uint32_t base, uint32_t offset, int tamanio, uint32_t id_programa, char origen, t_log *logger)
 {
 	uint32_t bEnv = 0;
-	char *orden = codificar_solicitar_bytes(base,offset,tamanio);
+	char *orden = codificar_solicitar_bytes(base,offset,tamanio,id_programa);
 	void *valorRetorno = NULL;
 
 	t_paquete_programa paq_saliente;
@@ -296,7 +296,7 @@ char *codificar_enviar_bytes(uint32_t base, uint32_t offset, int tamanio, void *
 	return orden_completa;
 }
 
-char *codificar_solicitar_bytes(uint32_t base, uint32_t offset, int tamanio)
+char *codificar_solicitar_bytes(uint32_t base, uint32_t offset, int tamanio, uint32_t id_programa)
 {
 	int offset_codificacion = 0;
 
@@ -306,14 +306,17 @@ char *codificar_solicitar_bytes(uint32_t base, uint32_t offset, int tamanio)
 	sprintf(str_offset, "%d", offset);
 	char str_tamanio[10];
 	sprintf(str_tamanio, "%d", tamanio);
+	char str_id_programa[10];
+	sprintf(str_id_programa, "%d", id_programa);
 	char *comando = "solicitar_bytes";
 
 	int base_len = strlen(str_base);
 	int offset_len = strlen(str_offset);
 	int tamanio_len = strlen(str_tamanio);
+	int id_programa_len = strlen(str_id_programa);
 	int comando_len = strlen(comando);
 	
-	char *orden_completa = calloc(comando_len + 1 + 1 + base_len + 1 + offset_len + 1 + tamanio_len, 1);
+	char *orden_completa = calloc(comando_len + 1 + 1 + base_len + 1 + offset_len + 1 + tamanio_len + 1 + id_programa_len, 1);
 	memcpy(orden_completa + offset_codificacion, comando, comando_len);
 	offset_codificacion += comando_len;
 	memcpy(orden_completa + offset_codificacion, ",", 1);
@@ -331,6 +334,11 @@ char *codificar_solicitar_bytes(uint32_t base, uint32_t offset, int tamanio)
 
 	memcpy(orden_completa + offset_codificacion, str_tamanio, tamanio_len);
 	offset_codificacion += tamanio_len;
+	memcpy(orden_completa + offset_codificacion, ",", 1);
+	offset_codificacion += 1;
+
+	memcpy(orden_completa + offset_codificacion, str_id_programa, id_programa_len);
+	offset_codificacion += id_programa_len;
 	
 	return orden_completa;	
 }
