@@ -64,16 +64,32 @@ t_puntero obtenerPosicionVariable(t_nombre_variable identificador_variable)
 	posicion = (t_puntero *) dictionary_get(diccionario_variables, nom_var);
 
 	log_info(logger, "[PRIMITIVA] _obtenerPosicionVariable retorna: %d.", *posicion);
-
 	return *posicion;
 }
 
 t_valor_variable dereferenciar(t_puntero direccion_variable)
 {
 	//t_valor_variable == int
-	log_info(logger, "[PRIMITIVA] Estoy dentro de _dereferenciar");
+	log_info(logger, "[PRIMITIVA] Estoy dentro de _dereferenciar (direccion_variable = %d).", direccion_variable);
+	
+	pthread_mutex_t operacion = PTHREAD_MUTEX_INITIALIZER;
+	t_valor_variable *ret = NULL;
+	int tamanio_lectura = sizeof(t_valor_variable);
+	
+	pthread_mutex_lock(&operacion);
+		solicitar_cambiar_proceso_activo(socket_umv, pcb.id, 'C', logger);
+		
+		ret = (t_valor_variable *) solicitar_solicitar_bytes(socket_umv, pcb.seg_stack, direccion_variable, tamanio_lectura, 'C', logger);
+		if(ret == NULL){
+			log_error(logger, "[CPU] Segmentation fault. La UMV dice que no se pudo leer. (base=%d, offset=%d, tamaño=%d).", pcb.seg_stack, direccion_variable, tamanio_lectura);
+			//acá hay que terminar la ejecución del programa
+			return 0;
+		}
+	
+	pthread_mutex_unlock(&operacion);
 
-	return 0;
+	log_info(logger, "[PRIMITIVA] _dereferenciar retorna: %d.", *ret);
+	return *ret;
 }
 
 void asignar(t_puntero direccion_variable, t_valor_variable valor)
