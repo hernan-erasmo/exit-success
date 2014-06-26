@@ -8,13 +8,13 @@
 #include <commons/config.h>
 #include <commons/collections/list.h>
 
-
 #ifndef UMV_H
 #define UMV_H
 
 #include "atencionConexiones.h"
 #include "consola.h"
 #include "../../utils/comunicacion.h"
+#include "segmento.h"
 
 int crearLogger(t_log **logger);
 int cargarConfig(t_config **config, char *path);

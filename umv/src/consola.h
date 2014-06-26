@@ -7,7 +7,6 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 
-#include "segmento.h"
 #include "umv.h"
 
 #ifndef CONSOLA_H

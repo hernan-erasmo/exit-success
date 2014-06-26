@@ -5,7 +5,6 @@
 #include <commons/log.h>
 #include <commons/collections/list.h>
 
-#include "segmento.h"
 #include "umv.h"
 
 #ifndef ATENCIONCONEXIONES_H

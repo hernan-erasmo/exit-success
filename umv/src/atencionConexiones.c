@@ -21,14 +21,12 @@ void *atencionConexiones(void *config)
 			case 'P':
 				;
 				uint32_t resp = -1;
-				log_info(logger, "[UMV] Estoy atendiendo una solicitud del PLP");
 				handler_plp(*sock, &resp, paq.mensaje, parametros_memoria, logger);
 
 				break;
 			case 'C':
 				;
 				void *resp_buf = NULL;
-				log_info(logger, "[UMV] Estoy atendiendo una solicitud de una cpu.");
 				handler_cpu(*sock, resp_buf, paq.mensaje, parametros_memoria, logger);
 
 				break;
@@ -58,6 +56,8 @@ void handler_plp(int sock, uint32_t *respuesta, char *orden, t_param_memoria *pa
 {
 	char *savePtr1 = NULL;
 	char *comando = strtok_r(orden, ",", &savePtr1);
+
+	log_info(logger, "[UMV] Estoy atendiendo una solicitud de %s del PLP.", comando);
 
 	if(strcmp(comando, "cambiar_proceso_activo") == 0){
 		handler_cambiar_proceso_activo(respuesta, orden, parametros_memoria, &savePtr1, logger);
@@ -95,6 +95,8 @@ void handler_cpu(int sock, void *respuesta, char *orden, t_param_memoria *parame
 	char *savePtr1 = NULL;
 	char *comando = strtok_r(orden, ",", &savePtr1);
 	uint32_t resp_num = 0;
+
+	log_info(logger, "[UMV] Estoy atendiendo una solicitud de %s de una CPU.", comando);
 
 	uint32_t tamanio_buffer_respuesta = 0;
 
