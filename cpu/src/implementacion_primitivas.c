@@ -3,7 +3,6 @@
 /*
 uint32_t solicitar_cambiar_proceso_activo(int socket_umv, uint32_t contador_id_programa, char origen, t_log *logger);
 uint32_t solicitar_crear_segmento(int socket_umv, uint32_t id_programa, uint32_t tamanio_segmento, char origen, t_log *logger);
-uint32_t solicitar_enviar_bytes(int socket_umv, uint32_t base, uint32_t offset, int tamanio, void *buffer, char origen, t_log *logger);
 uint32_t solicitar_destruir_segmentos(int socket_umv, uint32_t id_programa, char origen, t_log *logger);
 void *solicitar_solicitar_bytes(int socket_umv, uint32_t base, uint32_t offset, int tamanio, char origen, t_log *logger);
 */
@@ -28,7 +27,7 @@ t_puntero definirVariable(t_nombre_variable identificador_variable)
 	pthread_mutex_lock(&operacion);
 		solicitar_cambiar_proceso_activo(socket_umv, pcb.id, 'C', logger);
 		
-		respuesta = solicitar_enviar_bytes(socket_umv, pcb.seg_stack, offset, 1, nom_var, 'C', logger);
+		respuesta = solicitar_enviar_bytes(socket_umv, pcb.seg_stack, offset, 1, nom_var, pcb.id, 'C', logger);
 		if(respuesta == -1){
 			log_error(logger, "[CPU] Segmentation fault. La UMV dice que este proceso no tiene ningún segmento con base %d.", pcb.seg_stack);
 			//acá hay que terminar la ejecución del programa
@@ -105,7 +104,7 @@ void asignar(t_puntero direccion_variable, t_valor_variable valor)
 
 		solicitar_cambiar_proceso_activo(socket_umv, pcb.id, 'C', logger);
 		
-		respuesta = solicitar_enviar_bytes(socket_umv, pcb.seg_stack, direccion_variable, tamanio_escritura, v, 'C', logger);
+		respuesta = solicitar_enviar_bytes(socket_umv, pcb.seg_stack, direccion_variable, tamanio_escritura, v, pcb.id, 'C', logger);
 		if(respuesta == -1){
 			log_error(logger, "[CPU] Segmentation fault. La UMV dice que este proceso no tiene ningún segmento con base %d.", pcb.seg_stack);
 			//acá hay que terminar la ejecución del programa

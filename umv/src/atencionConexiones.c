@@ -162,10 +162,16 @@ void handler_enviar_bytes(uint32_t *respuesta, char *orden, t_param_memoria *par
 {
 	char *base = strtok_r(NULL, ",", savePtr1);
 	char *offset = strtok_r(NULL, ",", savePtr1);
+	char *id_prog = strtok_r(NULL, ",", savePtr1);
 	char *tamanio = strtok_r(NULL, ",", savePtr1);
 	void *buffer = strtok_r(NULL, "\0", savePtr1);
 
-	*respuesta = enviar_bytes(parametros_memoria->listaSegmentos, atoi(base), atoi(offset), atoi(tamanio), buffer);
+	pthread_mutex_t op_atomica = PTHREAD_MUTEX_INITIALIZER;
+	
+	pthread_mutex_lock(&op_atomica);
+		cambiar_proceso_activo(atoi(id_prog));
+		*respuesta = enviar_bytes(parametros_memoria->listaSegmentos, atoi(base), atoi(offset), atoi(tamanio), buffer);
+	pthread_mutex_unlock(&op_atomica);
 
 	return;
 }

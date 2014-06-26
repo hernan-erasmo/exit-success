@@ -72,11 +72,11 @@ uint32_t solicitar_crear_segmento(int socket_umv, uint32_t id_programa, uint32_t
 	return valorRetorno;
 }
 
-uint32_t solicitar_enviar_bytes(int socket_umv, uint32_t base, uint32_t offset, int tamanio, void *buffer, char origen, t_log *logger)
+uint32_t solicitar_enviar_bytes(int socket_umv, uint32_t base, uint32_t offset, int tamanio, void *buffer, uint32_t id_programa, char origen, t_log *logger)
 {
 	uint32_t bEnv = 0;
 	uint32_t tamanio_de_la_orden_completa = 0;
-	char *orden = codificar_enviar_bytes(base,offset,tamanio,buffer,&tamanio_de_la_orden_completa);
+	char *orden = codificar_enviar_bytes(base,offset,tamanio,buffer,id_programa,&tamanio_de_la_orden_completa);
 	uint32_t valorRetorno = 0;
 
 	t_paquete_programa paq_saliente;
@@ -239,7 +239,7 @@ char *codificar_crear_segmento(uint32_t id_programa, uint32_t tamanio)
 	return orden_completa;
 }
 
-char *codificar_enviar_bytes(uint32_t base, uint32_t offset, int tamanio, void *buffer, uint32_t *tamanio_de_la_orden_completa)
+char *codificar_enviar_bytes(uint32_t base, uint32_t offset, int tamanio, void *buffer, uint32_t id_programa, uint32_t *tamanio_de_la_orden_completa)
 {
 	int offset_codificacion = 0;
 
@@ -247,17 +247,20 @@ char *codificar_enviar_bytes(uint32_t base, uint32_t offset, int tamanio, void *
 	sprintf(str_base, "%d", base);
 	char str_offset[10];
 	sprintf(str_offset, "%d", offset);
+	char str_id_programa[10];
+	sprintf(str_id_programa, "%d", id_programa);
 	char str_tamanio[10];
 	sprintf(str_tamanio, "%d", tamanio);
 	char *comando = "enviar_bytes";
 
 	int base_len = strlen(str_base);
 	int offset_len = strlen(str_offset);
+	int id_programa_len = strlen(str_id_programa);
 	int tamanio_len = strlen(str_tamanio);
 	int comando_len = strlen(comando);
 	int buffer_len = tamanio;
 
-	char *orden_completa = calloc(comando_len + 1 + 1 + base_len + 1 + offset_len + 1 + tamanio_len + 1 + buffer_len, 1);
+	char *orden_completa = calloc(comando_len + 1 + 1 + base_len + 1 + offset_len + 1 + id_programa_len + 1 + tamanio_len + 1 + buffer_len, 1);
 	memcpy(orden_completa + offset_codificacion, comando, comando_len);
 	offset_codificacion += comando_len;
 	memcpy(orden_completa + offset_codificacion, ",", 1);
@@ -270,6 +273,11 @@ char *codificar_enviar_bytes(uint32_t base, uint32_t offset, int tamanio, void *
 
 	memcpy(orden_completa + offset_codificacion, str_offset, offset_len);
 	offset_codificacion += offset_len;
+	memcpy(orden_completa + offset_codificacion, ",", 1);
+	offset_codificacion += 1;
+
+	memcpy(orden_completa + offset_codificacion, str_id_programa, id_programa_len);
+	offset_codificacion += id_programa_len;
 	memcpy(orden_completa + offset_codificacion, ",", 1);
 	offset_codificacion += 1;
 

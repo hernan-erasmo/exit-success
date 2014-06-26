@@ -291,7 +291,7 @@ uint32_t crear_segmento_codigo(int socket_umv, t_pcb *pcb, t_paquete_programa *p
 		return resultado;
 	}
 
-	if(solicitar_enviar_bytes(socket_umv, pcb->seg_cod, 0, strlen(paquete->mensaje), paquete->mensaje, 'P', logger) == 0){
+	if(solicitar_enviar_bytes(socket_umv, pcb->seg_cod, 0, strlen(paquete->mensaje), paquete->mensaje, pcb->id, 'P', logger) == 0){
 		log_error(logger, "[PLP] La UMV no permitió escribir el código en el segmento de código del programa.");
 		return resultado;
 	}
@@ -334,12 +334,12 @@ uint32_t crear_segmento_indice_codigo(int socket_umv, t_pcb *pcb, t_metadata_pro
 		st = t[i].start;
 		off = t[i].offset;
 
-		if(solicitar_enviar_bytes(socket_umv, pcb->seg_idx_cod, i*8, sizeof(uint32_t), &st, 'P', logger) == 0){
+		if(solicitar_enviar_bytes(socket_umv, pcb->seg_idx_cod, i*8, sizeof(uint32_t), &st, pcb->id, 'P', logger) == 0){
 			log_error(logger, "[PLP] La UMV no permitió escribir el índice de código en el segmento de índice de código del programa.");
 			return resultado;
 		}
 
-		if(solicitar_enviar_bytes(socket_umv, pcb->seg_idx_cod, (i*8 + 4), sizeof(uint32_t), &off, 'P', logger) == 0){
+		if(solicitar_enviar_bytes(socket_umv, pcb->seg_idx_cod, (i*8 + 4), sizeof(uint32_t), &off, pcb->id, 'P', logger) == 0){
 			log_error(logger, "[PLP] La UMV no permitió escribir el índice de código en el segmento de índice de código del programa.");
 			return resultado;
 		}		
@@ -365,7 +365,7 @@ uint32_t crear_segmento_etiquetas(int socket_umv, t_pcb *pcb, t_metadata_program
 		return resultado;
 	}
 
-	if(solicitar_enviar_bytes(socket_umv, pcb->seg_idx_etq, 0, metadatos->etiquetas_size, metadatos->etiquetas, 'P', logger) == 0)
+	if(solicitar_enviar_bytes(socket_umv, pcb->seg_idx_etq, 0, metadatos->etiquetas_size, metadatos->etiquetas, pcb->id, 'P', logger) == 0)
 	{
 		log_error(logger, "[PLP] La UMV no permitió escribir el serializado de etiquetas para este programa. Se aborta su creación.");
 		return resultado;
