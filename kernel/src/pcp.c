@@ -153,6 +153,8 @@ void *pcp(void *datos_pcp)
 								// la cantidad de variables y el valor de cada una. Soñar es gratis.)
 								deserializarPcb(pcb_modificado, (void *) mensaje_cpu.mensaje);
 
+								enviarMensajePrograma(&(pcb_modificado->socket), "FINALIZAR", "Terminó la ejecución.\n");
+
 								log_info(logger, "[PCP] Una CPU me mandó el PCB del proceso: %d. (program counter=%d)", pcb_modificado->id, pcb_modificado->p_counter);
 								pthread_mutex_lock(&encolar);
 									list_add(cola_exit, pcb_modificado);
