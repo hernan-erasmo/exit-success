@@ -148,3 +148,40 @@ t_datos_pcp *crearConfiguracionPcp(t_config *config, t_log *logger)
 
 	return d_pcp;
 }
+
+//motivo = sólo deberia ser "INFORMAR" o "FINALIZAR"
+int enviarMensajePrograma(int *socket, char *motivo, char *mensaje)
+{
+	t_paquete_programa paq;
+	int respuesta = 0;
+	int bytesEnviados = 0;
+
+	char *mensaje_completo = NULL;
+	int motivo_len = strlen(motivo);
+	int mensaje_len = strlen(mensaje);
+	int offset = 0;
+
+	mensaje_completo = calloc(motivo_len + 1 + 1 + mensaje_len + 1, 1);
+
+	memcpy(mensaje_completo + offset, motivo, motivo_len);
+	offset += motivo_len;
+
+	memcpy(mensaje_completo + offset, "_", 1);
+	offset += 1;
+
+	memcpy(mensaje_completo + offset, mensaje, mensaje_len);
+	offset += mensaje_len;
+
+	paq.id = 'K';
+	paq.mensaje = mensaje_completo;
+	paq.sizeMensaje = motivo_len + 1 + 1 + mensaje_len + 1;	//motivo + el nulo + el _ + mensaje + el nulo
+
+	char *paqueteSaliente = serializar_paquete(&paq, NULL);
+	bytesEnviados = paq.tamanio_total;
+
+	sendAll(*socket, paqueteSaliente, &bytesEnviados);
+	free(paqueteSaliente);
+	free(mensaje_completo);
+
+	return respuesta;
+}

@@ -20,6 +20,7 @@ int main(int argc, char *argv[])
 	int errorConfig = 0;
 	int errorConexion = 0;
 	int errorEnvio = 0;
+	int statusRecepcion = 0;
 
 	//Variables para el script
 	FILE *script = NULL;
@@ -69,6 +70,21 @@ int main(int argc, char *argv[])
 			finalizarEnvio(&unSocket);
 			log_info(logger, "Transmisión finalizada.");	
 		}			
+
+		t_paquete_programa paq;
+		while(1){
+			statusRecepcion = recvAll(&paq, unSocket);
+			if(statusRecepcion == 0){
+				log_error(logger, "Hubo un error al recibir un mensaje del Kernel.");
+			} else {
+				if(ejecutarMensajeKernel(paq.mensaje)){		//Si es 0 era porque era un imprimir/imprimirTexto. Si es 1, hay que terminar.
+					log_info(logger, "Finalizó la ejecución del programa.");
+					free(paq.mensaje);
+					goto liberarRecursos;
+					break;
+				}
+			}
+		}
 	
 	} else {
 		log_error(logger,"No se pudo abrir el script AnSISOP. Motivo: %s", strerror(errno));
@@ -123,7 +139,8 @@ int enviarDatos(FILE *script, int unSocket, t_log *logger)
 }
 
 void finalizarEnvio(int *unSocket) {
-	shutdown(*unSocket, SHUT_WR);
+	//Está comentado, porque hace que no se bloquee el programa al llegar a recvAll()
+	//shutdown(*unSocket, SHUT_WR);
 }
 
 int checkArgs(int args)
@@ -193,4 +210,21 @@ char *cargarScript(FILE *script, char **contenidoScript)
 	}
 	memset(aux, '\0', 1);		// ¿Es realmente necesario este memset? Para preguntar. Pero anda igual.
 
+}
+
+int ejecutarMensajeKernel(char *mensaje)
+{
+	char *orden = strtok(mensaje, "_");
+	char *msj = strtok(NULL, "_");
+
+	printf("El kernel dice: %s\n", msj);
+	
+	if(strcmp("FINALIZAR", orden) == 0){
+		return 1;
+	} else if (strcmp("INFORMAR", orden) == 0) {
+		return 0;
+	}
+
+	printf("No entiendo la orden del Kernel (No es ni FINALIZAR, ni INFORMAR)\n");
+	return 0;
 }

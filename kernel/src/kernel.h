@@ -28,4 +28,6 @@ int cargarConfig(t_config **config, char *path);
 t_datos_plp *crearConfiguracionPlp(t_config *config, t_log *logger);
 t_datos_pcp *crearConfiguracionPcp(t_config *config, t_log *logger);
 
+int enviarMensajePrograma(int *socket, char *motivo, char *mensaje);
+
 #endif /* KERNEL_H */

@@ -7,3 +7,4 @@ char *cargarScript(FILE *script, char **contenidoScript);
 int enviarDatos(FILE *script, int unSocket, t_log *logger);
 void finalizarEnvio(int *unSocket);
 void inicializarPaquete(t_paquete_programa *paquete, uint32_t sizeMensaje, char **contenidoScript);
+int ejecutarMensajeKernel(char *mensaje);
