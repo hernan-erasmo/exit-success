@@ -21,6 +21,7 @@ typedef struct consola_init {
 	int *listenningSocket;
 	int *noTerminar;
 	int puerto;
+	uint32_t retardo;
 } t_consola_init;
 
 void *consola(void *c_init);

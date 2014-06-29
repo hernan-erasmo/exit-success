@@ -102,6 +102,8 @@ uint32_t crearSegmento(uint32_t prog_id,
 	t_esp_libre *esp_libre = NULL;
 	t_segmento *seg = NULL;
 
+	sleep(retardo);
+
 	if(strcasecmp(algoritmo, "first_fit") == 0) {
 		//ordenar la lista de espacios libres de menor a mayor de acuerdo a su dirección física
 		list_sort(espacios_libres, comparador_esp_libre_dir_asc);
@@ -330,6 +332,8 @@ void dump_segmentos(t_list *listaSegmentos)
 
 void destruirSegmentos(t_list *listaSegmentos, uint32_t prog_id)
 {
+	sleep(retardo);
+
 	int i, marcados = 0, sizeLista = 0;
 	sizeLista = list_size(listaSegmentos);
 	t_segmento *s = NULL;
@@ -362,4 +366,9 @@ void *marcar_para_borrar(void *seg)
 bool marcado_para_borrar(void *seg)
 {
 	return ((t_segmento *) seg)->marcadoParaBorrar;
+}
+
+void setRetardo(uint32_t segs)
+{
+	retardo = segs;
 }
