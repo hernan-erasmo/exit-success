@@ -44,6 +44,12 @@ int main(int argc, char *argv[])
 	tamanio_quantum = config_get_int_value(config, "QUANTUM");
 	log_info(logger, "[KERNEL] El tamaño de quantum es: %d", tamanio_quantum);
 
+	cargarInfoIO(&cabeceras_io, config, logger);
+	if(crearHilosIO(cabeceras_io, logger)){
+		goto liberarRecursos;
+		return EXIT_FAILURE;
+	}
+	
 	d_pcp = crearConfiguracionPcp(config, logger);
 	d_plp = crearConfiguracionPlp(config, logger);
 
@@ -184,4 +190,69 @@ int enviarMensajePrograma(int *socket, char *motivo, char *mensaje)
 	free(mensaje_completo);
 
 	return respuesta;
+}
+
+
+/*
+** Asumo que siempre hay al menos un dispositivo, si no hay dispositivos, entonces no pongas la opcion ID_HIO
+** en la configuración.
+*/
+void cargarInfoIO(t_list **cabeceras, t_config *config, t_log *logger)
+{
+
+	int i, cant_disp = contarDispositivos(config_get_string_value(config, "ID_HIO"));
+	*cabeceras = list_create();
+	t_cola_io *dispositivo_io = NULL;
+	char **IO_ids = config_get_array_value(config, "ID_HIO");
+	char **IO_tiempos = config_get_array_value(config, "HIO");
+
+	printf("Hay %d dispositivos configurados. Sus IDs son:\n", cant_disp);
+
+	for(i = 0; i < cant_disp; i++){
+		dispositivo_io = malloc(sizeof(t_cola_io));
+		dispositivo_io->nombre_dispositivo = IO_ids[i];
+		dispositivo_io->tiempo_espera = atoi(IO_tiempos[i]);
+		dispositivo_io->cola_dispositivo = list_create();
+		dispositivo_io->logger = logger;
+
+		list_add(*cabeceras, dispositivo_io);
+		
+		//debug!
+		printf("\t%s (Espera: %d, cola en: %p)\n", dispositivo_io->nombre_dispositivo, dispositivo_io->tiempo_espera, dispositivo_io->cola_dispositivo);
+	}
+
+	return;
+}
+
+int contarDispositivos(char *cadena)
+{
+	int i, len = strlen(cadena);
+	int disp = 1;	
+
+	for(i = 0; i < len; i++){
+		if(cadena[i] == ',') disp++;
+	}
+
+	return disp;
+}
+
+int crearHilosIO(t_list *cabeceras, t_log *logger)
+{
+	int i, cant_disp = list_size(cabeceras);
+	int huboError = 0;
+
+	for(i = 0; i < cant_disp; i++){
+		t_cola_io *config_disp = list_get(cabeceras, i);
+		pthread_t *hilo_io = malloc(sizeof(pthread_t));
+
+		if(pthread_create(hilo_io, NULL, hilo_entrada_salida, (void *) config_disp)) {
+			log_error(logger, "Error al crear el hilo para el dispositivo %s. Motivo: %s", config_disp->nombre_dispositivo, strerror(errno));
+			huboError = 1;
+			break;
+		}
+
+		pthread_detach(*hilo_io);
+	}
+
+	return huboError;
 }
