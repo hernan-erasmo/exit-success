@@ -1,11 +1,12 @@
 #include <stdint.h>
+#include <time.h>
 
 #include <commons/collections/list.h>
 
 #ifndef SEGMENTO_H
 #define SEGMENTO_H
 
-uint32_t retardo;
+struct timespec *ret;
 
 typedef struct segmento {
 	uint32_t prog_id;
@@ -37,7 +38,7 @@ bool comparador_esp_libre_dir_asc(void *esp_a, void *esp_b);			//Si querés apli
 bool comparador_esp_libre_dir_desc(void *esp_a, void *esp_b);
 void *marcar_para_borrar(void *seg);
 bool marcado_para_borrar(void *seg);
-void setRetardo(uint32_t segs);
+void setRetardo(struct timespec *ret);
 
 /*
 **	Interfaz de la UMV

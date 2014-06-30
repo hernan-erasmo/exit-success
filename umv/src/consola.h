@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <pthread.h>
 #include <signal.h>
+#include <time.h>
 
 #include <netdb.h>
 #include <netinet/in.h>
@@ -21,7 +22,7 @@ typedef struct consola_init {
 	int *listenningSocket;
 	int *noTerminar;
 	int puerto;
-	uint32_t retardo;
+	struct timespec *ret;
 } t_consola_init;
 
 void *consola(void *c_init);

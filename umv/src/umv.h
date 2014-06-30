@@ -3,6 +3,7 @@
 #include <sys/socket.h>
 #include <netdb.h>
 #include <signal.h>
+#include <time.h>
 
 #include <commons/log.h>
 #include <commons/config.h>
@@ -16,12 +17,13 @@
 #include "../../utils/comunicacion.h"
 #include "segmento.h"
 
-uint32_t retardo_umv;
+struct timespec *retardo;
 
 int crearLogger(t_log **logger);
 int cargarConfig(t_config **config, char *path);
 void *inicializarMemoria(uint32_t size);
-void inicializarConfigConsola(t_consola_init **c_init, uint32_t sizeMem, void *mem, t_list *listaSegmentos, char *algoritmo_comp, int *listenningSocket, int *noTerminar, int puerto, uint32_t retardo);
+void inicializarTiempoRetardo(struct timespec **r, uint32_t retardo_ms);
+void inicializarConfigConsola(t_consola_init **c_init, uint32_t sizeMem, void *mem, t_list *listaSegmentos, char *algoritmo_comp, int *listenningSocket, int *noTerminar, int puerto, struct timespec *ret);
 void manejar_salida(int sig);
 
 uint32_t compactar(t_list *segmentos, void *mem_ppal, uint32_t size_mem_ppal);

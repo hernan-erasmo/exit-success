@@ -12,7 +12,7 @@ void *consola(void *consola_init)
 	t_list *listaSegmentos = c_init->listaSegmentos;
 	char *algoritmo_comp = c_init->algoritmo_comp;
 	pid_t pid = c_init->umv_pid;	
-	uint32_t demora = c_init->retardo;
+	struct timespec *demora = c_init->ret;
 
 	setRetardo(demora);
 

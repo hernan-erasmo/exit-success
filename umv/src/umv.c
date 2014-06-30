@@ -60,11 +60,15 @@ int main(int argc, char *argv[])
 		return EXIT_FAILURE;
 	}
 
+	uint32_t retardo_ms = 0;
+
 	//Cargo los valores desde la configuración
 	tamanio_mem_ppal = config_get_int_value(config, "TAMANIO_MEM_PPAL_BYTES");
 	algoritmo_comp = config_get_string_value(config, "ALGORITMO_COMPACTACION");
 	puerto = config_get_string_value(config, "PUERTO");
-	retardo_umv = config_get_int_value(config, "RETARDO");
+	retardo_ms = config_get_long_value(config, "RETARDO");
+	inicializarTiempoRetardo(&retardo, retardo_ms);
+
 	log_info(logger, "TAMANIO_MEM_PPAL_BYTES = %d", tamanio_mem_ppal);
 	log_info(logger, "ALGORITMO_COMPACTACION = %s", algoritmo_comp);
 	log_info(logger, "PUERTO = %s", puerto);
@@ -83,7 +87,7 @@ int main(int argc, char *argv[])
 	listaSegmentos = list_create();
 
 	//Inicializo la configuración de la consola
-	inicializarConfigConsola(&c_init, tamanio_mem_ppal, mem_ppal, listaSegmentos, algoritmo_comp, &listenningSocket, &noTerminar, config_get_int_value(config, "PUERTO"), retardo_umv);
+	inicializarConfigConsola(&c_init, tamanio_mem_ppal, mem_ppal, listaSegmentos, algoritmo_comp, &listenningSocket, &noTerminar, config_get_int_value(config, "PUERTO"), retardo);
 
 	// Arranca la consola
 	if(pthread_create(&threadConsola, NULL, consola, (void *) c_init)) {
@@ -213,7 +217,7 @@ void *inicializarMemoria(uint32_t size)
 	return mem;
 }
 
-void inicializarConfigConsola(t_consola_init **c_init, uint32_t sizeMem, void *mem, t_list *listaSegmentos, char *algoritmo_comp, int *listenningSocket, int *noTerminar, int puerto, uint32_t retardo)
+void inicializarConfigConsola(t_consola_init **c_init, uint32_t sizeMem, void *mem, t_list *listaSegmentos, char *algoritmo_comp, int *listenningSocket, int *noTerminar, int puerto, struct timespec *ret)
 {
 	*c_init = malloc(sizeof(t_consola_init));
 	(*c_init)->listaSegmentos = listaSegmentos;
@@ -224,14 +228,14 @@ void inicializarConfigConsola(t_consola_init **c_init, uint32_t sizeMem, void *m
 	(*c_init)->listenningSocket = listenningSocket;
 	(*c_init)->noTerminar = noTerminar;
 	(*c_init)->puerto = puerto;
-	(*c_init)->retardo = retardo;
+	(*c_init)->ret = ret;
 
 	return;
 }
 
 uint32_t compactar(t_list *segmentos, void *mem_ppal, uint32_t size_mem_ppal)
 {
-	sleep(retardo_umv);
+	nanosleep(retardo, NULL);
 
 	int i, cant_segmentos = list_size(segmentos);
 	uint32_t espacio_liberado = 0;
@@ -291,7 +295,7 @@ uint32_t compactar(t_list *segmentos, void *mem_ppal, uint32_t size_mem_ppal)
 
 uint32_t enviar_bytes(t_list *listaSegmentos, uint32_t base, uint32_t offset, uint32_t tamanio, void *buffer)
 {
-	sleep(retardo_umv);
+	nanosleep(retardo, NULL);
 	
 	int cod_retorno = tamanio;
 	int escritura_valida = 0;
@@ -392,7 +396,7 @@ uint32_t get_proceso_activo()
 
 void *solicitar_bytes(t_list *listaSegmentos, uint32_t base, uint32_t offset, uint32_t *tamanio)
 {
-	sleep(retardo_umv);
+	nanosleep(retardo, NULL);
 
 	char *retorno = NULL;
 	
@@ -429,4 +433,24 @@ void *solicitar_bytes(t_list *listaSegmentos, uint32_t base, uint32_t offset, ui
 	}	
 
 	return (void *) retorno;
+}
+
+void inicializarTiempoRetardo(struct timespec **r, uint32_t retardo_ms)
+{
+	int segundos = 0;
+	long nanosegundos = 0;
+
+	*r = malloc(sizeof(struct timespec));
+
+	if(retardo_ms > 999){
+		segundos = (retardo_ms / 1000);
+		nanosegundos = (retardo_ms % 1000) * 1000000;	//1 ms = 1.000.000 ns
+	} else {
+		nanosegundos = retardo_ms * 1000000;
+	}
+
+	(*r)->tv_sec = (time_t) segundos;
+	(*r)->tv_nsec = nanosegundos;
+
+	return;
 }
