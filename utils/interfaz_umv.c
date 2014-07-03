@@ -9,6 +9,7 @@ uint32_t solicitar_cambiar_proceso_activo(int socket_umv, uint32_t contador_id_p
 	t_paquete_programa paq_saliente;
 		paq_saliente.id = origen;
 		paq_saliente.mensaje = orden;
+		log_info(logger, "[INTERFAZ_UMV] [ORDEN] [%c] - %s", origen, orden);
 		paq_saliente.sizeMensaje = strlen(orden);
 
 	char *paqueteSaliente = serializar_paquete(&paq_saliente, logger);
@@ -26,7 +27,7 @@ uint32_t solicitar_cambiar_proceso_activo(int socket_umv, uint32_t contador_id_p
 
 	uint32_t bRec = 0;
 	t_paquete_programa respuesta;
-	log_info(logger, "[INTERFAZ_UMV] Esperando la respuesta de la UMV.");
+	log_info(logger, "[INTERFAZ_UMV] Esperando la respuesta de la UMV al comando cambiar_proceso_activo.");
 	bRec = recvAll(&respuesta, socket_umv);
 	log_info(logger, "[INTERFAZ_UMV] La UMV respondió %s", respuesta.mensaje);
 
@@ -45,6 +46,7 @@ uint32_t solicitar_crear_segmento(int socket_umv, uint32_t id_programa, uint32_t
 	t_paquete_programa paq_saliente;
 		paq_saliente.id = origen;
 		paq_saliente.mensaje = orden;
+		log_info(logger, "[INTERFAZ_UMV] [ORDEN] [%c] - %s", origen, orden);
 		paq_saliente.sizeMensaje = strlen(orden);
 	
 	char *paqueteSaliente = serializar_paquete(&paq_saliente, logger);
@@ -62,7 +64,7 @@ uint32_t solicitar_crear_segmento(int socket_umv, uint32_t id_programa, uint32_t
 
 	uint32_t bRec = 0;
 	t_paquete_programa respuesta;
-	log_info(logger, "[INTERFAZ_UMV] Esperando la respuesta de la UMV.");
+	log_info(logger, "[INTERFAZ_UMV] Esperando la respuesta de la UMV al comando crear_segmento.");
 	bRec = recvAll(&respuesta, socket_umv);
 	log_info(logger, "[INTERFAZ_UMV] La UMV respondió %s", respuesta.mensaje);
 
@@ -82,7 +84,7 @@ uint32_t solicitar_enviar_bytes(int socket_umv, uint32_t base, uint32_t offset, 
 	t_paquete_programa paq_saliente;
 		paq_saliente.id = origen;
 		paq_saliente.mensaje = orden;
-		printf("############## ORDEN ############## : %s", orden);
+		log_info(logger, "[INTERFAZ_UMV] [ORDEN] [%c] - %s", origen, orden);
 		paq_saliente.sizeMensaje = tamanio_de_la_orden_completa;
 	
 	char *paqueteSaliente = serializar_paquete(&paq_saliente, logger);
@@ -100,7 +102,7 @@ uint32_t solicitar_enviar_bytes(int socket_umv, uint32_t base, uint32_t offset, 
 
 	uint32_t bRec = 0;
 	t_paquete_programa respuesta;
-	log_info(logger, "[INTERFAZ_UMV] Esperando la respuesta de la UMV.");
+	log_info(logger, "[INTERFAZ_UMV] Esperando la respuesta de la UMV al comando enviar_bytes.");
 	bRec = recvAll(&respuesta, socket_umv);
 	log_info(logger, "[INTERFAZ_UMV] La UMV respondió %s", respuesta.mensaje);
 
@@ -119,6 +121,7 @@ uint32_t solicitar_destruir_segmentos(int socket_umv, uint32_t id_programa, char
 	t_paquete_programa paq_saliente;
 		paq_saliente.id = origen;
 		paq_saliente.mensaje = orden;
+		log_info(logger, "[INTERFAZ_UMV] [ORDEN] [%c] - %s", origen, orden);		
 		paq_saliente.sizeMensaje = strlen(orden);
 
 	char *paqueteSaliente = serializar_paquete(&paq_saliente, logger);
@@ -134,15 +137,6 @@ uint32_t solicitar_destruir_segmentos(int socket_umv, uint32_t id_programa, char
 	free(paqueteSaliente);
 	free(orden);
 
-	uint32_t bRec = 0;
-	t_paquete_programa respuesta;
-	log_info(logger, "[INTERFAZ_UMV] Esperando la respuesta de la UMV.");
-	bRec = recvAll(&respuesta, socket_umv);
-	log_info(logger, "[INTERFAZ_UMV] La UMV respondió %s", respuesta.mensaje);
-
-	valorRetorno = atoi(respuesta.mensaje);
-	free(respuesta.mensaje);
-
 	return valorRetorno;	
 }
 
@@ -155,7 +149,7 @@ void *solicitar_solicitar_bytes(int socket_umv, uint32_t base, uint32_t offset, 
 	t_paquete_programa paq_saliente;
 		paq_saliente.id = origen;
 		paq_saliente.mensaje = orden;
-		printf("############## ORDEN ############## : %s", orden);
+		log_info(logger, "[INTERFAZ_UMV] [ORDEN] [%c] - %s", origen, orden);
 		paq_saliente.sizeMensaje = strlen(orden);
 	
 	char *paqueteSaliente = serializar_paquete(&paq_saliente, logger);
@@ -173,7 +167,7 @@ void *solicitar_solicitar_bytes(int socket_umv, uint32_t base, uint32_t offset, 
 
 	uint32_t bRec = 0;
 	t_paquete_programa respuesta;
-	log_info(logger, "[INTERFAZ_UMV] Esperando la respuesta de la UMV.");
+	log_info(logger, "[INTERFAZ_UMV] Esperando la respuesta de la UMV al comando solicitar_bytes.");
 	bRec = recvAll(&respuesta, socket_umv);
 	log_info(logger, "[INTERFAZ_UMV] La UMV respondió %s", respuesta.mensaje);
 
@@ -354,7 +348,7 @@ char *codificar_destruir_segmentos(uint32_t id_programa)
 	int id_programa_len = strlen(str_id_programa);
 	int comando_len = strlen(comando);
 	
-	char *orden_completa = calloc(comando_len + 1 + 1 + 1 + id_programa_len, 1);
+	char *orden_completa = calloc(comando_len + 1 + 1 + id_programa_len + 1, 1);
 	memcpy(orden_completa + offset_codificacion, comando, comando_len);
 	offset_codificacion += comando_len;
 	memcpy(orden_completa + offset_codificacion, ",", 1);
@@ -362,8 +356,6 @@ char *codificar_destruir_segmentos(uint32_t id_programa)
 
 	memcpy(orden_completa + offset_codificacion, str_id_programa, id_programa_len);
 	offset_codificacion += id_programa_len;
-	memcpy(orden_completa + offset_codificacion, ",", 1);
-	offset_codificacion += 1;
 	
 	return orden_completa;	
 }
