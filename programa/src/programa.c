@@ -70,7 +70,7 @@ int main(int argc, char *argv[])
 			finalizarEnvio(&unSocket);
 			log_info(logger, "Transmisión finalizada.");	
 		}			
-
+/*
 		t_paquete_programa paq;
 		while(1){
 			statusRecepcion = recvAll(&paq, unSocket);
@@ -85,7 +85,7 @@ int main(int argc, char *argv[])
 				}
 			}
 		}
-	
+*/	
 	} else {
 		log_error(logger,"No se pudo abrir el script AnSISOP. Motivo: %s", strerror(errno));
 		goto liberarRecursos;
