@@ -44,13 +44,12 @@ int main(int argc, char *argv[])
 	tamanio_quantum = config_get_int_value(config, "QUANTUM");
 	log_info(logger, "[KERNEL] El tamaño de quantum es: %d", tamanio_quantum);
 
-/*
 	cargarInfoIO(&cabeceras_io, config, logger);
 	if(crearHilosIO(cabeceras_io, logger)){
 		goto liberarRecursos;
 		return EXIT_FAILURE;
 	}
-*/	
+
 	d_pcp = crearConfiguracionPcp(config, logger);
 	d_plp = crearConfiguracionPlp(config, logger);
 

@@ -30,7 +30,13 @@ typedef struct cola_io {
 	uint32_t tiempo_espera;
 	t_list *cola_dispositivo;
 	t_log *logger;
+	sem_t *s_cola;
 } t_cola_io;
+
+typedef struct pcb_en_io {
+	t_pcb *pcb_en_espera;
+	uint32_t unidades_de_tiempo;
+} t_pcb_en_io;
 
 int checkArgs(int args);
 int crearLogger(t_log **logger);
