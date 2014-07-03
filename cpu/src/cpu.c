@@ -141,7 +141,7 @@ int main(int argc, char *argv[])
 				} else {
 					log_info(logger, "[CPU] Finalizó el quantum. Enviando PCB al Kernel.");
 					
-					if(enviarPcbProcesado(socket_pcp, 'P', logger) > 0){
+					if(enviarPcbProcesado(socket_pcp, 'Q', logger) > 0){
 						log_error(logger, "[CPU] Error en la transmisión hacia el PCP. Motivo: %s", strerror(errno));
 						goto liberarRecursos;
 						return EXIT_FAILURE;

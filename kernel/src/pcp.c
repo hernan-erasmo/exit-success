@@ -134,12 +134,12 @@ void *pcp(void *datos_pcp)
 								*	Un pijazo.
 								*/
 								break;
-							case 'P':	//Terminó la ráfaga de CPU (por quantum, o por block) y me está mandando el PCB para guardar
+							case 'Q':	//Terminó la ráfaga de CPU (por quantum, o por block) y me está mandando el PCB para guardar
 								;
 								int tamanio_ready = 0;
 								deserializarPcb(pcb_modificado, (void *) mensaje_cpu.mensaje);
 
-								log_info(logger, "[PCP] Una CPU me mandó el PCB del proceso: %d. (program counter=%d)", pcb_modificado->id, pcb_modificado->p_counter);
+								log_info(logger, "[PCP] Una CPU me mandó el PCB del proceso %d que terminó su quantum. (program counter=%d)", pcb_modificado->id, pcb_modificado->p_counter);
 								pthread_mutex_lock(&encolar);
 									tamanio_ready = list_size(cola_ready);
 									list_add_in_index(cola_ready, tamanio_ready, pcb_modificado);	//Lo mando al fondo de la cola, es Round-Robin.
@@ -155,7 +155,7 @@ void *pcp(void *datos_pcp)
 
 								enviarMensajePrograma(&(pcb_modificado->socket), "FINALIZAR", "Terminó la ejecución.\n");
 
-								log_info(logger, "[PCP] Una CPU me mandó el PCB del proceso: %d. (program counter=%d)", pcb_modificado->id, pcb_modificado->p_counter);
+								log_info(logger, "[PCP] Una CPU me mandó el PCB del proceso %d que terminó su ejecución. (program counter=%d)", pcb_modificado->id, pcb_modificado->p_counter);
 								pthread_mutex_lock(&encolar);
 									list_add(cola_exit, pcb_modificado);
 									sem_post(&s_ready_max);
