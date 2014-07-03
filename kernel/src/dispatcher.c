@@ -17,9 +17,11 @@ void *dispatcher(void *init)
 	while(1){
 		log_info(logger, "[DISPATCH] Bloqueado esperando algún PCB que entre a Ready");
 		sem_wait(&s_ready_nuevo);
+		log_info(logger, "[DISPATCH] Entró un PCB a ready, ahora me falta encontrar una CPU donde mandarlo.");
 			
 			log_info(logger, "[DISPATCH] Bloqueado esperando alguna CPU ociosa");	
 			sem_wait(&s_hay_cpus);
+			log_info(logger, "[DISPATCH] Ya encontré una CPU ociosa.");
 
 			pthread_mutex_lock(&despachar);
 				t_header_cpu *cpu_destino = list_remove(cpus_ociosas, 0);

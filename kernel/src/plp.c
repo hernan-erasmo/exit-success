@@ -97,12 +97,12 @@ void *plp(void *datos_plp)
 	//bucle principal del PLP
 	while(1){
 		read_fds = master;
-		log_info(logger, "[SELECT] Me bloqueé");
+		log_info(logger, "[PLP] Me bloqueé en select");
 		if(select(fdmax + 1, &read_fds, NULL, NULL, NULL) == -1){
 			log_error(logger, "[PLP] El select tiró un error, y la verdad que no sé que hacer. Sigo corriendo.");
 			continue;
 		}
-		log_info(logger, "[SELECT] Salí del bloqueo");
+		log_info(logger, "[PLP] Salí del bloqueo del select");
 
 		//Recorro tooooodos los descriptores que tengo
 		for(sockActual = 0; sockActual <= fdmax; sockActual++){
@@ -111,7 +111,7 @@ void *plp(void *datos_plp)
 				
 				//...me están avisando que se quiere conectar un programa que nunca se conectó todavía.
 				if(sockActual == listenningSocket){
-					log_info(logger, "[SELECT] Conexion nueva");		
+					log_info(logger, "[PLP] Me desbloqueé del select por conexion nueva");		
 
 					if((newfd = accept(listenningSocket, (struct sockaddr *) &addr, &addrlen)) != -1){
 						FD_SET(newfd, &master);
@@ -126,7 +126,7 @@ void *plp(void *datos_plp)
 
 				} else {	//Ya tengo a este socket en mi lista de conexiones
 
-					log_info(logger, "[SELECT] Conexión vieja");
+					log_info(logger, "[PLP] Me desbloqueé del select por conexion vieja");
 					t_paquete_programa paquete;
 					inicializar_paquete(&paquete);
 
@@ -143,7 +143,7 @@ void *plp(void *datos_plp)
 								pcb->quantum = tamanio_quantum;
 
 								if(atender_solicitud_programa(socket_umv, &paquete, pcb, tamanio_stack, logger) != 0){
-									enviarMensajePrograma(&sockActual, "FINALIZAR", "No se pudo atender tu solicitud :( Adiós para siempre.");
+									//enviarMensajePrograma(&sockActual, "FINALIZAR", "No se pudo atender tu solicitud :( Adiós para siempre.");
 									log_error(logger, "[PLP] No se pudo satisfacer la solicitud del programa");
 								
 									pthread_mutex_lock(&encolar);
@@ -151,7 +151,7 @@ void *plp(void *datos_plp)
 										sem_post(&s_exit);
 									pthread_mutex_unlock(&encolar);
 								} else {
-									enviarMensajePrograma(&sockActual, "INFORMAR", "Ya estás adentro del sistema. Esperá por los resultados.");
+									//enviarMensajePrograma(&sockActual, "INFORMAR", "Ya estás adentro del sistema. Esperá por los resultados.");
 
 									log_info(logger, "[PLP] Solicitud atendida satisfactoriamente.");
 									
@@ -201,7 +201,7 @@ void *plp(void *datos_plp)
 				}
 			}
 		}
-	}
+	}	//fin del bucle principal del plp
 
 	goto liberarRecursos;
 	pthread_exit(NULL);
@@ -280,7 +280,8 @@ int atender_solicitud_programa(int socket_umv, t_paquete_programa *paquete, t_pc
 	if(!huboUnError)
 		calcularPeso(pcb, metadatos);
 	else
-		contador_id_programa--;
+		//Comentar esta línea arreglaría problemas cuando los programas rebotan por falta de memoria en la UMV
+		//contador_id_programa--;	
 
 	if(metadatos)
 		metadata_destruir(metadatos);
