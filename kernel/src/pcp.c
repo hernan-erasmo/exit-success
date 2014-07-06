@@ -107,7 +107,7 @@ void *pcp(void *datos_pcp)
 					t_paquete_programa mensaje_cpu;
 					t_header_cpu *head_cpu;
 					status = recvAll(&mensaje_cpu, sockActual);
-					t_pcb *pcb_modificado = malloc(sizeof(t_pcb));
+					t_pcb *pcb_modificado = NULL;
 
 					if(status){
 						switch(mensaje_cpu.id)		//Reciclo el campo id de paquete_programa y lo uso para saber qué quiere hacer la CPU
@@ -126,17 +126,46 @@ void *pcp(void *datos_pcp)
 								sem_post(&s_hay_cpus);
 
 								break;
-							case 'T':	//La cpu dice que está trabajando, quiere solicitar un servicio.
+							case 'S':	//La CPU quiere ejecutar una syscall
+								;
+									char *syscall_serializada = NULL;
+									char *pcb_serializado = NULL;
+									int esBloqueante = 0;
+
+									esBloqueante = extraerComandoYPcb(mensaje_cpu.mensaje, &syscall_serializada, &pcb_serializado);
+									log_info(logger, "[PCP] El syscall que me solicitaron es: %s", syscall_serializada);
+
+									if(esBloqueante){
+										if(esBloqueante == -1){
+											log_error(logger, "[PCP] extraerComandoYPcb no reconoció ningún comando en el mensaje.");
+											break;											
+										}
+
+										pcb_modificado = malloc(sizeof(t_pcb));
+										deserializarPcb(pcb_modificado, (void *) pcb_serializado);
+										log_info(logger, "[PCP] El PCB del proceso que lo solicitó tiene los siguientes datos:");
+										log_info(logger, "\tID:%d\n\tSocket:%d\n\tQuantum:%d\n\tPeso:%d\n\tSeg_cod:%d\n\tSeg_stack:%d\n\t...",pcb_modificado->id,pcb_modificado->socket,pcb_modificado->quantum,pcb_modificado->peso,pcb_modificado->seg_cod,pcb_modificado->seg_stack);	
+									
+										int status_op = -1;
+										int respuesta = ejecutarSyscall(syscall_serializada,pcb_modificado,&status_op,logger);
+
+										if(status_op < 0){
+											log_error(logger, "[PCP] Hubo un error al ejecutar la syscall. Me lavo las manos olímpicamente, eh!");
+										}
+
+									} else {	// NO es bloqueante, la cpu está esperando una respuesta YA!
+
+										//Programemos esto cuando estemos programando
+										//una syscall no bloqueante :/
+
+									}
+
+								break;
+							case 'Q':	//Terminó la ráfaga de CPU, por quantum, y me está mandando el PCB para guardar
 								;
 
-								/*
-								*	Acá tendré que manejar una interfaz de atención de serivicios, parsear el campo 'operacion' del header.
-								*	Un pijazo.
-								*/
-								break;
-							case 'Q':	//Terminó la ráfaga de CPU (por quantum, o por block) y me está mandando el PCB para guardar
-								;
 								int tamanio_ready = 0;
+								pcb_modificado = malloc(sizeof(t_pcb));
 								deserializarPcb(pcb_modificado, (void *) mensaje_cpu.mensaje);
 
 								log_info(logger, "[PCP] Una CPU me mandó el PCB del proceso %d que terminó su quantum. (program counter=%d)", pcb_modificado->id, pcb_modificado->p_counter);
@@ -151,6 +180,7 @@ void *pcp(void *datos_pcp)
 								;
 								//Informamos a quien haya que informar (Como el programa, por ejemplo, leemos el stack y retornamos
 								// la cantidad de variables y el valor de cada una. Soñar es gratis.)
+								pcb_modificado = malloc(sizeof(t_pcb));
 								deserializarPcb(pcb_modificado, (void *) mensaje_cpu.mensaje);
 
 								enviarMensajePrograma(&(pcb_modificado->socket), "FINALIZAR", "Terminó la ejecución.\n");
@@ -179,9 +209,6 @@ void *pcp(void *datos_pcp)
 						close(sockActual);
 						FD_CLR(sockActual, &master);
 					}
-
-					if(mensaje_cpu.mensaje)
-						free(mensaje_cpu.mensaje);
 				}
 			}
 		}
@@ -204,4 +231,74 @@ void *pcp(void *datos_pcp)
 				close(listenningSocket);
 
 		pthread_mutex_unlock(&fin_pcp);
+}
+
+int extraerComandoYPcb(char *mensaje, char **syscall_serializada, char **pcb_serializado)
+{
+	char *saveptr = NULL;
+	int offset = 0;
+	int limiteEntreComandoYPcb = 0;
+
+	*syscall_serializada = strdup(strtok_r(mensaje, "|", &saveptr));
+	limiteEntreComandoYPcb = strlen(*syscall_serializada);
+
+	if(strstr(*syscall_serializada, "entradaSalida") != NULL){	//ES BLOQUEANTE (entradaSalida)
+		*pcb_serializado = calloc(48, 1);
+		memcpy(*pcb_serializado, mensaje + limiteEntreComandoYPcb + 1, 48);
+		return 1;
+	}
+
+	if(strstr(*syscall_serializada,"wait") != NULL){	//ES BLOQUEANTE (wait)
+		*pcb_serializado = calloc(48, 1);
+		memcpy(*pcb_serializado, mensaje + limiteEntreComandoYPcb + 1, 48);
+		return 1;
+	}
+	
+	if(strstr(*syscall_serializada,"wait?") != NULL){	//NO ES BLOQUEANTE (notar el signo de pregunta al final)
+		*pcb_serializado = NULL;
+		return 0;
+	}
+
+	if(strstr(*syscall_serializada,"obtenerValorCompartida") != NULL){	//NO ES BLOQUEANTE (obtenerValorCompartida)
+		*pcb_serializado = NULL;
+		return 0;
+	}
+	
+	if(strstr(*syscall_serializada,"asignarValorCompartida") != NULL){	//NO ES BLOQUEANTE (asignarValorCompartida)
+		*pcb_serializado = NULL;
+		return 0;
+	}
+
+	if(strstr(*syscall_serializada,"imprimir") != NULL){	//NO ES BLOQUEANTE (imprimir)
+		*pcb_serializado = NULL;
+		return 0;
+	}	
+	
+	if(strstr(*syscall_serializada,"imprimirTexto") != NULL){	//NO ES BLOQUEANTE (imprimirTexto)
+		*pcb_serializado = NULL;
+		return 0;
+	}
+	
+	if(strstr(*syscall_serializada,"signal") != NULL){	//NO ES BLOQUEANTE (signal)
+		*pcb_serializado = NULL;
+		return 0;
+	}	
+	
+	return -1;
+}
+
+int ejecutarSyscall(char *syscall_completa, t_pcb *pcb_a_atender, int *status_op, t_log *logger)
+{
+	char *saveptr;
+	char *nombre_syscall = strtok_r(syscall_completa, ",", &saveptr);
+
+	if(strcmp("entradaSalida", nombre_syscall) == 0){
+		char *nombre_dispositivo = strtok_r(NULL, ",", &saveptr);
+		char *tiempoEnUnidades = strtok_r(NULL, ",", &saveptr);
+		log_info(logger, "[PCP] Voy a ejecutar la syscall %s (dispositivo: %s, tiempoEnUnidades: %s)", nombre_syscall, nombre_dispositivo, tiempoEnUnidades);
+		*status_op = syscall_entradaSalida(nombre_dispositivo, pcb_a_atender, atoi(tiempoEnUnidades), logger);
+	}
+
+	free(syscall_completa);
+	return 1;
 }
