@@ -240,9 +240,19 @@ int crearHilosIO(t_list *cabeceras, t_log *logger)
 {
 	int i, cant_disp = list_size(cabeceras);
 	int huboError = 0;
+	sem_t *s_cola_io;
 
 	for(i = 0; i < cant_disp; i++){
 		t_cola_io *config_disp = list_get(cabeceras, i);
+		s_cola_io = malloc(sizeof(sem_t));
+
+		if(sem_init(s_cola_io, 0, 0) != 0){
+			log_error(logger, "[DISPOSITIVO-%s] Hubo un error al inicializar el semáforo de mi cola. Adiós para siempre!.", config_disp->nombre_dispositivo);
+			huboError = 1;
+			break;
+		}
+
+		config_disp->s_cola = s_cola_io;
 		pthread_t *hilo_io = malloc(sizeof(pthread_t));
 
 		if(pthread_create(hilo_io, NULL, hilo_entrada_salida, (void *) config_disp)) {
@@ -255,4 +265,40 @@ int crearHilosIO(t_list *cabeceras, t_log *logger)
 	}
 
 	return huboError;
+}
+
+/*
+**	Busca en la cola de dispositivos al dispositivo solicitado y pone en su cola al pcb correspondiente.
+*/
+int syscall_entradaSalida(char *nombre_dispositivo, t_pcb *pcb_en_espera, uint32_t tiempoEnUnidades, t_log *logger){
+
+	int i, sizeDispositivos = list_size(cabeceras_io);
+	int encontrado = 0;
+	t_cola_io *disp_buscado = malloc(sizeof(t_cola_io));
+
+	for(i = 0; i < sizeDispositivos; i++){
+		disp_buscado = list_get(cabeceras_io, i);
+
+		if(strcmp(disp_buscado->nombre_dispositivo, nombre_dispositivo) == 0){
+			encontrado = 1;
+			break;
+		}
+	}
+
+	if(!encontrado){
+		log_error(logger, "[SYS_entradaSalida] No se encontró el dispositivo buscado.");
+		return -1;
+	}
+
+	t_pcb_en_io *pcb_en_io = malloc(sizeof(t_pcb_en_io));
+		pcb_en_io->pcb_en_espera = pcb_en_espera;
+		pcb_en_io->unidades_de_tiempo = tiempoEnUnidades;
+
+	//agrego al pcb a la cola del dispositivo
+	list_add(disp_buscado->cola_dispositivo, pcb_en_io);
+
+	//le aviso al dispositivo
+	sem_post(disp_buscado->s_cola);
+
+	return 0;
 }

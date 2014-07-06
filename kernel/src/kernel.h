@@ -28,7 +28,7 @@ t_list *cabeceras_io;	//Una lista de estructuras de tipo t_cola_io
 typedef struct cola_io {
 	char *nombre_dispositivo;
 	uint32_t tiempo_espera;
-	t_list *cola_dispositivo;
+	t_list *cola_dispositivo;	//Una lista de estructuras de tipo t_pcb_en_io
 	t_log *logger;
 	sem_t *s_cola;
 } t_cola_io;
@@ -48,5 +48,8 @@ t_datos_plp *crearConfiguracionPlp(t_config *config, t_log *logger);
 t_datos_pcp *crearConfiguracionPcp(t_config *config, t_log *logger);
 
 int enviarMensajePrograma(int *socket, char *motivo, char *mensaje);
+
+// SYSCALLS
+int syscall_entradaSalida(char *nombre_dispositivo, t_pcb *pcb_en_espera, uint32_t tiempoEnUnidades, t_log *logger);
 
 #endif /* KERNEL_H */
