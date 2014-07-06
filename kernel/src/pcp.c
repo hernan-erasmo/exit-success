@@ -200,7 +200,22 @@ void *pcp(void *datos_pcp)
 								*	Acá hago lo que tenga que hacer en este caso. Ahora no se me ocurre nada que tenga que hacer.
 								*	sem_wait(&s_hay_cpus);
 								*/
+								break;
+							case 'E':	//La CPU me avisa que finalizó por un error en la ejecución del script. (stack overflow, seg. fault, etc)
+								;
+								pcb_modificado = malloc(sizeof(t_pcb));
+								deserializarPcb(pcb_modificado, (void *) mensaje_cpu.mensaje);
 
+								enviarMensajePrograma(&(pcb_modificado->socket), "FINALIZAR", "La ejecución terminó de forma inesperada debido a un error. Revisar logs para más información.\n");
+
+								log_info(logger, "[PCP] Una CPU me mandó el PCB del proceso %d que terminó su ejecución. (program counter=%d)", pcb_modificado->id, pcb_modificado->p_counter);
+								pthread_mutex_lock(&encolar);
+									list_add(cola_exit, pcb_modificado);
+									sem_post(&s_ready_max);
+									sem_post(&s_exit);
+								pthread_mutex_unlock(&encolar);
+
+								break;
 							default:
 								log_info(logger, "[PCP] No entiendo lo que me quiere decir una CPU");
 						}

@@ -119,7 +119,7 @@ int main(int argc, char *argv[])
 				pcb.p_counter = pcb.p_counter + 1;
 				analizadorLinea(proxima_instruccion, funciones_comunes, funciones_kernel);
 
-				if(salimosPorFin || salimosPorSyscall)
+				if(salimosPorFin || salimosPorSyscall || salimosPorError)
 					break;
 			}
 			
@@ -135,7 +135,15 @@ int main(int argc, char *argv[])
 				salimosPorSyscall = 0;
 
 			} else if(salimosPorError) {
-				// Falta implementar!
+				salimosPorError = 0;
+
+				log_error(logger, "[CPU] La ejecución del proceso con ID = %d finalizó de forma anormal.", pcb.id);
+				
+				if(enviarPcbProcesado(socket_pcp, 'X', logger) > 0){
+					log_error(logger, "[CPU] Error en la transmisión hacia el PCP. Motivo: %s", strerror(errno));
+					goto liberarRecursos;
+					return EXIT_FAILURE;
+				}
 			} else {
 				
 				if(salimosPorFin){
