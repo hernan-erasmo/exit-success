@@ -197,7 +197,43 @@ void imprimirTexto(char* texto)
 
 void entradaSalida(t_nombre_dispositivo dispositivo, int tiempo)
 {
-	log_info(logger, "[PRIMITIVA] Estoy dentro de _entradaSalida");
+	log_info(logger, "[PRIMITIVA] Estoy dentro de _entradaSalida (dispositivo = %s, tiempo = %d)", dispositivo, tiempo);	
+	pthread_mutex_t operacion = PTHREAD_MUTEX_INITIALIZER;
+	
+	pthread_mutex_lock(&operacion);
+		//ejemplo: entradaSalida,Impresora,20|	(notar el pipe al final)
+		char str_tiempo[10];
+		char nombre_syscall[] = "entradaSalida\0";
+		sprintf(str_tiempo, "%d", tiempo);
+		int offset = 0;
+		int nombre_syscall_len = strlen(nombre_syscall);
+		int dispositivo_len = strlen(dispositivo);
+		int tiempo_len = strlen(str_tiempo);
+		char *comando = calloc(nombre_syscall_len + 1 + 1 + dispositivo_len + 1 + 1 + tiempo_len + 1 + 1 + 48, 1); //le agregamos los 48 que pesa el pcb
+
+		memcpy(comando + offset, nombre_syscall, nombre_syscall_len);
+		offset += nombre_syscall_len;
+
+		memcpy(comando + offset, ",", 1);
+		offset += 1;
+
+		memcpy(comando + offset, dispositivo, dispositivo_len);
+		offset += dispositivo_len;
+
+		memcpy(comando + offset, ",", 1);
+		offset += 1;
+
+		memcpy(comando + offset, str_tiempo, tiempo_len);
+		offset += tiempo_len;
+		
+		memcpy(comando + offset, "|", 1);
+
+		mi_syscall = comando;
+		log_info(logger, "[PRIMITIVA] entradaSalida tira el comando: %s", mi_syscall);
+
+	pthread_mutex_unlock(&operacion);
+
+	salimosPorSyscall = 1;
 
 	return;
 }
@@ -205,6 +241,12 @@ void entradaSalida(t_nombre_dispositivo dispositivo, int tiempo)
 void wait(t_nombre_semaforo identificador_semaforo)
 {
 	log_info(logger, "[PRIMITIVA] Estoy dentro de _wait");
+
+	//envío como mensaje la palabra clave "wait?" que el pcp interpreta como no bloqueante, y me quedo esperando la respuesta
+
+	//si el PCP me dice que hay que bloquear, entonces envío como bloqueante, "wait"
+
+	//si no, entonces continúo la ejecución.
 
 	return;
 }

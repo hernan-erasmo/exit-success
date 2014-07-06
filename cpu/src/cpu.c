@@ -15,7 +15,7 @@ int main(int argc, char *argv[])
 	int errorConfig = 0;
 	int errorConexion = 0;
 
-	salimosPorBloqueo = 0;
+	salimosPorSyscall = 0;
 	salimosPorError = 0;
 	salimosPorFin = 0;
 
@@ -119,12 +119,21 @@ int main(int argc, char *argv[])
 				pcb.p_counter = pcb.p_counter + 1;
 				analizadorLinea(proxima_instruccion, funciones_comunes, funciones_kernel);
 
-				if(salimosPorFin)
+				if(salimosPorFin || salimosPorSyscall)
 					break;
 			}
 			
-			if(salimosPorBloqueo){
-				// Falta implementar!
+			if(salimosPorSyscall){
+				log_info(logger, "[CPU] El proceso con ID = %d quiere ejecutar una syscall (%s).", pcb.id, mi_syscall);
+
+				if(enviarPcbProcesado(socket_pcp, 'S', logger) > 0){
+					log_error(logger, "[CPU] Error en la transmisión hacia el PCP. Motivo: %s", strerror(errno));
+					goto liberarRecursos;
+					return EXIT_FAILURE;
+				}
+				free(mi_syscall);
+				salimosPorSyscall = 0;
+
 			} else if(salimosPorError) {
 				// Falta implementar!
 			} else {
@@ -275,11 +284,40 @@ char *obtener_proxima_instruccion(int socket_umv, t_log *logger)
 int enviarPcbProcesado(int socket_pcp, char evento, t_log *logger)
 {
 	int bEnv = 0;
+	int comando_syscall_len = 0;
+	int i;
+	int offset = 0;
+	int offset_sys = 0;
+	int offset_pcb = 0;
+	char *pcb_serializado;
 
 	t_paquete_programa paq;
-			paq.id = evento; 	//'P' = te mando un pcb que salió por quantum, 'F' = te mando un pcb que salió por fin de operación
+			paq.id = evento; 	//'S' = Te mandó un pcb que salió por solicitud de syscall, 'P' = te mando un pcb que salió por quantum, 'F' = te mando un pcb que salió por fin de operación
+
+		if(salimosPorSyscall){
+			comando_syscall_len = strlen(mi_syscall);
+			paq.mensaje = calloc(comando_syscall_len + 48,1);
+			
+			//meto los dos strings en el mensaje, primero el comando...
+			for(i = 0; i < comando_syscall_len; i++){
+				memcpy(paq.mensaje + offset, mi_syscall + offset_sys, 1);
+				offset += 1;
+				offset_sys += 1;
+			}
+
+			//...y despues el pcb serializado.
+			pcb_serializado = serializar_pcb(&pcb,logger);
+			for(i = 0; i < 48; i++){
+				memcpy(paq.mensaje + offset, pcb_serializado + offset_pcb, 1);
+				offset += 1;
+				offset_pcb += 1;
+			}
+
+			paq.sizeMensaje = comando_syscall_len + 48;
+		} else {
 			paq.mensaje = serializar_pcb(&pcb, logger);
 			paq.sizeMensaje = 48;
+		}
 
 		//Le digo al PCP que estoy ociosa (porque soy una cpu, no el programador, que es bien hombre, y no está ociosa, a diferencia de la cpu)
 		char *paqueteSerializado = serializar_paquete(&paq, logger);

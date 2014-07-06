@@ -19,7 +19,9 @@ t_dictionary *diccionario_variables;
 int socket_umv;
 t_log *logger;
 
-uint32_t salimosPorBloqueo;
+uint32_t salimosPorSyscall;
+char *mi_syscall;
+
 uint32_t salimosPorError;
 uint32_t salimosPorFin;
 
