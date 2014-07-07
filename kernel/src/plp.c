@@ -379,6 +379,8 @@ uint32_t crear_segmento_etiquetas(int socket_umv, t_pcb *pcb, t_metadata_program
 		return resultado;
 	}
 
+	pcb->size_idx_etq = metadatos->etiquetas_size;
+
 	resultado = 1;
 	return resultado;
 }
