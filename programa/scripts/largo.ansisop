@@ -1,0 +1,16 @@
+#!/usr/bin/ansisop
+begin
+	variables a, b, c, d, e, f, g, h, i
+	a = 3
+	b = 5
+	a = b + 12
+	c = 4
+	d = 30
+	e = 23
+	f = 21
+	g = a + f
+	h = g
+	i = 0
+end
+
+
