@@ -24,4 +24,8 @@ void entradaSalida(t_nombre_dispositivo dispositivo, int tiempo);
 void wait(t_nombre_semaforo identificador_semaforo);
 void signal(t_nombre_semaforo identificador_semaforo);
 
+//Funciones auxiliares
+int _pushSinRetorno(int puntero_cursor_aux, int cursor_viejo, int program_counter_viejo);
+int _popSinRetorno();
+
 #endif /* IMPLEMENTACION_PRIMITIVAS_H */
