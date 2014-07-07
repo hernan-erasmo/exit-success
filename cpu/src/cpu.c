@@ -253,7 +253,7 @@ void generarDiccionarioVariables()
 
 	pthread_mutex_lock(&operar);
 		
-		log_info(logger, "[CPU] El tamaño del contexto actual es de: %d.", pcb.size_ctxt_actual);		
+		log_info(logger, "[CPU] El tamaño del contexto actual es de: %d.", pcb.size_ctxt_actual);
 		for(i = 0; i < pcb.size_ctxt_actual; i++){
 		
 			cursor = pcb.cursor_stack + i*5;

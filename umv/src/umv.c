@@ -418,6 +418,7 @@ void *solicitar_bytes(t_list *listaSegmentos, uint32_t base, uint32_t offset, ui
 	t_segmento *seg = buscar_segmento_solicitado(listaSegmentos, base);
 
 	if(seg == NULL){
+		printf("#ERROR#	El proceso activo %d no tiene un segmento con base %d\n", PROCESO_ACTIVO, base);
 		//Segmentation fault. El proceso activo no tiene un segmento con esa base.
 		//return noHaySegmento;
 		return retorno;
@@ -427,6 +428,7 @@ void *solicitar_bytes(t_list *listaSegmentos, uint32_t base, uint32_t offset, ui
 		retorno = calloc(*tamanio, 1);
 		memcpy(retorno, seg->pos_mem_ppal + offset, *tamanio);
 	} else {
+		printf("#ERROR#	Se quiso leer por fuera de los límites del segmento con base %d, proceso activo: %d\n", base, PROCESO_ACTIVO);
 		//Segmentation fault. Se quiso leer/escribir por fuera de los límites de la memoria del segmento
 		//return violacionLimite;
 		return retorno;

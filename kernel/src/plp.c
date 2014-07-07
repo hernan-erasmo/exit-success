@@ -141,6 +141,7 @@ void *plp(void *datos_plp)
 								pcb->socket = sockActual;
 								pcb->peso = 0;
 								pcb->quantum = tamanio_quantum;
+								pcb->size_ctxt_actual = 0;
 
 								if(atender_solicitud_programa(socket_umv, &paquete, pcb, tamanio_stack, logger) != 0){
 									//enviarMensajePrograma(&sockActual, "FINALIZAR", "No se pudo atender tu solicitud :( Adiós para siempre.");
