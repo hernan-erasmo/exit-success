@@ -116,8 +116,8 @@ int main(int argc, char *argv[])
 
 			for(q = pcb.quantum; q > 0; q--){
 				proxima_instruccion = obtener_proxima_instruccion(socket_umv, logger);
-				pcb.p_counter = pcb.p_counter + 1;
 				analizadorLinea(proxima_instruccion, funciones_comunes, funciones_kernel);
+				pcb.p_counter = pcb.p_counter + 1;
 
 				if(salimosPorFin || salimosPorSyscall || salimosPorError)
 					break;
