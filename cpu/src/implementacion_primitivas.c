@@ -341,7 +341,7 @@ int _popSinRetorno()
 {
 	int off_p_counter_anterior = pcb.cursor_stack - 4;
 	int off_cursor_stack_anterior = pcb.cursor_stack - 8;
-	int valor_contexto_anterior = pcb.cursor_stack;
+	int valor_contexto_anterior = pcb.cursor_stack - 8;
 	int tamanio_ctxt_actual_bytes = 0;
 	int tamanio_ctxt_actual = 0;
 	int *ret = NULL;
