@@ -183,7 +183,7 @@ void *pcp(void *datos_pcp)
 								pcb_modificado = malloc(sizeof(t_pcb));
 								deserializarPcb(pcb_modificado, (void *) mensaje_cpu.mensaje);
 
-								enviarMensajePrograma(&(pcb_modificado->socket), "FINALIZAR", "Terminó la ejecución.\n");
+								//enviarMensajePrograma(&(pcb_modificado->socket), "FINALIZAR", "Terminó la ejecución.\n");
 
 								log_info(logger, "[PCP] Una CPU me mandó el PCB del proceso %d que terminó su ejecución. (program counter=%d)", pcb_modificado->id, pcb_modificado->p_counter);
 								pthread_mutex_lock(&encolar);
@@ -206,7 +206,7 @@ void *pcp(void *datos_pcp)
 								pcb_modificado = malloc(sizeof(t_pcb));
 								deserializarPcb(pcb_modificado, (void *) mensaje_cpu.mensaje);
 
-								enviarMensajePrograma(&(pcb_modificado->socket), "FINALIZAR", "La ejecución terminó de forma inesperada debido a un error. Revisar logs para más información.\n");
+								//enviarMensajePrograma(&(pcb_modificado->socket), "FINALIZAR", "La ejecución terminó de forma inesperada debido a un error. Revisar logs para más información.\n");
 
 								log_info(logger, "[PCP] Una CPU me mandó el PCB del proceso %d que terminó su ejecución. (program counter=%d)", pcb_modificado->id, pcb_modificado->p_counter);
 								pthread_mutex_lock(&encolar);
