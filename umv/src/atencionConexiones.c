@@ -62,8 +62,6 @@ void handler_plp(int sock, uint32_t *respuesta, char *orden, t_param_memoria *pa
 	log_info(logger, "[ATENCION_CONN] Estoy atendiendo una solicitud de %s del PLP.", comando);
 	if(comando == NULL){
 		log_info(logger, "[ATENCION_CONN] Recibí una solicitud del PLP de ejecutar una instrucción NULL.");
-		pthread_exit(NULL);
-		//enviar_respuesta_numerica(&sock, *respuesta, logger);
 		return;
 	}
 
@@ -261,7 +259,7 @@ void enviar_respuesta_buffer(int *socket, void *respuesta, uint32_t *tam_buffer,
 	if(sendAll(*socket, respuesta_serializada, &bEnv)){
 		log_error(logger, "[ATENCION_CONN] Error en el envío de la respuesta al comando. Motivo: %s", strerror(errno));		
 	}
-	log_info(logger, "[ATENCION_CONN] Ya envié la respuesta al comando. (Tamaño: %d bytes.)", bEnv);
+	log_info(logger, "[ATENCION_CONN] Ya envié la respuesta al comando solicitar_bytes. (Tamaño: %d bytes.)", bEnv);
 
 	free(respuesta_serializada);
 
