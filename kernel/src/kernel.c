@@ -363,8 +363,46 @@ int syscall_obtenerValorCompartida(char *nombre_compartida, int socket_respuesta
 
 	char *paq_serializado = serializar_paquete(&paq, logger);
 	int bEnv = paq.tamanio_total;
-	if(!sendAll(socket_respuesta, paq_serializado, &bEnv)){
+	if(sendAll(socket_respuesta, paq_serializado, &bEnv)){
 		log_error(logger, "[SYS_obtenerValorCompartida] Hubo un error al tratar de enviar la respuesta a la CPU");
+	}
+
+	return 0;
+}
+
+int syscall_asignarValorCompartida(char *nombre_compartida, int socket_respuesta, int nuevo_valor, t_log *logger)
+{
+	int i, tamanio_lista = list_size(listaCompartidas);
+	t_compartida *variable = NULL;
+	int encontrada = 0;
+
+	for(i = 0; i < tamanio_lista; i++){
+		variable = list_get(listaCompartidas, i);
+
+		if(strcmp(variable->nombre,nombre_compartida) == 0){
+			encontrada = 1;
+			break;
+		}
+	}
+
+	if(!encontrada){
+		log_error(logger, "[SYS_asignarValorCompartida] No se encontró la variable buscada.");
+		return -1;
+	}
+
+	variable->valor = nuevo_valor;
+
+	char str_valor[10];
+	t_paquete_programa paq;
+		paq.id = 'K';
+		sprintf(str_valor, "%d", variable->valor);
+		paq.mensaje = str_valor;
+		paq.sizeMensaje = strlen(str_valor);
+
+	char *paq_serializado = serializar_paquete(&paq, logger);
+	int bEnv = paq.tamanio_total;
+	if(sendAll(socket_respuesta, paq_serializado, &bEnv)){
+		log_error(logger, "[SYS_asignarValorCompartida] Hubo un error al tratar de enviar la respuesta a la CPU");
 	}
 
 	return 0;

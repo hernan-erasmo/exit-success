@@ -60,5 +60,6 @@ int enviarMensajePrograma(int *socket, char *motivo, char *mensaje);
 // SYSCALLS
 int syscall_entradaSalida(char *nombre_dispositivo, t_pcb *pcb_en_espera, uint32_t tiempoEnUnidades, t_log *logger);
 int syscall_obtenerValorCompartida(char *nombre_compartida, int socket_respuesta, t_log *logger);
+int syscall_asignarValorCompartida(char *nombre_compartida, int socket_respuesta, int nuevo_valor, t_log *logger);
 
 #endif /* KERNEL_H */

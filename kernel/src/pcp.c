@@ -328,6 +328,13 @@ void ejecutarSyscall(char *syscall_completa, t_pcb *pcb_a_atender, int *status_o
 		*status_op = syscall_obtenerValorCompartida(nombre_compartida, socket_respuesta, logger);
 	}
 
+	if(strcmp("asignarValorCompartida", nombre_syscall) == 0){
+		char *nombre_compartida = strtok_r(NULL, ",", &saveptr);
+		char *valor_compartida = strtok_r(NULL, ",", &saveptr);
+		log_info(logger, "[PCP] Voy a ejecutar la syscall %s (variable: \'%s\', valor: %d)", nombre_syscall, nombre_compartida, atoi(valor_compartida));
+		*status_op = syscall_asignarValorCompartida(nombre_compartida, socket_respuesta, atoi(valor_compartida), logger);
+	}
+
 	free(syscall_completa);
 	return;
 }
