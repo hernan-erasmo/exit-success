@@ -23,6 +23,6 @@ typedef struct init_dispatcher {
 
 void *pcp(void *datos_pcp);
 int extraerComandoYPcb(char *mensaje, char **syscall_serializada, char **pcb_serializado);
-int ejecutarSyscall(char *syscall_completa, t_pcb *pcb_a_atender, int *status_op, t_log *logger);
+void ejecutarSyscall(char *syscall_completa, t_pcb *pcb_a_atender, int *status_op, void **respuesta_op, int socket_respuesta, t_log *logger);
 
 #endif /* PCP_H */

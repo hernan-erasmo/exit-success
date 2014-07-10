@@ -131,6 +131,8 @@ void *pcp(void *datos_pcp)
 									char *syscall_serializada = NULL;
 									char *pcb_serializado = NULL;
 									int esBloqueante = 0;
+									int status_op = -1;
+									void *respuesta_op = NULL;
 
 									esBloqueante = extraerComandoYPcb(mensaje_cpu.mensaje, &syscall_serializada, &pcb_serializado);
 									log_info(logger, "[PCP] El syscall que me solicitaron es: %s", syscall_serializada);
@@ -146,8 +148,7 @@ void *pcp(void *datos_pcp)
 										log_info(logger, "[PCP] El PCB del proceso que lo solicitó tiene los siguientes datos:");
 										log_info(logger, "\tID:%d\n\tSocket:%d\n\tQuantum:%d\n\tPeso:%d\n\tSeg_cod:%d\n\tSeg_stack:%d\n\t...",pcb_modificado->id,pcb_modificado->socket,pcb_modificado->quantum,pcb_modificado->peso,pcb_modificado->seg_cod,pcb_modificado->seg_stack);	
 									
-										int status_op = -1;
-										int respuesta = ejecutarSyscall(syscall_serializada,pcb_modificado,&status_op,logger);
+										ejecutarSyscall(syscall_serializada,pcb_modificado,&status_op, &respuesta_op, sockActual, logger);
 
 										if(status_op < 0){
 											log_error(logger, "[PCP] Hubo un error al ejecutar la syscall. Me lavo las manos olímpicamente, eh!");
@@ -158,6 +159,13 @@ void *pcp(void *datos_pcp)
 										//Programemos esto cuando estemos programando
 										//una syscall no bloqueante :/
 
+										if(esBloqueante == -1){
+											log_error(logger, "[PCP] extraerComandoYPcb no reconoció ningún comando en el mensaje.");
+											break;											
+										}
+
+										int status_op = -1;
+										ejecutarSyscall(syscall_serializada, NULL, &status_op, &respuesta_op, sockActual, logger);
 									}
 
 								break;
@@ -302,7 +310,7 @@ int extraerComandoYPcb(char *mensaje, char **syscall_serializada, char **pcb_ser
 	return -1;
 }
 
-int ejecutarSyscall(char *syscall_completa, t_pcb *pcb_a_atender, int *status_op, t_log *logger)
+void ejecutarSyscall(char *syscall_completa, t_pcb *pcb_a_atender, int *status_op, void **respuesta_op, int socket_respuesta, t_log *logger)
 {
 	char *saveptr;
 	char *nombre_syscall = strtok_r(syscall_completa, ",", &saveptr);
@@ -314,6 +322,12 @@ int ejecutarSyscall(char *syscall_completa, t_pcb *pcb_a_atender, int *status_op
 		*status_op = syscall_entradaSalida(nombre_dispositivo, pcb_a_atender, atoi(tiempoEnUnidades), logger);
 	}
 
+	if(strcmp("obtenerValorCompartida", nombre_syscall) == 0){
+		char *nombre_compartida = strtok_r(NULL, ",", &saveptr);
+		log_info(logger, "[PCP] Voy a ejecutar la syscall %s (variable: \'%s\')", nombre_syscall, nombre_compartida);
+		*status_op = syscall_obtenerValorCompartida(nombre_compartida, socket_respuesta, logger);
+	}
+
 	free(syscall_completa);
-	return 1;
+	return;
 }
