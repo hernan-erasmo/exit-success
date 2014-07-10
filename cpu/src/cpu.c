@@ -15,7 +15,7 @@ int main(int argc, char *argv[])
 	int errorConfig = 0;
 	int errorConexion = 0;
 
-	salimosPorSyscall = 0;
+	salimosPorSyscallBloqueante = 0;
 	salimosPorError = 0;
 	salimosPorFin = 0;
 
@@ -23,7 +23,6 @@ int main(int argc, char *argv[])
 	t_config *config = NULL;
 
 	//Variables para las conexiones
-	int socket_pcp = -1;
 	int puerto_pcp = -1;
 	char *ip_pcp = NULL;
 	int puerto_umv = -1;
@@ -69,6 +68,7 @@ int main(int argc, char *argv[])
 	log_info(logger, "Hola, soy la CPU %d", getpid());
 
 	//Me conecto al hilo PCP del Kernel
+	socket_pcp = -1;
 	errorConexion = crear_conexion_saliente(&socket_pcp, &socketInfo, ip_pcp, puerto_pcp, logger, "CPU");
 	if (errorConexion) {
 		log_error(logger, "[CPU] Error al conectar con el Kernel (Hilo PCP).");
@@ -119,11 +119,11 @@ int main(int argc, char *argv[])
 				analizadorLinea(proxima_instruccion, funciones_comunes, funciones_kernel);
 				pcb.p_counter = pcb.p_counter + 1;
 
-				if(salimosPorFin || salimosPorSyscall || salimosPorError)
+				if(salimosPorFin || salimosPorSyscallBloqueante || salimosPorError)
 					break;
 			}
 			
-			if(salimosPorSyscall){
+			if(salimosPorSyscallBloqueante){
 				log_info(logger, "[CPU] El proceso con ID = %d quiere ejecutar una syscall (%s).", pcb.id, mi_syscall);
 
 				if(enviarPcbProcesado(socket_pcp, 'S', logger) > 0){
@@ -132,7 +132,7 @@ int main(int argc, char *argv[])
 					return EXIT_FAILURE;
 				}
 				free(mi_syscall);
-				salimosPorSyscall = 0;
+				salimosPorSyscallBloqueante = 0;
 
 			} else if(salimosPorError) {
 				salimosPorError = 0;
@@ -302,7 +302,7 @@ int enviarPcbProcesado(int socket_pcp, char evento, t_log *logger)
 	t_paquete_programa paq;
 			paq.id = evento; 	//'S' = Te mandó un pcb que salió por solicitud de syscall, 'P' = te mando un pcb que salió por quantum, 'F' = te mando un pcb que salió por fin de operación
 
-		if(salimosPorSyscall){
+		if(salimosPorSyscallBloqueante){
 			comando_syscall_len = strlen(mi_syscall);
 			paq.mensaje = calloc(comando_syscall_len + 48,1);
 			

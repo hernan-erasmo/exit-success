@@ -17,9 +17,10 @@
 t_pcb pcb;
 t_dictionary *diccionario_variables;
 int socket_umv;
+int socket_pcp;
 t_log *logger;
 
-uint32_t salimosPorSyscall;
+uint32_t salimosPorSyscallBloqueante;
 char *mi_syscall;
 
 uint32_t salimosPorError;
