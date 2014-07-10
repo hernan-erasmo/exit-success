@@ -139,6 +139,25 @@ t_valor_variable asignarValorCompartida(t_nombre_compartida variable, t_valor_va
 void irAlLabel(t_nombre_etiqueta nombre_etiqueta)
 {
 	log_info(logger, "[PRIMITIVA] Estoy dentro de _irAlLabel (nombre_etiqueta: %s)", nombre_etiqueta);
+	int aux = 0;
+	char *etiquetas_serializado = malloc(pcb.size_idx_etq);
+
+	//Le saco el \n al final a 'etiqueta' si es que lo tiene. Ver: http://www.campusvirtual.frba.utn.edu.ar/especialidad/mod/forum/discuss.php?d=27715
+	aux = strlen(nombre_etiqueta);
+	if(nombre_etiqueta[aux - 1] == '\n')
+		nombre_etiqueta[aux - 1] = '\0';
+
+	etiquetas_serializado = (char *) solicitar_solicitar_bytes(socket_umv, pcb.seg_idx_etq, 0, pcb.size_idx_etq, pcb.id, 'C', logger);
+	if(etiquetas_serializado == NULL){
+		log_error(logger, "[CPU] Segmentation fault. La UMV dice que no se pudo leer. (base=%d, offset=%d, tamaño=%d).", pcb.seg_idx_etq, 0, pcb.size_idx_etq);
+		salimosPorError = 1;
+		return;
+	}	
+
+	//actualizamos el program counter
+	log_info(logger, "[CPU] Antes de actualizarse por salto, el program counter del proceso %d es %d.", pcb.id, pcb.p_counter);
+	pcb.p_counter = metadata_buscar_etiqueta(nombre_etiqueta,etiquetas_serializado,pcb.size_idx_etq);
+	log_info(logger, "[CPU] Despues de actualizarse por salto, el program counter del proceso %d es %d.", pcb.id, pcb.p_counter);
 
 	return;
 }
@@ -148,13 +167,7 @@ void llamarSinRetorno(t_nombre_etiqueta etiqueta)
 	log_info(logger, "[PRIMITIVA] Estoy dentro de _llamarSinRetorno (etiqueta: %s)", etiqueta);
 	uint32_t nuevoProgramCounter = pcb.p_counter + 1;
 	uint32_t nuevoCursorStack = pcb.size_ctxt_actual * 5;
-	char *etiquetas_serializado = malloc(pcb.size_idx_etq);
-	int aux, respuesta = 0;
-
-	//Le saco el \n al final a 'etiqueta' si es que lo tiene. Ver: http://www.campusvirtual.frba.utn.edu.ar/especialidad/mod/forum/discuss.php?d=27715
-	aux = strlen(etiqueta);
-	if(etiqueta[aux - 1] == '\n')
-		etiqueta[aux - 1] = '\0';
+	int respuesta = 0;
 
 	log_info(logger, "[PRIMITIVA] _llamarSinRetorno, el nuevo cursor de stack apunta a: %d", nuevoCursorStack);
 	if((respuesta = _pushSinRetorno(nuevoCursorStack, pcb.cursor_stack, nuevoProgramCounter)) < 0){
@@ -171,21 +184,11 @@ void llamarSinRetorno(t_nombre_etiqueta etiqueta)
 
 	pcb.cursor_stack = nuevoCursorStack + 8;
 
-	etiquetas_serializado = (char *) solicitar_solicitar_bytes(socket_umv, pcb.seg_idx_etq, 0, pcb.size_idx_etq, pcb.id, 'C', logger);
-	if(etiquetas_serializado == NULL){
-		log_error(logger, "[CPU] Segmentation fault. La UMV dice que no se pudo leer. (base=%d, offset=%d, tamaño=%d).", pcb.seg_idx_etq, 0, pcb.size_idx_etq);
-		salimosPorError = 1;
-		return;
-	}	
+	irAlLabel(etiqueta);
 
 	//vaciamos diccionario de variables
 	dictionary_clean(diccionario_variables);
 	pcb.size_ctxt_actual = 0;
-
-	//actualizamos el program counter
-	log_info(logger, "[CPU] Antes de actualizarse por salto, el program counter del proceso %d es %d.", pcb.id, pcb.p_counter);
-	pcb.p_counter = metadata_buscar_etiqueta(etiqueta,etiquetas_serializado,pcb.size_idx_etq);
-	log_info(logger, "[CPU] Despues de actualizarse por salto, el program counter del proceso %d es %d.", pcb.id, pcb.p_counter);
 
 	return;
 }
