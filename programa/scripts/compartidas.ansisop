@@ -1,0 +1,8 @@
+#!/usr/bin/ansisop
+
+begin
+	print !colas
+	!colas = 33
+	print !colas
+    
+end
