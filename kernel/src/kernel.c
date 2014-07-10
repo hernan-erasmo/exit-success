@@ -50,6 +50,8 @@ int main(int argc, char *argv[])
 		return EXIT_FAILURE;
 	}
 
+	cargarInfoCompartidas(&listaCompartidas, config, logger);
+
 	d_pcp = crearConfiguracionPcp(config, logger);
 	d_plp = crearConfiguracionPlp(config, logger);
 
@@ -200,7 +202,7 @@ int enviarMensajePrograma(int *socket, char *motivo, char *mensaje)
 void cargarInfoIO(t_list **cabeceras, t_config *config, t_log *logger)
 {
 
-	int i, cant_disp = contarDispositivos(config_get_string_value(config, "ID_HIO"));
+	int i, cant_disp = contarOcurrenciasElementos(config_get_string_value(config, "ID_HIO"));
 	*cabeceras = list_create();
 	t_cola_io *dispositivo_io = NULL;
 	char **IO_ids = config_get_array_value(config, "ID_HIO");
@@ -208,6 +210,7 @@ void cargarInfoIO(t_list **cabeceras, t_config *config, t_log *logger)
 
 	printf("Hay %d dispositivos configurados. Sus IDs son:\n", cant_disp);
 
+	//cargo los dispositivos y al final muestro el nombre.
 	for(i = 0; i < cant_disp; i++){
 		dispositivo_io = malloc(sizeof(t_cola_io));
 		dispositivo_io->nombre_dispositivo = IO_ids[i];
@@ -224,7 +227,7 @@ void cargarInfoIO(t_list **cabeceras, t_config *config, t_log *logger)
 	return;
 }
 
-int contarDispositivos(char *cadena)
+int contarOcurrenciasElementos(char *cadena)
 {
 	int i, len = strlen(cadena);
 	int disp = 1;	
@@ -234,6 +237,34 @@ int contarDispositivos(char *cadena)
 	}
 
 	return disp;
+}
+
+/*
+** Asumo que siempre hay al menos una variable compartida, si no hay entonces no pongas la opcion COMPARTIDAS
+** en la configuración.
+*/
+void cargarInfoCompartidas(t_list **listaCompartidas, t_config *config, t_log *logger)
+{
+	int i, cantVariablesCompartidas = contarOcurrenciasElementos(config_get_string_value(config, "COMPARTIDAS"));
+	*listaCompartidas = list_create();
+	char **variables_compartidas = config_get_array_value(config, "COMPARTIDAS");
+	t_compartida *comp = NULL;
+
+	log_info(logger, "Hay %d variables compartidas. Sus nombres son:\n", cantVariablesCompartidas);
+
+	//cargo las variables y al final muestro el nombre.
+	for(i = 0; i < cantVariablesCompartidas; i++){
+		comp = malloc(sizeof(t_cola_io));
+		comp->nombre = variables_compartidas[i];
+		comp->valor = 98;
+
+		list_add(*listaCompartidas, comp);
+		
+		//debug!
+		printf("\t%s (Valor inicial: %d)\n", comp->nombre, comp->valor);
+	}
+
+	return;
 }
 
 int crearHilosIO(t_list *cabeceras, t_log *logger)
@@ -299,6 +330,42 @@ int syscall_entradaSalida(char *nombre_dispositivo, t_pcb *pcb_en_espera, uint32
 
 	//le aviso al dispositivo
 	sem_post(disp_buscado->s_cola);
+
+	return 0;
+}
+
+int syscall_obtenerValorCompartida(char *nombre_compartida, int socket_respuesta, t_log *logger)
+{
+	int i, tamanio_lista = list_size(listaCompartidas);
+	t_compartida *variable = NULL;
+	int encontrada = 0;
+
+	for(i = 0; i < tamanio_lista; i++){
+		variable = list_get(listaCompartidas, i);
+
+		if(strcmp(variable->nombre,nombre_compartida) == 0){
+			encontrada = 1;
+			break;
+		}
+	}
+
+	if(!encontrada){
+		log_error(logger, "[SYS_obtenerValorCompartida] No se encontró la variable buscada.");
+		return -1;
+	}
+
+	char str_valor[10];
+	t_paquete_programa paq;
+		paq.id = 'K';
+		sprintf(str_valor, "%d", variable->valor);
+		paq.mensaje = str_valor;
+		paq.sizeMensaje = strlen(str_valor);
+
+	char *paq_serializado = serializar_paquete(&paq, logger);
+	int bEnv = paq.tamanio_total;
+	if(!sendAll(socket_respuesta, paq_serializado, &bEnv)){
+		log_error(logger, "[SYS_obtenerValorCompartida] Hubo un error al tratar de enviar la respuesta a la CPU");
+	}
 
 	return 0;
 }

@@ -38,12 +38,20 @@ typedef struct pcb_en_io {
 	uint32_t unidades_de_tiempo;
 } t_pcb_en_io;
 
+t_list *listaCompartidas;	//Una lista de estructuras de tipo t_compartida
+
+typedef struct compartida {
+	char *nombre;
+	int valor;
+} t_compartida;
+
 int checkArgs(int args);
 int crearLogger(t_log **logger);
 int cargarConfig(t_config **config, char *path);
 void cargarInfoIO(t_list **cabeceras, t_config *config, t_log *logger);
+void cargarInfoCompartidas(t_list **listaCompartidas, t_config *config, t_log *logger);
 int crearHilosIO(t_list *cabeceras, t_log *logger);
-int contarDispositivos(char *cadena);
+int contarOcurrenciasElementos(char *cadena);
 t_datos_plp *crearConfiguracionPlp(t_config *config, t_log *logger);
 t_datos_pcp *crearConfiguracionPcp(t_config *config, t_log *logger);
 
@@ -51,5 +59,6 @@ int enviarMensajePrograma(int *socket, char *motivo, char *mensaje);
 
 // SYSCALLS
 int syscall_entradaSalida(char *nombre_dispositivo, t_pcb *pcb_en_espera, uint32_t tiempoEnUnidades, t_log *logger);
+int syscall_obtenerValorCompartida(char *nombre_compartida, int socket_respuesta, t_log *logger);
 
 #endif /* KERNEL_H */
