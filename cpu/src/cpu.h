@@ -26,6 +26,8 @@ char *mi_syscall;
 uint32_t salimosPorError;
 uint32_t salimosPorFin;
 
+int debo_actualizar_manualmente_p_counter;
+
 int checkArgs(int args);
 int crearLogger(t_log **logger);
 int cargarConfig(t_config **config, char *path);

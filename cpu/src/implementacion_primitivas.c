@@ -13,7 +13,8 @@ t_puntero definirVariable(t_nombre_variable identificador_variable)
 	pthread_mutex_t operacion = PTHREAD_MUTEX_INITIALIZER;
 	int respuesta = 0;
 	int tamanio_escritura = 5;
-	int offset = pcb.size_ctxt_actual*5;
+	//int offset = pcb.size_ctxt_actual*5;	//este era el viejo, que andaba bien cuando sólo existía 'llamarSinRetorno'
+	int offset = pcb.cursor_stack + pcb.size_ctxt_actual*5;
 	
 	t_puntero *puntero_al_valor = malloc(sizeof(t_puntero));
 	t_nombre_variable *nom_var = malloc(sizeof(t_nombre_variable) + 1);
@@ -268,9 +269,10 @@ void irAlLabel(t_nombre_etiqueta nombre_etiqueta)
 	}	
 
 	//actualizamos el program counter
-	log_info(logger, "[CPU] Antes de actualizarse por salto, el program counter del proceso %d es %d.", pcb.id, pcb.p_counter);
+	log_info(logger, "[PRIMITIVA_irAlLabel] Antes de actualizarse por salto, el program counter del proceso %d es %d.", pcb.id, pcb.p_counter);
 	pcb.p_counter = metadata_buscar_etiqueta(nombre_etiqueta,etiquetas_serializado,pcb.size_idx_etq);
-	log_info(logger, "[CPU] Despues de actualizarse por salto, el program counter del proceso %d es %d.", pcb.id, pcb.p_counter);
+	debo_actualizar_manualmente_p_counter = 0;
+	log_info(logger, "[PRIMITIVA_irAlLabel] Despues de actualizarse por salto, el program counter del proceso %d es %d.", pcb.id, pcb.p_counter);
 
 	return;
 }
@@ -279,7 +281,7 @@ void llamarSinRetorno(t_nombre_etiqueta etiqueta)
 {
 	log_info(logger, "[PRIMITIVA] Estoy dentro de _llamarSinRetorno (etiqueta: %s)", etiqueta);
 	uint32_t nuevoProgramCounter = pcb.p_counter + 1;
-	uint32_t nuevoCursorStack = pcb.size_ctxt_actual * 5;
+	uint32_t nuevoCursorStack = pcb.cursor_stack + pcb.size_ctxt_actual * 5;
 	int respuesta = 0;
 
 	log_info(logger, "[PRIMITIVA] _llamarSinRetorno, el nuevo cursor de stack apunta a: %d", nuevoCursorStack);
@@ -308,7 +310,31 @@ void llamarSinRetorno(t_nombre_etiqueta etiqueta)
 
 void llamarConRetorno(t_nombre_etiqueta etiqueta, t_puntero donde_retornar)
 {
-	log_info(logger, "[PRIMITIVA] Estoy dentro de _llamarConRetorno");
+	log_info(logger, "[PRIMITIVA] Estoy dentro de _llamarConRetorno (etiqueta: %s, donde_retornar: %d)", etiqueta, donde_retornar);
+	uint32_t nuevoProgramCounter = pcb.p_counter + 1;
+	uint32_t nuevoCursorStack = pcb.cursor_stack + pcb.size_ctxt_actual * 5;
+	int respuesta = 0;
+
+	log_info(logger, "[PRIMITIVA] _llamarConRetorno, el nuevo cursor de stack apunta a: %d", nuevoCursorStack);
+	if((respuesta = _pushConRetorno(nuevoCursorStack, pcb.cursor_stack, nuevoProgramCounter, donde_retornar)) < 0){
+		if(respuesta == -1){
+			log_error(logger, "[CPU] No se encontró el segmento de stack. Muy bizarro. No sigo ni ahí. Olvidate.");	
+		} else {
+			log_error(logger, "[CPU] Stack overflow. Adiós para siempre.");
+		}
+				
+		salimosPorError = 1;
+		
+		return;
+	}
+
+	pcb.cursor_stack = nuevoCursorStack + 12;
+
+	irAlLabel(etiqueta);
+
+	//vaciamos diccionario de variables
+	dictionary_clean(diccionario_variables);
+	pcb.size_ctxt_actual = 0;
 
 	return;
 }
@@ -336,21 +362,51 @@ void finalizar(void)
 
 void retornar(t_valor_variable retorno)
 {
-	log_info(logger, "[PRIMITIVA] Estoy dentro de _retornar");
+	log_info(logger, "[PRIMITIVA] Estoy dentro de _retornar (retorno: %d)", retorno);
+
+	int respuesta_pop = 0;
+	int respuesta_escritura;
+
+	if((respuesta_pop = _popConRetorno()) < 0){
+		//_popConRetorno ya brinda suficiente información acerca del error
+		salimosPorError = 1;
+	} else {
+		//'respuesta_pop' contiene el offset respecto al comienzo del contexto actual
+		// donde se debe escribir el valor de 'retorno' que viene como parámetro de esta función
+		respuesta_escritura = solicitar_enviar_bytes(socket_umv, pcb.seg_stack, respuesta_pop, 4, (void *) &retorno, pcb.id, 'C', logger);
+		if(respuesta_escritura == -1){
+			log_error(logger, "[CPU] Segmentation fault. La UMV dice que este proceso no tiene ningún segmento con base %d.", respuesta_pop);
+			//acá hay que terminar la ejecución del programa
+			salimosPorError = 1;
+			return;
+		} else if(respuesta_escritura == -2) {
+			log_error(logger, "[CPU] Segmentation fault. La UMV dice que intentar escribir %d bytes en la base %d, offset %d, quedaría fuera de rango.", 4, respuesta_pop, 0);
+			//acá hay que terminar la ejecución del programa
+			salimosPorError = 1;
+			return;
+		}
+
+		/*
+		** A diferencia del funcionamiento de 'llamarSinRetorno' y 'popSinRetorno' la generación del diccionario de variables
+		** se realiza acá, después de 'llamarConRetorno' pero más importante aún, después de actualizar el valor de la variable
+		** que recibe el valor de retorno. En 'popSinRetorno', no se modifica ningún valor de variable una vez desapilados los datos. Aquí si.
+		*/
+		generarDiccionarioVariables();
+	}
 
 	return;
 }
 
 void imprimir(t_valor_variable valor_mostrar)
 {
-	log_info(logger, "[PRIMITIVA] Estoy dentro de _imprimir");
+	log_info(logger, "[PRIMITIVA] Estoy dentro de _imprimir (valor_mostrar: %d)", valor_mostrar);
 
 	return;
 }
 
 void imprimirTexto(char* texto)
 {
-	log_info(logger, "[PRIMITIVA] Estoy dentro de _imprimirTexto");
+	log_info(logger, "[PRIMITIVA] Estoy dentro de _imprimirTexto (texto: %s)", texto);
 
 	return;
 }
@@ -418,6 +474,52 @@ void signal(t_nombre_semaforo identificador_semaforo)
 	return;
 }
 
+int _pushConRetorno(int puntero_cursor_aux, int cursor_viejo, int program_counter_viejo, t_puntero donde_retornar){
+	int respuesta = 0;
+
+	pthread_mutex_t operacion = PTHREAD_MUTEX_INITIALIZER;
+
+	pthread_mutex_lock(&operacion);
+		log_info(logger, "[PRIMITIVA_aux] _pushConRetorno apila el cursor de contexto viejo: %d", cursor_viejo);
+		respuesta = solicitar_enviar_bytes(socket_umv, pcb.seg_stack, puntero_cursor_aux, 4, (void *) &cursor_viejo, pcb.id, 'C', logger);
+		if(respuesta == -1){
+			log_error(logger, "[CPU] Segmentation fault. La UMV dice que este proceso no tiene ningún segmento con base %d.", pcb.seg_stack);
+			//acá hay que terminar la ejecución del programa
+			return -1;
+		} else if(respuesta == -2) {
+			log_error(logger, "[CPU] Segmentation fault. La UMV dice que intentar escribir %d bytes en la base %d, offset %d, quedaría fuera de rango.", 8, pcb.seg_stack, puntero_cursor_aux);
+			//acá hay que terminar la ejecución del programa
+			return -2;
+		}
+
+		log_info(logger, "[PRIMITIVA_aux] _pushConRetorno apila el program counter viejo: %d", program_counter_viejo);
+		respuesta = solicitar_enviar_bytes(socket_umv, pcb.seg_stack, puntero_cursor_aux + 4, 4, (void *) &program_counter_viejo, pcb.id, 'C', logger);
+		if(respuesta == -1){
+			log_error(logger, "[CPU] Segmentation fault. La UMV dice que este proceso no tiene ningún segmento con base %d.", pcb.seg_stack);
+			//acá hay que terminar la ejecución del programa
+			return -1;
+		} else if(respuesta == -2) {
+			log_error(logger, "[CPU] Segmentation fault. La UMV dice que intentar escribir %d bytes en la base %d, offset %d, quedaría fuera de rango.", 8, pcb.seg_stack, puntero_cursor_aux);
+			//acá hay que terminar la ejecución del programa
+			return -2;
+		}
+
+		log_info(logger, "[PRIMITIVA_aux] _pushConRetorno apila la dirección donde retornar el valor: %d", donde_retornar);
+		respuesta = solicitar_enviar_bytes(socket_umv, pcb.seg_stack, puntero_cursor_aux + 8, 4, (void *) &donde_retornar, pcb.id, 'C', logger);
+		if(respuesta == -1){
+			log_error(logger, "[CPU] Segmentation fault. La UMV dice que este proceso no tiene ningún segmento con base %d.", pcb.seg_stack);
+			//acá hay que terminar la ejecución del programa
+			return -1;
+		} else if(respuesta == -2) {
+			log_error(logger, "[CPU] Segmentation fault. La UMV dice que intentar escribir %d bytes en la base %d, offset %d, quedaría fuera de rango.", 8, pcb.seg_stack, puntero_cursor_aux);
+			//acá hay que terminar la ejecución del programa
+			return -2;
+		}
+	pthread_mutex_unlock(&operacion);
+
+	return 0;
+}
+
 int _pushSinRetorno(int puntero_cursor_aux, int cursor_viejo, int program_counter_viejo)
 {
 	int respuesta = 0;
@@ -453,11 +555,66 @@ int _pushSinRetorno(int puntero_cursor_aux, int cursor_viejo, int program_counte
 	return 0;
 }
 
+int _popConRetorno()
+{
+	int off_dir_guardar_retorno = pcb.cursor_stack - 4;
+	int off_p_counter_anterior = pcb.cursor_stack - 8;
+	int off_cursor_stack_anterior = pcb.cursor_stack - 12;
+	int fin_contexto_anterior = pcb.cursor_stack - 12;
+	int tamanio_ctxt_actual_bytes = 0;
+	int tamanio_ctxt_actual = 0;
+	int *ret = NULL;
+	int valorRetorno = 0;
+
+	pthread_mutex_t operacion = PTHREAD_MUTEX_INITIALIZER;
+
+	pthread_mutex_lock(&operacion);
+		//Recupero el valor de la posición donde tengo que almacenar el retorno.
+		ret = (int *) solicitar_solicitar_bytes(socket_umv, pcb.seg_stack, off_dir_guardar_retorno, 4, pcb.id, 'C', logger);
+		if(ret == NULL){
+			log_error(logger, "[CPU] Segmentation fault. La UMV dice que no se pudo leer. (base=%d, offset=%d, tamaño=%d).", pcb.seg_stack, off_dir_guardar_retorno, 4);
+		} else {
+			valorRetorno = *ret;
+		}
+
+		//Recupero el valor del program counter
+		ret = (int *) solicitar_solicitar_bytes(socket_umv, pcb.seg_stack, off_p_counter_anterior, 4, pcb.id, 'C', logger);
+		if(ret == NULL){
+			log_error(logger, "[CPU] Segmentation fault. La UMV dice que no se pudo leer. (base=%d, offset=%d, tamaño=%d).", pcb.seg_stack, off_p_counter_anterior, 4);
+			return -1;
+		} else {
+			log_info(logger, "[PRIMITIVA_aux] _popConRetorno: El program counter del proceso %d valía %d y lo voy a actualizar.", pcb.id, pcb.p_counter);
+			pcb.p_counter = *ret;
+			debo_actualizar_manualmente_p_counter = 0;
+			log_info(logger, "[PRIMITIVA_aux] _popConRetorno: El program counter del proceso %d ahora vale %d.", pcb.id, pcb.p_counter);
+		}
+
+		//Recupero el valor del puntero al comienzo del contexto
+		ret = (int *) solicitar_solicitar_bytes(socket_umv, pcb.seg_stack, off_cursor_stack_anterior, 4, pcb.id, 'C', logger);
+		if(ret == NULL){
+			log_error(logger, "[CPU] Segmentation fault. La UMV dice que no se pudo leer. (base=%d, offset=%d, tamaño=%d).", pcb.seg_stack, off_cursor_stack_anterior, 4);
+			return -1;
+		} else {
+			pcb.cursor_stack = *ret;
+		}
+
+		//Calculo el tamaño del diccionario de variables (la cantidad de bytes debería ser múltiplo de 5)
+		tamanio_ctxt_actual_bytes = fin_contexto_anterior - pcb.cursor_stack;
+		pcb.size_ctxt_actual = (tamanio_ctxt_actual_bytes / 5);
+		
+		if(tamanio_ctxt_actual_bytes % 5)
+			log_warning(logger, "[CPU] El tamaño del contexto actual en bytes es de %d, y no es múltiplo de 5", tamanio_ctxt_actual_bytes);
+
+	pthread_mutex_unlock(&operacion);
+
+	return valorRetorno;
+}
+
 int _popSinRetorno()
 {
 	int off_p_counter_anterior = pcb.cursor_stack - 4;
 	int off_cursor_stack_anterior = pcb.cursor_stack - 8;
-	int valor_contexto_anterior = pcb.cursor_stack - 8;
+	int fin_contexto_anterior = pcb.cursor_stack - 8;
 	int tamanio_ctxt_actual_bytes = 0;
 	int tamanio_ctxt_actual = 0;
 	int *ret = NULL;
@@ -471,7 +628,10 @@ int _popSinRetorno()
 			log_error(logger, "[CPU] Segmentation fault. La UMV dice que no se pudo leer. (base=%d, offset=%d, tamaño=%d).", pcb.seg_stack, off_p_counter_anterior, 4);
 			return -1;
 		} else {
+			log_info(logger, "[PRIMITIVA_aux] _popSinRetorno: El program counter del proceso %d valía %d y lo voy a actualizar.", pcb.id, pcb.p_counter);
 			pcb.p_counter = *ret;
+			debo_actualizar_manualmente_p_counter = 0;
+			log_info(logger, "[PRIMITIVA_aux] _popSinRetorno: El program counter del proceso %d ahora vale %d.", pcb.id, pcb.p_counter);
 		}
 
 		//Recupero el valor del puntero al comienzo del contexto
@@ -480,11 +640,12 @@ int _popSinRetorno()
 			log_error(logger, "[CPU] Segmentation fault. La UMV dice que no se pudo leer. (base=%d, offset=%d, tamaño=%d).", pcb.seg_stack, off_cursor_stack_anterior, 4);
 			return -1;
 		} else {
+			log_info(logger, "[PRIMITIVA_aux] _popSinRetorno, cursor al comienzo del contexto apunta al offset: %d", pcb.cursor_stack);
 			pcb.cursor_stack = *ret;
 		}
 
 		//Calculo el tamaño del diccionario de variables (la cantidad de bytes debería ser múltiplo de 5)
-		tamanio_ctxt_actual_bytes = valor_contexto_anterior - pcb.cursor_stack;
+		tamanio_ctxt_actual_bytes = fin_contexto_anterior - pcb.cursor_stack;
 		pcb.size_ctxt_actual = (tamanio_ctxt_actual_bytes / 5);
 		
 		if(tamanio_ctxt_actual_bytes % 5)
