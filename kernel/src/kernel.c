@@ -44,8 +44,13 @@ int main(int argc, char *argv[])
 	tamanio_quantum = config_get_int_value(config, "QUANTUM");
 	log_info(logger, "[KERNEL] El tamaño de quantum es: %d", tamanio_quantum);
 
-	cargarInfoSemaforosAnsisop(&semaforos_ansisop, config, logger);
 	cargarInfoCompartidas(&listaCompartidas, config, logger);
+
+	cargarInfoSemaforosAnsisop(&semaforos_ansisop, config, logger);
+	if(crearHilosSemaforosAnsisop(semaforos_ansisop, logger)){
+		goto liberarRecursos;
+		return EXIT_FAILURE;
+	}
 
 	cargarInfoIO(&cabeceras_io, config, logger);
 	if(crearHilosIO(cabeceras_io, logger)){
@@ -244,6 +249,7 @@ void cargarInfoSemaforosAnsisop(t_list **semaforos, t_config *config, t_log *log
 		semaforo->nombre = sem_nombres[i];
 		semaforo->valor = atoi(sem_valores[i]);
 		semaforo->pcbs_en_wait = list_create();
+		semaforo->logger = logger;
 
 		list_add(*semaforos, semaforo);
 
@@ -320,6 +326,37 @@ int crearHilosIO(t_list *cabeceras, t_log *logger)
 		}
 
 		pthread_detach(*hilo_io);
+	}
+
+	return huboError;
+}
+
+int crearHilosSemaforosAnsisop(t_list *lista_semaforos, t_log *logger)
+{
+	int i, cant_sem = list_size(lista_semaforos);
+	int huboError = 0;
+	sem_t *liberar;
+
+	for(i = 0; i < cant_sem; i++){
+		t_semaforo_ansisop *config_sem = list_get(lista_semaforos, i);
+		liberar = malloc(sizeof(sem_t));
+
+		if(sem_init(liberar, 0, 0) != 0){
+			log_error(logger, "[SEMAFORO_ANSISOP-%s] Hubo un error al inicializar el semáforo que libera PCBs. Adiós para siempre!", config_sem->nombre);
+			huboError = 1;
+			break;
+		}
+
+		config_sem->liberar = liberar;
+		pthread_t *hilo_sem = malloc(sizeof(pthread_t));
+
+		if(pthread_create(hilo_sem, NULL, hilo_semaforo, (void *) config_sem)) {
+			log_error(logger, "Error al crear el hilo para el semáforo ansisop \'%s\'. Motivo: %s", config_sem->nombre, strerror(errno));
+			huboError = 1;
+			break;
+		}
+
+		pthread_detach(*hilo_sem);
 	}
 
 	return huboError;
@@ -433,4 +470,46 @@ int syscall_asignarValorCompartida(char *nombre_compartida, int socket_respuesta
 	}
 
 	return 0;
+}
+
+int syscall_wait(char *nombre_semaforo, t_pcb *pcb_a_wait)
+{
+	//busco el semaforo en la lista de semaforos
+	int i, cant_semaforos = list_size(semaforos_ansisop);
+	int encontrado = 0;
+	t_semaforo_ansisop *sem_buscado = NULL;
+
+	for(i = 0; i < cant_semaforos; i++){
+		sem_buscado = list_get(semaforos_ansisop, i);
+		if(strcmp(nombre_semaforo, sem_buscado->nombre) == 0){
+			encontrado = 1;
+			break;
+		}
+	}
+
+	if(!encontrado)
+		return -1;
+
+	if(pcb_a_wait == NULL){	//esto es una consulta para ver si bloquearía o no
+		if(sem_buscado->valor > 0){
+			sem_buscado->valor = sem_buscado->valor - 1;
+			return 1;
+		} else {
+			return 0;
+		}
+	} else {	// la cpu ya había preguntado, 
+		if(sem_buscado->valor > 0){	// si pasa esto, es porque entre la consulta del proceso y el envío del pcb se liberó una instancia
+									// el famoso caso "Te comiste un desalojo al pedo"
+			sem_buscado->valor = sem_buscado->valor - 1;
+			list_add(sem_buscado->pcbs_en_wait, pcb_a_wait);
+			sem_post(sem_buscado->liberar);
+			return 1;
+		} else {
+			sem_buscado->valor = sem_buscado->valor - 1;
+			list_add(sem_buscado->pcbs_en_wait, pcb_a_wait);
+			return 1;
+		}
+	}
+
+	return 678;
 }

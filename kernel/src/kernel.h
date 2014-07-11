@@ -6,6 +6,7 @@
 #define KERNEL_H
 
 #include "hilo_entrada_salida.h"
+#include "hilo_semaforo.h"
 #include "plp.h"
 #include "pcp.h"
 
@@ -41,7 +42,9 @@ t_list *semaforos_ansisop;			//Una lista de estructuras t_semaforo_ansisop
 typedef struct semaforo_ansisop{
 	char* nombre;
 	int valor;
+	t_log *logger;
 	t_list *pcbs_en_wait;	//Una lista de estructuras de tipo t_pcb
+	sem_t *liberar;
 } t_semaforo_ansisop;
 
 t_list *listaCompartidas;	//Una lista de estructuras de tipo t_compartida
@@ -57,6 +60,7 @@ void cargarInfoIO(t_list **cabeceras, t_config *config, t_log *logger);
 void cargarInfoSemaforosAnsisop(t_list **semaforos, t_config *config, t_log *logger);
 void cargarInfoCompartidas(t_list **listaCompartidas, t_config *config, t_log *logger);
 int crearHilosIO(t_list *cabeceras, t_log *logger);
+int crearHilosSemaforosAnsisop(t_list *lista_semaforos, t_log *logger);
 int contarOcurrenciasElementos(char *cadena);
 t_datos_plp *crearConfiguracionPlp(t_config *config, t_log *logger);
 t_datos_pcp *crearConfiguracionPcp(t_config *config, t_log *logger);
@@ -67,5 +71,6 @@ int enviarMensajePrograma(int *socket, char *motivo, char *mensaje);
 int syscall_entradaSalida(char *nombre_dispositivo, t_pcb *pcb_en_espera, uint32_t tiempoEnUnidades, t_log *logger);
 int syscall_obtenerValorCompartida(char *nombre_compartida, int socket_respuesta, t_log *logger);
 int syscall_asignarValorCompartida(char *nombre_compartida, int socket_respuesta, int nuevo_valor, t_log *logger);
+int syscall_wait(char *nombre_semaforo, t_pcb *pcb_a_wait);
 
 #endif /* KERNEL_H */
