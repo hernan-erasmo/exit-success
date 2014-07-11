@@ -9,5 +9,8 @@ begin
 end
 
 function sinParam
-	textPrint Bye
+	variables f, g, h
+	f = 55
+	g = 66
+	h = f + g
 end

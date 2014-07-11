@@ -1,0 +1,64 @@
+#!/usr/bin/ansisop
+begin
+	#	pc == 0
+	variables f, a, g		
+
+	#	pc == 1
+	a = 1					
+	
+	#	pc == 2
+	f = 8					
+	
+	#	pc == 3
+	g <- tresMasDos a 		
+
+	print g
+
+#	pc == 4
+end							
+
+function tresMasDos			
+	#	pc == 5
+	variables d, e, f
+
+	#	pc == 6
+	d <- triple $0			
+	
+	#	pc == 7
+	e <- doble $0			
+	
+	#	pc == 
+	f = d + e 				
+	
+	#	pc == 
+	return f 				
+
+#	pc == 
+end 						
+
+function doble 				
+	
+	#	pc == 
+	variables f 			
+	
+	#	pc == 
+	f = $0 + $0				
+	
+	#	pc == 
+	return f 				
+
+#	pc == 
+end							
+
+function triple				
+	#	pc == 15
+	variables n 
+
+	#	pc == 16
+	n = $0 + $0 + $0		
+
+	#	pc == 17
+	return n 				
+
+#	pc == 
+end 						

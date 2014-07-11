@@ -1,0 +1,29 @@
+#!/usr/bin/ansisop
+begin
+	variables f, a, g		
+	a = 1					
+	f = 8					
+	g <- tresMasDos a 		
+
+	print g
+end							
+
+function tresMasDos			
+	variables d, e, f
+	d <- triple $0			
+	e <- doble $0			
+	f = d + e 				
+	return f 				
+end 						
+
+function doble 				
+	variables f 			
+	f = $0 + $0				
+	return f 				
+end							
+
+function triple				
+	variables n 
+	n = $0 + $0 + $0		
+	return n 				
+end 						
