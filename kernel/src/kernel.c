@@ -535,3 +535,28 @@ void _responderWait(int socket_respuesta, int valor_resp, t_log *logger)
 
 	return;
 }
+
+int syscall_signal(char *nombre_semaforo, t_log *logger)
+{
+	//busco el semaforo en la lista de semaforos
+	int i, cant_semaforos = list_size(semaforos_ansisop);
+	int encontrado = 0;
+	t_semaforo_ansisop *sem_buscado = NULL;
+
+	for(i = 0; i < cant_semaforos; i++){
+		sem_buscado = list_get(semaforos_ansisop, i);
+		if(strcmp(nombre_semaforo, sem_buscado->nombre) == 0){
+			encontrado = 1;
+			break;
+		}
+	}
+
+	if(!encontrado){
+		log_error(logger, "[SYS_signal] No encontré el semáforo con nombre: %s. Posiblemente vuele todo al choto.", nombre_semaforo);
+		return -1;
+	}
+
+	sem_post(sem_buscado->liberar);
+	//no incremento el valor, porque ya lo hace el hilo del semáforo. Creo.
+	return 1;
+}

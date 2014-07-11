@@ -347,6 +347,12 @@ void ejecutarSyscall(char *syscall_completa, t_pcb *pcb_a_atender, int *status_o
 		*status_op = syscall_wait(nombre_semaforo, pcb_a_atender, socket_respuesta, logger);
 	}
 
+	if(strcmp("signal", nombre_syscall) == 0){
+		char *nombre_semaforo = strtok_r(NULL, ",", &saveptr);
+		log_info(logger, "[PCP] Voy a ejecutar la syscall %s (nombre_semaforo: \'%s\')", nombre_syscall, nombre_semaforo);
+		*status_op = syscall_signal(nombre_semaforo, logger);
+	}
+
 	//agregar acá nuevas syscalls
 
 	free(syscall_completa);
