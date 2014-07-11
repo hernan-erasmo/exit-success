@@ -1,0 +1,11 @@
+#!/usr/bin/ansisop
+begin	
+	variables a	
+	wait SEM3
+	variables c, d
+	d = 4
+	c = 8
+	signal SEM3
+end
+
+

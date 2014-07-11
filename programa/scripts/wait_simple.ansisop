@@ -1,0 +1,7 @@
+#!/usr/bin/ansisop
+begin	
+	variables a	
+	wait SEM3
+end
+
+
