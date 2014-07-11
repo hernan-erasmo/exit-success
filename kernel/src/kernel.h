@@ -71,6 +71,9 @@ int enviarMensajePrograma(int *socket, char *motivo, char *mensaje);
 int syscall_entradaSalida(char *nombre_dispositivo, t_pcb *pcb_en_espera, uint32_t tiempoEnUnidades, t_log *logger);
 int syscall_obtenerValorCompartida(char *nombre_compartida, int socket_respuesta, t_log *logger);
 int syscall_asignarValorCompartida(char *nombre_compartida, int socket_respuesta, int nuevo_valor, t_log *logger);
-int syscall_wait(char *nombre_semaforo, t_pcb *pcb_a_wait);
+int syscall_wait(char *nombre_semaforo, t_pcb *pcb_a_wait, int socket_respuesta, t_log *logger);
+
+// Auxiliares
+void _responderWait(int socket_respuesta, int valor_resp, t_log *logger);
 
 #endif /* KERNEL_H */

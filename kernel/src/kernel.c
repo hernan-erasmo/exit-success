@@ -472,7 +472,7 @@ int syscall_asignarValorCompartida(char *nombre_compartida, int socket_respuesta
 	return 0;
 }
 
-int syscall_wait(char *nombre_semaforo, t_pcb *pcb_a_wait)
+int syscall_wait(char *nombre_semaforo, t_pcb *pcb_a_wait, int socket_respuesta, t_log *logger)
 {
 	//busco el semaforo en la lista de semaforos
 	int i, cant_semaforos = list_size(semaforos_ansisop);
@@ -487,14 +487,18 @@ int syscall_wait(char *nombre_semaforo, t_pcb *pcb_a_wait)
 		}
 	}
 
-	if(!encontrado)
+	if(!encontrado){
+		_responderWait(socket_respuesta, -1, logger);
 		return -1;
+	}
 
 	if(pcb_a_wait == NULL){	//esto es una consulta para ver si bloquearía o no
 		if(sem_buscado->valor > 0){
 			sem_buscado->valor = sem_buscado->valor - 1;
+			_responderWait(socket_respuesta, 1, logger);
 			return 1;
 		} else {
+			_responderWait(socket_respuesta, 0, logger);
 			return 0;
 		}
 	} else {	// la cpu ya había preguntado, 
@@ -512,4 +516,22 @@ int syscall_wait(char *nombre_semaforo, t_pcb *pcb_a_wait)
 	}
 
 	return 678;
+}
+
+void _responderWait(int socket_respuesta, int valor_resp, t_log *logger)
+{
+	char str_valor[10];
+	t_paquete_programa paq;
+		paq.id = 'K';
+		sprintf(str_valor, "%d", valor_resp);
+		paq.mensaje = str_valor;
+		paq.sizeMensaje = strlen(str_valor);
+
+	char *paq_serializado = serializar_paquete(&paq, logger);
+	int bEnv = paq.tamanio_total;
+	if(sendAll(socket_respuesta, paq_serializado, &bEnv)){
+		log_error(logger, "[SYS_wait?] Hubo un error al tratar de enviar la respuesta a la CPU");
+	}
+
+	return;
 }
