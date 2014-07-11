@@ -44,13 +44,14 @@ int main(int argc, char *argv[])
 	tamanio_quantum = config_get_int_value(config, "QUANTUM");
 	log_info(logger, "[KERNEL] El tamaño de quantum es: %d", tamanio_quantum);
 
+	cargarInfoSemaforosAnsisop(&semaforos_ansisop, config, logger);
+	cargarInfoCompartidas(&listaCompartidas, config, logger);
+
 	cargarInfoIO(&cabeceras_io, config, logger);
 	if(crearHilosIO(cabeceras_io, logger)){
 		goto liberarRecursos;
 		return EXIT_FAILURE;
 	}
-
-	cargarInfoCompartidas(&listaCompartidas, config, logger);
 
 	d_pcp = crearConfiguracionPcp(config, logger);
 	d_plp = crearConfiguracionPlp(config, logger);
@@ -222,6 +223,32 @@ void cargarInfoIO(t_list **cabeceras, t_config *config, t_log *logger)
 		
 		//debug!
 		printf("\t%s (Espera: %d, cola en: %p)\n", dispositivo_io->nombre_dispositivo, dispositivo_io->tiempo_espera, dispositivo_io->cola_dispositivo);
+	}
+
+	return;
+}
+
+void cargarInfoSemaforosAnsisop(t_list **semaforos, t_config *config, t_log *logger)
+{
+	int i, cant_semaforos = contarOcurrenciasElementos(config_get_string_value(config, "SEMAFOROS"));
+	*semaforos = list_create();
+	t_semaforo_ansisop *semaforo = NULL;
+	char **sem_nombres = config_get_array_value(config, "SEMAFOROS");
+	char **sem_valores = config_get_array_value(config, "VALOR_SEMAFORO");
+
+	printf("Hay %d semáforos en el sistema. Sus nombres son:\n", cant_semaforos);
+
+	//cargo los semáforos y al final muestro el nombres
+	for(i = 0; i < cant_semaforos; i++){
+		semaforo = malloc(sizeof(t_semaforo_ansisop));
+		semaforo->nombre = sem_nombres[i];
+		semaforo->valor = atoi(sem_valores[i]);
+		semaforo->pcbs_en_wait = list_create();
+
+		list_add(*semaforos, semaforo);
+
+		//debug!
+		printf("\t%s (Valor: %d, cola de PCBs: %p)\n", semaforo->nombre, semaforo->valor, semaforo->pcbs_en_wait);
 	}
 
 	return;

@@ -24,7 +24,6 @@ sem_t s_exit;
 sem_t s_hay_cpus;
 
 t_list *cabeceras_io;	//Una lista de estructuras de tipo t_cola_io
-
 typedef struct cola_io {
 	char *nombre_dispositivo;
 	uint32_t tiempo_espera;
@@ -38,8 +37,14 @@ typedef struct pcb_en_io {
 	uint32_t unidades_de_tiempo;
 } t_pcb_en_io;
 
-t_list *listaCompartidas;	//Una lista de estructuras de tipo t_compartida
+t_list *semaforos_ansisop;			//Una lista de estructuras t_semaforo_ansisop
+typedef struct semaforo_ansisop{
+	char* nombre;
+	int valor;
+	t_list *pcbs_en_wait;	//Una lista de estructuras de tipo t_pcb
+} t_semaforo_ansisop;
 
+t_list *listaCompartidas;	//Una lista de estructuras de tipo t_compartida
 typedef struct compartida {
 	char *nombre;
 	int valor;
@@ -49,6 +54,7 @@ int checkArgs(int args);
 int crearLogger(t_log **logger);
 int cargarConfig(t_config **config, char *path);
 void cargarInfoIO(t_list **cabeceras, t_config *config, t_log *logger);
+void cargarInfoSemaforosAnsisop(t_list **semaforos, t_config *config, t_log *logger);
 void cargarInfoCompartidas(t_list **listaCompartidas, t_config *config, t_log *logger);
 int crearHilosIO(t_list *cabeceras, t_log *logger);
 int contarOcurrenciasElementos(char *cadena);
