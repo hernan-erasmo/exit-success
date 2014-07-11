@@ -156,9 +156,6 @@ void *pcp(void *datos_pcp)
 
 									} else {	// NO es bloqueante, la cpu está esperando una respuesta YA!
 
-										//Programemos esto cuando estemos programando
-										//una syscall no bloqueante :/
-
 										if(esBloqueante == -1){
 											log_error(logger, "[PCP] extraerComandoYPcb no reconoció ningún comando en el mensaje.");
 											break;											
@@ -270,17 +267,20 @@ int extraerComandoYPcb(char *mensaje, char **syscall_serializada, char **pcb_ser
 		memcpy(*pcb_serializado, mensaje + limiteEntreComandoYPcb + 1, 48);
 		return 1;
 	}
+	
+	//Esta tiene que estar antes que "wait". EL ORDEN IMPORTA. Si, ya lo sé. No, no me da vergüenza.
+	if(memcmp(*syscall_serializada,"wait?",5) == 0){	//NO ES BLOQUEANTE (notar el signo de pregunta al final)
+		*pcb_serializado = NULL;
+		return 0;
+	}
 
-	if(strstr(*syscall_serializada,"wait") != NULL){	//ES BLOQUEANTE (wait)
+	//Esta tiene que estar después que "wait?". EL ORDEN IMPORTA. Si, ya lo sé. No, no me da vergüenza.
+	if(memcmp(*syscall_serializada,"wait",4) == 0){	//ES BLOQUEANTE (wait)
 		*pcb_serializado = calloc(48, 1);
 		memcpy(*pcb_serializado, mensaje + limiteEntreComandoYPcb + 1, 48);
 		return 1;
 	}
 	
-	if(strstr(*syscall_serializada,"wait?") != NULL){	//NO ES BLOQUEANTE (notar el signo de pregunta al final)
-		*pcb_serializado = NULL;
-		return 0;
-	}
 
 	if(strstr(*syscall_serializada,"obtenerValorCompartida") != NULL){	//NO ES BLOQUEANTE (obtenerValorCompartida)
 		*pcb_serializado = NULL;
@@ -334,6 +334,20 @@ void ejecutarSyscall(char *syscall_completa, t_pcb *pcb_a_atender, int *status_o
 		log_info(logger, "[PCP] Voy a ejecutar la syscall %s (variable: \'%s\', valor: %d)", nombre_syscall, nombre_compartida, atoi(valor_compartida));
 		*status_op = syscall_asignarValorCompartida(nombre_compartida, socket_respuesta, atoi(valor_compartida), logger);
 	}
+
+	if(strcmp("wait?", nombre_syscall) == 0){
+		char *nombre_semaforo = strtok_r(NULL, ",", &saveptr);
+		log_info(logger, "[PCP] Voy a ejecutar la syscall %s (nombre_semaforo: \'%s\')", nombre_syscall, nombre_semaforo);
+		*status_op = syscall_wait(nombre_semaforo, NULL, socket_respuesta, logger);
+	}
+
+	if(strcmp("wait", nombre_syscall) == 0){
+		char *nombre_semaforo = strtok_r(NULL, ",", &saveptr);
+		log_info(logger, "[PCP] Voy a ejecutar la syscall %s (nombre_semaforo: \'%s\')", nombre_syscall, nombre_semaforo);
+		*status_op = syscall_wait(nombre_semaforo, pcb_a_atender, socket_respuesta, logger);
+	}
+
+	//agregar acá nuevas syscalls
 
 	free(syscall_completa);
 	return;
