@@ -29,5 +29,6 @@ int _pushConRetorno(int puntero_cursor_aux, int cursor_viejo, int program_counte
 int _pushSinRetorno(int puntero_cursor_aux, int cursor_viejo, int program_counter_viejo);
 int _popConRetorno();
 int _popSinRetorno();
+void _wait_bloqueante(t_nombre_semaforo identificador_semaforo);
 
 #endif /* IMPLEMENTACION_PRIMITIVAS_H */

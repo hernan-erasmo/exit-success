@@ -454,15 +454,79 @@ void entradaSalida(t_nombre_dispositivo dispositivo, int tiempo)
 	return;
 }
 
+
+/*
+** Envío como mensaje la palabra clave "wait?" que el pcp interpreta como no bloqueante, y me quedo esperando la respuesta
+** si el PCP me dice que hay que bloquear, entonces envío como bloqueante, "wait"
+** si no, entonces continúo la ejecución.
+*/
 void wait(t_nombre_semaforo identificador_semaforo)
 {
-	log_info(logger, "[PRIMITIVA] Estoy dentro de _wait");
+	log_info(logger, "[PRIMITIVA] Estoy dentro de _wait (identificador_semaforo: %s)", identificador_semaforo);
 
-	//envío como mensaje la palabra clave "wait?" que el pcp interpreta como no bloqueante, y me quedo esperando la respuesta
+	char nombre_syscall[] = "wait?\0";
+	int nombre_syscall_len = strlen(nombre_syscall);
+	int identificador_semaforo_len = strlen(identificador_semaforo);
+	char *paqueteSerializado, *comando = calloc(nombre_syscall_len + 1 + 1 + identificador_semaforo_len + 1 + 1, 1);
+	int offset = 0;
+	int bEnv = 0;
+	int aux = 0;
 
-	//si el PCP me dice que hay que bloquear, entonces envío como bloqueante, "wait"
+	aux = strlen(identificador_semaforo);
+	if(identificador_semaforo[aux - 1] == '\n')
+		identificador_semaforo[aux - 1] = '\0';
 
-	//si no, entonces continúo la ejecución.
+	memcpy(comando + offset, nombre_syscall, nombre_syscall_len);
+	offset += nombre_syscall_len;
+
+	memcpy(comando + offset, ",", 1);
+	offset += 1;
+
+	memcpy(comando + offset, identificador_semaforo, identificador_semaforo_len);
+	offset += identificador_semaforo_len;
+
+	t_paquete_programa paq;
+		paq.id = 'S';	//porque el pcp reconoce que es una syscall si le mandás 'S'
+		paq.mensaje = comando;
+		paq.sizeMensaje = strlen(comando);
+
+	paqueteSerializado = serializar_paquete(&paq, logger);
+	bEnv = paq.tamanio_total;
+	if(sendAll(socket_pcp, paqueteSerializado, &bEnv)){
+		log_error(logger, "[PRIMITIVA_wait?] Hubo un error al tratar de enviar la syscall al PCP");
+	}
+
+	free(paq.mensaje);
+
+	/*
+	**	Ahora espero la respuesta del Kernel
+	*/
+	log_info(logger, "[PRIMITIVA_wait?] Estoy esperando la respuesta para ver si me bloqueo o no.");
+	int status = 0;
+	t_paquete_programa respuesta;
+	while(1)
+	{
+		int respuesta_pcp = -1;
+		status = recvAll(&respuesta, socket_pcp);
+		if(status){
+			
+			respuesta_pcp = atoi(respuesta.mensaje);
+			if(respuesta_pcp > 0){
+				log_info(logger, "[PRIMITIVA_wait?] Obtuve el semáforo, sigo trabajando sin bloquearme.");
+				break;
+			} else if(respuesta_pcp < 0){
+				log_error(logger, "[PRIMITIVA_wait?] ¿El semáforo no existe? La respuesta fue -1.");
+				break;
+			} else {
+				log_info(logger, "[PRIMITIVA_wait?] El semáforo está bloqueado, tengo que mandar el PCB y salirme de la CPU");
+				_wait_bloqueante(identificador_semaforo);
+				break;
+			}
+		} else {
+			log_error(logger, "[PRIMITIVA_wait?] El socket PCP cerró su conexión de manera inesperada.");
+			break;
+		}
+	}
 
 	return;
 }
@@ -656,4 +720,37 @@ int _popSinRetorno()
 	pthread_mutex_unlock(&operacion);	
 
 	return 0;
+}
+
+void _wait_bloqueante(t_nombre_semaforo identificador_semaforo)
+{
+	char nombre_syscall[] = "wait\0";
+	int nombre_syscall_len = strlen(nombre_syscall);
+	int identificador_semaforo_len = strlen(identificador_semaforo);
+	char *comando = calloc(nombre_syscall_len + 1 + 1 + identificador_semaforo_len + 1 + 1 + 48, 1);
+	int offset = 0;
+	int bEnv = 0;
+	int aux = 0;
+
+	aux = strlen(identificador_semaforo);
+	if(identificador_semaforo[aux - 1] == '\n')
+		identificador_semaforo[aux - 1] = '\0';
+
+	memcpy(comando + offset, nombre_syscall, nombre_syscall_len);
+	offset += nombre_syscall_len;
+
+	memcpy(comando + offset, ",", 1);
+	offset += 1;
+
+	memcpy(comando + offset, identificador_semaforo, identificador_semaforo_len);
+	offset += identificador_semaforo_len;
+
+	memcpy(comando + offset, "|", 1);
+
+	mi_syscall = comando;
+	log_info(logger, "[PRIMITIVA_wait] wait bloqueante tira el comando: %s", mi_syscall);
+
+	salimosPorSyscallBloqueante = 1;
+
+	return;
 }
