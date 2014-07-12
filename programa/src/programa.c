@@ -219,7 +219,7 @@ int ejecutarMensajeKernel(char *mensaje)
 	char *orden = strtok(mensaje, "_");
 	char *msj = strtok(NULL, "_");
 
-	printf("El kernel dice: %s\n", msj);
+	printf("%s\n", msj);
 	
 	if(strcmp("FINALIZAR", orden) == 0){
 		return 1;
