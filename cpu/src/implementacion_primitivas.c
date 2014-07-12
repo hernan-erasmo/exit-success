@@ -533,7 +533,46 @@ void wait(t_nombre_semaforo identificador_semaforo)
 
 void signal(t_nombre_semaforo identificador_semaforo)
 {
-	log_info(logger, "[PRIMITIVA] Estoy dentro de _signal");
+	log_info(logger, "[PRIMITIVA] Estoy dentro de _signal (identificador_semaforo: %s)", identificador_semaforo);
+
+	pthread_mutex_t operacion = PTHREAD_MUTEX_INITIALIZER;
+
+	pthread_mutex_lock(&operacion);
+		char nombre_syscall[] = "signal\0";
+		int nombre_syscall_len = strlen(nombre_syscall);
+		int identificador_semaforo_len = strlen(identificador_semaforo);
+		char *paqueteSerializado, *comando = calloc(nombre_syscall_len + 1 + 1 + identificador_semaforo_len + 1 + 1, 1);
+		int offset = 0;
+		int bEnv = 0;
+		int aux = 0;
+
+		aux = strlen(identificador_semaforo);
+		if(identificador_semaforo[aux - 1] == '\n')
+			identificador_semaforo[aux - 1] = '\0';
+
+		memcpy(comando + offset, nombre_syscall, nombre_syscall_len);
+		offset += nombre_syscall_len;
+
+		memcpy(comando + offset, ",", 1);
+		offset += 1;
+
+		memcpy(comando + offset, identificador_semaforo, identificador_semaforo_len);
+		offset += identificador_semaforo_len;
+
+		t_paquete_programa paq;
+			paq.id = 'S';	//porque el pcp reconoce que es una syscall si le mandás 'S'
+			paq.mensaje = comando;
+			paq.sizeMensaje = strlen(comando);
+
+		paqueteSerializado = serializar_paquete(&paq, logger);
+		bEnv = paq.tamanio_total;
+		if(sendAll(socket_pcp, paqueteSerializado, &bEnv)){
+			log_error(logger, "[PRIMITIVA_signal] Hubo un error al tratar de enviar la syscall al PCP");
+		}
+
+		free(paq.mensaje);
+		
+	pthread_mutex_unlock(&operacion);
 
 	return;
 }
