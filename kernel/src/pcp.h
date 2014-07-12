@@ -25,4 +25,6 @@ void *pcp(void *datos_pcp);
 int extraerComandoYPcb(char *mensaje, char **syscall_serializada, char **pcb_serializado);
 void ejecutarSyscall(char *syscall_completa, t_pcb *pcb_a_atender, int *status_op, void **respuesta_op, int socket_respuesta, t_log *logger);
 
+void mostrar_cola_ready(t_log *logger);
+
 #endif /* PCP_H */
