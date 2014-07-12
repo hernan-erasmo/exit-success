@@ -18,7 +18,12 @@ void *atencionConexiones(void *config)
 	while(atendiendoSolicitud){
 		bytesRecibidos = recvAll(&paq, *sock);
 		log_info(logger, "[ATENCION_CONN] Recibí una solicitud de %d bytes.", bytesRecibidos);
-	
+		
+		if(bytesRecibidos == 0){ //independientemente que haya sido una cpu o el plp, este hilo ya no tiene nada que hacer.
+			log_info(logger, "[ATENCION_CONN] Se desconectó una CPU (lo más probable). Este hilo de atención finalizará ahora.");
+			goto liberarRecursos;
+		}	
+
 		switch(paq.id){
 			case 'P':
 				;
@@ -47,11 +52,12 @@ void *atencionConexiones(void *config)
 		bytesRecibidos = 0;
 	}
 
-	free(sock);
-	free(parametros_memoria);
-	free(punteroAEsteHilo);
-	free(config);
-	pthread_exit(NULL);
+	liberarRecursos:
+		free(sock);
+		free(parametros_memoria);
+		free(punteroAEsteHilo);
+		free(config);
+		pthread_exit(NULL);
 }
 
 void handler_plp(int sock, uint32_t *respuesta, char *orden, t_param_memoria *parametros_memoria, t_log *logger)
@@ -108,6 +114,9 @@ void handler_cpu(int sock, void *respuesta, char *orden, t_param_memoria *parame
 	uint32_t resp_num = 0;
 
 	log_info(logger, "[ATENCION_CONN] Estoy atendiendo una solicitud de %s de una CPU.", comando);
+	if(comando == NULL){
+		log_info(logger, "[ATENCION_CONN] Recibí una solicitud de una CPU de ejecutar una instrucción NULL (Probablemente salió de servicio)");
+	}
 
 	uint32_t tamanio_buffer_respuesta = 0;
 
