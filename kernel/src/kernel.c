@@ -589,3 +589,17 @@ void _mostrar_cola_semaforo(t_semaforo_ansisop *sem_buscado, t_log *logger)
 	
 	return;
 }
+
+int syscall_imprimir(int socket_programa, char *valor)
+{
+	int respuesta = enviarMensajePrograma(&socket_programa, "INFORMAR", valor);
+
+	return 1;
+}
+
+int syscall_imprimirTexto(int socket_programa, char *valor)
+{
+	int respuesta = enviarMensajePrograma(&socket_programa, "INFORMAR", valor);
+
+	return 1;
+}

@@ -400,6 +400,51 @@ void retornar(t_valor_variable retorno)
 void imprimir(t_valor_variable valor_mostrar)
 {
 	log_info(logger, "[PRIMITIVA] Estoy dentro de _imprimir (valor_mostrar: %d)", valor_mostrar);
+	pthread_mutex_t operacion = PTHREAD_MUTEX_INITIALIZER;
+
+	pthread_mutex_lock(&operacion);
+		char nombre_syscall[] = "imprimir\0";
+		char str_valor_mostrar[10];
+			sprintf(str_valor_mostrar, "%d", valor_mostrar);
+		char str_socket_programa[10];
+			sprintf(str_socket_programa, "%d", pcb.socket);
+		int socket_programa_len = strlen(str_socket_programa);
+		int valor_mostrar_len = strlen(str_valor_mostrar);
+		int nombre_syscall_len = strlen(nombre_syscall);
+		char *paqueteSerializado, *comando = calloc(nombre_syscall_len + 1 + 1 + valor_mostrar_len + 1 + 1 + socket_programa_len + 1 + 1, 1);
+		int offset = 0;
+		int bEnv = 0;
+		int aux = 0;
+
+		memcpy(comando + offset, nombre_syscall, nombre_syscall_len);
+		offset += nombre_syscall_len;
+
+		memcpy(comando + offset, ",", 1);
+		offset += 1;
+
+		memcpy(comando + offset, str_socket_programa, socket_programa_len);
+		offset += socket_programa_len;
+
+		memcpy(comando + offset, ",", 1);
+		offset += 1;
+
+		memcpy(comando + offset, str_valor_mostrar, valor_mostrar_len);
+		offset += valor_mostrar_len;
+
+		t_paquete_programa paq;
+			paq.id = 'S';	//porque el pcp reconoce que es una syscall si le mandás 'S'
+			paq.mensaje = comando;
+			paq.sizeMensaje = strlen(comando);
+
+		paqueteSerializado = serializar_paquete(&paq, logger);
+		bEnv = paq.tamanio_total;
+		if(sendAll(socket_pcp, paqueteSerializado, &bEnv)){
+			log_error(logger, "[PRIMITIVA_imprimir] Hubo un error al tratar de enviar la syscall al PCP");
+		}
+
+		free(paq.mensaje);
+		
+	pthread_mutex_unlock(&operacion);
 
 	return;
 }
@@ -407,6 +452,50 @@ void imprimir(t_valor_variable valor_mostrar)
 void imprimirTexto(char* texto)
 {
 	log_info(logger, "[PRIMITIVA] Estoy dentro de _imprimirTexto (texto: %s)", texto);
+
+	pthread_mutex_t operacion = PTHREAD_MUTEX_INITIALIZER;
+
+	pthread_mutex_lock(&operacion);
+		char nombre_syscall[] = "imprimirTexto\0";
+		char str_socket_programa[10];
+			sprintf(str_socket_programa, "%d", pcb.socket);
+		int socket_programa_len = strlen(str_socket_programa);
+		int texto_len = strlen(texto);
+		int nombre_syscall_len = strlen(nombre_syscall);
+		char *paqueteSerializado, *comando = calloc(nombre_syscall_len + 1 + 1 + texto_len + 1 + 1 + socket_programa_len + 1 + 1, 1);
+		int offset = 0;
+		int bEnv = 0;
+		int aux = 0;
+
+		memcpy(comando + offset, nombre_syscall, nombre_syscall_len);
+		offset += nombre_syscall_len;
+
+		memcpy(comando + offset, ",", 1);
+		offset += 1;
+
+		memcpy(comando + offset, str_socket_programa, socket_programa_len);
+		offset += socket_programa_len;
+
+		memcpy(comando + offset, ",", 1);
+		offset += 1;
+
+		memcpy(comando + offset, texto, texto_len);
+		offset += texto_len;
+
+		t_paquete_programa paq;
+			paq.id = 'S';	//porque el pcp reconoce que es una syscall si le mandás 'S'
+			paq.mensaje = comando;
+			paq.sizeMensaje = strlen(comando);
+
+		paqueteSerializado = serializar_paquete(&paq, logger);
+		bEnv = paq.tamanio_total;
+		if(sendAll(socket_pcp, paqueteSerializado, &bEnv)){
+			log_error(logger, "[PRIMITIVA_imprimirTexto] Hubo un error al tratar de enviar la syscall al PCP");
+		}
+
+		free(paq.mensaje);
+		
+	pthread_mutex_unlock(&operacion);
 
 	return;
 }

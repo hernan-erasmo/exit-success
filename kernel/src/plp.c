@@ -144,7 +144,7 @@ void *plp(void *datos_plp)
 								pcb->size_ctxt_actual = 0;
 
 								if(atender_solicitud_programa(socket_umv, &paquete, pcb, tamanio_stack, logger) != 0){
-									//enviarMensajePrograma(&sockActual, "FINALIZAR", "No se pudo atender tu solicitud :( Adiós para siempre.");
+									enviarMensajePrograma(&sockActual, "FINALIZAR", "No se pudo atender tu solicitud :( Adiós para siempre.");
 									log_error(logger, "[PLP] No se pudo satisfacer la solicitud del programa");
 								
 									pthread_mutex_lock(&encolar);
@@ -152,7 +152,7 @@ void *plp(void *datos_plp)
 										sem_post(&s_exit);
 									pthread_mutex_unlock(&encolar);
 								} else {
-									//enviarMensajePrograma(&sockActual, "INFORMAR", "Ya estás adentro del sistema. Esperá por los resultados.");
+									enviarMensajePrograma(&sockActual, "INFORMAR", "Ya estás adentro del sistema. Esperá por los resultados.");
 
 									log_info(logger, "[PLP] Solicitud atendida satisfactoriamente.");
 									

@@ -73,6 +73,8 @@ int syscall_obtenerValorCompartida(char *nombre_compartida, int socket_respuesta
 int syscall_asignarValorCompartida(char *nombre_compartida, int socket_respuesta, int nuevo_valor, t_log *logger);
 int syscall_wait(char *nombre_semaforo, t_pcb *pcb_a_wait, int socket_respuesta, t_log *logger);
 int syscall_signal(char *nombre_semaforo, t_log *logger);
+int syscall_imprimir(int socket_programa, char *valor);
+int syscall_imprimirTexto(int socket_programa, char *valor);
 
 // Auxiliares
 void _responderWait(int socket_respuesta, int valor_resp, t_log *logger);

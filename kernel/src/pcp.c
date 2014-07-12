@@ -190,7 +190,7 @@ void *pcp(void *datos_pcp)
 								pcb_modificado = malloc(sizeof(t_pcb));
 								deserializarPcb(pcb_modificado, (void *) mensaje_cpu.mensaje);
 
-								//enviarMensajePrograma(&(pcb_modificado->socket), "FINALIZAR", "Terminó la ejecución.\n");
+								enviarMensajePrograma(&(pcb_modificado->socket), "FINALIZAR", "Terminó la ejecución.\n");
 
 								log_info(logger, "[PCP] Una CPU me mandó el PCB del proceso %d que terminó su ejecución. (program counter=%d)", pcb_modificado->id, pcb_modificado->p_counter);
 								pthread_mutex_lock(&encolar);
@@ -213,7 +213,7 @@ void *pcp(void *datos_pcp)
 								pcb_modificado = malloc(sizeof(t_pcb));
 								deserializarPcb(pcb_modificado, (void *) mensaje_cpu.mensaje);
 
-								//enviarMensajePrograma(&(pcb_modificado->socket), "FINALIZAR", "La ejecución terminó de forma inesperada debido a un error. Revisar logs para más información.\n");
+								enviarMensajePrograma(&(pcb_modificado->socket), "FINALIZAR", "La ejecución terminó de forma inesperada debido a un error. Revisar logs para más información.\n");
 
 								log_info(logger, "[PCP] Una CPU me mandó el PCB del proceso %d que terminó su ejecución. (program counter=%d)", pcb_modificado->id, pcb_modificado->p_counter);
 								pthread_mutex_lock(&encolar);
@@ -296,15 +296,16 @@ int extraerComandoYPcb(char *mensaje, char **syscall_serializada, char **pcb_ser
 		return 0;
 	}
 
-	if(strstr(*syscall_serializada,"imprimir") != NULL){	//NO ES BLOQUEANTE (imprimir)
-		*pcb_serializado = NULL;
-		return 0;
-	}	
-	
-	if(strstr(*syscall_serializada,"imprimirTexto") != NULL){	//NO ES BLOQUEANTE (imprimirTexto)
+
+	if(memcmp(*syscall_serializada,"imprimirTexto",13) == 0){	//NO ES BLOQUEANTE
 		*pcb_serializado = NULL;
 		return 0;
 	}
+	
+	if(memcmp(*syscall_serializada,"imprimir",8) == 0){			//NO ES BLOQUEANTE
+		*pcb_serializado = NULL;
+		return 0;
+	}	
 	
 	if(strstr(*syscall_serializada,"signal") != NULL){	//NO ES BLOQUEANTE (signal)
 		*pcb_serializado = NULL;
@@ -355,6 +356,18 @@ void ejecutarSyscall(char *syscall_completa, t_pcb *pcb_a_atender, int *status_o
 		char *nombre_semaforo = strtok_r(NULL, ",", &saveptr);
 		log_info(logger, "[PCP] Voy a ejecutar la syscall %s (nombre_semaforo: \'%s\')", nombre_syscall, nombre_semaforo);
 		*status_op = syscall_signal(nombre_semaforo, logger);
+	}
+
+	if(strcmp("imprimir", nombre_syscall) == 0){
+		char *str_socket = strtok_r(NULL, ",", &saveptr);
+		char *str_valor = strtok_r(NULL, ",", &saveptr);
+		*status_op = syscall_imprimir(atoi(str_socket), str_valor);
+	}
+
+	if(strcmp("imprimirTexto", nombre_syscall) == 0){
+		char *str_socket = strtok_r(NULL, ",", &saveptr);
+		char *str_valor = strtok_r(NULL, ",", &saveptr);
+		*status_op = syscall_imprimir(atoi(str_socket), str_valor);
 	}
 
 	//agregar acá nuevas syscalls
