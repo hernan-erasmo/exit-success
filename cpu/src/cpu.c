@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include <errno.h>
+#include <stdio.h>
+#include <signal.h>
 #include <unistd.h>
 #include <sys/types.h>
 
@@ -8,8 +10,20 @@
 
 void mostrarElementosDiccionario(char *k, void *v);
 
+void sig_handler(int signo)
+{
+	if(signo == SIGUSR1)
+		salimosPorSIGUSR1 = 1;
+}
+
 int main(int argc, char *argv[])
 {
+	salimosPorSIGUSR1 = 0;
+	if(signal(SIGUSR1, sig_handler) == SIG_ERR){
+		printf("No voy atrapar la señal SIGUSR1\n");
+		return EXIT_FAILURE;		
+	}
+
 	int errorArgumentos = 0;
 	int errorLogger = 0;
 	int errorConfig = 0;
@@ -49,7 +63,7 @@ int main(int argc, char *argv[])
 
 	AnSISOP_kernel *funciones_kernel = malloc(sizeof(AnSISOP_kernel));
 		funciones_kernel->AnSISOP_wait = wait;
-		funciones_kernel->AnSISOP_signal = signal;
+		funciones_kernel->AnSISOP_signal = prim_signal;
 
 	errorArgumentos = checkArgs(argc);
 	errorLogger = crearLogger(&logger);
@@ -168,6 +182,11 @@ int main(int argc, char *argv[])
 						log_error(logger, "[CPU] Error en la transmisión hacia el PCP. Motivo: %s", strerror(errno));
 						goto liberarRecursos;
 						return EXIT_FAILURE;
+					}
+
+					if(salimosPorSIGUSR1){
+						goto liberarRecursos;
+						return EXIT_SUCCESS;			
 					}
 				}
 			}

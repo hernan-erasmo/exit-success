@@ -23,6 +23,8 @@ t_log *logger;
 uint32_t salimosPorSyscallBloqueante;
 char *mi_syscall;
 
+int salimosPorSIGUSR1;
+
 uint32_t salimosPorError;
 uint32_t salimosPorFin;
 

@@ -22,7 +22,7 @@ void imprimirTexto(char* texto);
 void entradaSalida(t_nombre_dispositivo dispositivo, int tiempo);
 
 void wait(t_nombre_semaforo identificador_semaforo);
-void signal(t_nombre_semaforo identificador_semaforo);
+void prim_signal(t_nombre_semaforo identificador_semaforo);
 
 //Funciones auxiliares
 int _pushConRetorno(int puntero_cursor_aux, int cursor_viejo, int program_counter_viejo, t_puntero donde_retornar);

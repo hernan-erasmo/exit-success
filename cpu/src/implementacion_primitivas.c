@@ -531,7 +531,7 @@ void wait(t_nombre_semaforo identificador_semaforo)
 	return;
 }
 
-void signal(t_nombre_semaforo identificador_semaforo)
+void prim_signal(t_nombre_semaforo identificador_semaforo)
 {
 	log_info(logger, "[PRIMITIVA] Estoy dentro de _signal (identificador_semaforo: %s)", identificador_semaforo);
 
