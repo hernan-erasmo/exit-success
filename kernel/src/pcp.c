@@ -122,7 +122,7 @@ void *pcp(void *datos_pcp)
 								//Agrego la cpu a la lista de ociosas
 								list_add(cpus_ociosas, head_cpu);
 
-								mostrar_cola_ready(logger);
+								//mostrar_cola_ready(logger);
 
 								//Informo al thread que despacha que hay una cpu disponible
 								sem_post(&s_hay_cpus);
@@ -228,6 +228,8 @@ void *pcp(void *datos_pcp)
 						}
 					} else {
 						log_info(logger, "[PCP] El socket %d cerró su conexión y ya no está en mi lista de sockets.", sockActual);
+						log_info(logger, "[PCP] Saco a la CPU con el socket %d de mi lista de CPUs.", sockActual);
+						//quitar_cpu(cpus_ociosas, sockActual);
 						close(sockActual);
 						FD_CLR(sockActual, &master);
 					}
@@ -376,6 +378,28 @@ void mostrar_cola_ready(t_log *logger)
 			log_info(logger, "\tID: %d, Peso: %d", p->id, p->peso);
 		}
 	pthread_mutex_unlock(&listarDeCorrido);
+
+	return;
+}
+
+void quitar_cpu(t_list *cpus_ociosas, int socket_buscado)
+{
+	int i, cant_headers = list_size(cpus_ociosas);
+	t_header_cpu *header = NULL;
+	int encontado = 0;
+
+	for(i = 0; i < cant_headers; i++){
+		header = list_get(cpus_ociosas, i);
+
+		if(header->socket == socket_buscado){
+			encontado = 1;
+			break;
+		}
+	}
+
+	if(encontado){
+		t_header_cpu *header_a_eliminar = list_remove(cpus_ociosas, i);
+	}
 
 	return;
 }
