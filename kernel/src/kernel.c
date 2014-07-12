@@ -242,19 +242,23 @@ void cargarInfoSemaforosAnsisop(t_list **semaforos, t_config *config, t_log *log
 	char **sem_valores = config_get_array_value(config, "VALOR_SEMAFORO");
 
 	printf("Hay %d semáforos en el sistema. Sus nombres son:\n", cant_semaforos);
-
+	
 	//cargo los semáforos y al final muestro el nombres
+	int aux = 0;
 	for(i = 0; i < cant_semaforos; i++){
 		semaforo = malloc(sizeof(t_semaforo_ansisop));
 		semaforo->nombre = sem_nombres[i];
-		semaforo->valor = atoi(sem_valores[i]);
+		semaforo->valor = malloc(sizeof(int));
+			aux = atoi(sem_valores[i]);
+			memcpy(semaforo->valor, &aux, sizeof(int));
 		semaforo->pcbs_en_wait = list_create();
 		semaforo->logger = logger;
 
 		list_add(*semaforos, semaforo);
 
 		//debug!
-		printf("\t%s (Valor: %d, cola de PCBs: %p)\n", semaforo->nombre, semaforo->valor, semaforo->pcbs_en_wait);
+		int *aux = semaforo->valor;
+		printf("\t%s (Valor: %d, cola de PCBs: %p)\n", semaforo->nombre, *aux, semaforo->pcbs_en_wait);
 	}
 
 	return;
@@ -478,10 +482,12 @@ int syscall_wait(char *nombre_semaforo, t_pcb *pcb_a_wait, int socket_respuesta,
 	int i, cant_semaforos = list_size(semaforos_ansisop);
 	int encontrado = 0;
 	t_semaforo_ansisop *sem_buscado = NULL;
+	int *valor_semaforo = NULL;
 
 	for(i = 0; i < cant_semaforos; i++){
 		sem_buscado = list_get(semaforos_ansisop, i);
 		if(strcmp(nombre_semaforo, sem_buscado->nombre) == 0){
+			valor_semaforo = sem_buscado->valor;
 			encontrado = 1;
 			break;
 		}
@@ -493,24 +499,29 @@ int syscall_wait(char *nombre_semaforo, t_pcb *pcb_a_wait, int socket_respuesta,
 	}
 
 	if(pcb_a_wait == NULL){	//esto es una consulta para ver si bloquearía o no
-		if(sem_buscado->valor > 0){
-			sem_buscado->valor = sem_buscado->valor - 1;
+		if(*valor_semaforo > 0){
+			*valor_semaforo = *valor_semaforo - 1;
+			log_info(logger, "[SYS_wait] Respondo al PCB que siga operando, y mi valor ahora reducido es: %d", *valor_semaforo);
 			_responderWait(socket_respuesta, 1, logger);
 			return 1;
 		} else {
 			_responderWait(socket_respuesta, 0, logger);
+			log_info(logger, "[SYS_wait] Respondo al PCB que se va a bloquear, mi valor actual (sin reducir) es: %d", *valor_semaforo);
 			return 0;
 		}
 	} else {	// la cpu ya había preguntado, 
-		if(sem_buscado->valor > 0){	// si pasa esto, es porque entre la consulta del proceso y el envío del pcb se liberó una instancia
+		if(*valor_semaforo > 0){	// si pasa esto, es porque entre la consulta del proceso y el envío del pcb se liberó una instancia
 									// el famoso caso "Te comiste un desalojo al pedo"
-			sem_buscado->valor = sem_buscado->valor - 1;
+			*valor_semaforo = *valor_semaforo - 1;
 			list_add(sem_buscado->pcbs_en_wait, pcb_a_wait);
 			sem_post(sem_buscado->liberar);
+			log_info(logger, "[SYS_wait] Caso \"TCUDAP\".");
 			return 1;
 		} else {
-			sem_buscado->valor = sem_buscado->valor - 1;
+			*valor_semaforo = *valor_semaforo - 1;
 			list_add(sem_buscado->pcbs_en_wait, pcb_a_wait);
+			log_info(logger, "[SYS_wait] Voy a meter en la cola del semáforo \'%s\' al proceso con ID: %d.", sem_buscado->nombre, pcb_a_wait->id);
+			_mostrar_cola_semaforo(sem_buscado, logger);
 			return 1;
 		}
 	}
@@ -559,4 +570,22 @@ int syscall_signal(char *nombre_semaforo, t_log *logger)
 	sem_post(sem_buscado->liberar);
 	//no incremento el valor, porque ya lo hace el hilo del semáforo. Creo.
 	return 1;
+}
+
+void _mostrar_cola_semaforo(t_semaforo_ansisop *sem_buscado, t_log *logger)
+{
+	int i, cant_bloq = list_size(sem_buscado->pcbs_en_wait);
+	t_pcb *pcb_bloqueado = NULL;
+	log_info(logger, "[COLA_BLOQUEADO] El semáforo %s tiene en su cola a los procesos:", sem_buscado->nombre);
+	
+	pthread_mutex_t mostrarTextoConsecutivo = PTHREAD_MUTEX_INITIALIZER;
+
+	pthread_mutex_lock(&mostrarTextoConsecutivo);
+		for(i = 0; i < cant_bloq; i++){
+			pcb_bloqueado = list_get(sem_buscado->pcbs_en_wait, i);
+			log_info(logger, "\tID Proceso: %d.", pcb_bloqueado->id);
+		}
+	pthread_mutex_unlock(&mostrarTextoConsecutivo);
+	
+	return;
 }

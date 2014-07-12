@@ -40,8 +40,8 @@ typedef struct pcb_en_io {
 
 t_list *semaforos_ansisop;			//Una lista de estructuras t_semaforo_ansisop
 typedef struct semaforo_ansisop{
-	char* nombre;
-	int valor;
+	char *nombre;
+	int *valor;
 	t_log *logger;
 	t_list *pcbs_en_wait;	//Una lista de estructuras de tipo t_pcb
 	sem_t *liberar;
@@ -72,8 +72,10 @@ int syscall_entradaSalida(char *nombre_dispositivo, t_pcb *pcb_en_espera, uint32
 int syscall_obtenerValorCompartida(char *nombre_compartida, int socket_respuesta, t_log *logger);
 int syscall_asignarValorCompartida(char *nombre_compartida, int socket_respuesta, int nuevo_valor, t_log *logger);
 int syscall_wait(char *nombre_semaforo, t_pcb *pcb_a_wait, int socket_respuesta, t_log *logger);
+int syscall_signal(char *nombre_semaforo, t_log *logger);
 
 // Auxiliares
 void _responderWait(int socket_respuesta, int valor_resp, t_log *logger);
+void _mostrar_cola_semaforo(t_semaforo_ansisop *sem_buscado, t_log *logger);
 
 #endif /* KERNEL_H */
