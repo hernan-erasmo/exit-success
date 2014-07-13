@@ -293,7 +293,7 @@ uint32_t compactar(t_list *segmentos, void *mem_ppal, uint32_t size_mem_ppal)
 	return espacio_liberado;
 }
 
-uint32_t enviar_bytes(t_list *listaSegmentos, uint32_t base, uint32_t offset, uint32_t tamanio, void *buffer)
+int enviar_bytes(t_list *listaSegmentos, uint32_t base, uint32_t offset, uint32_t tamanio, void *buffer)
 {
 	nanosleep(retardo, NULL);
 	
@@ -318,7 +318,6 @@ uint32_t enviar_bytes(t_list *listaSegmentos, uint32_t base, uint32_t offset, ui
 			memcpy(dest, buffer, tamanio);	//este debería ser el curso normal de ejecución
 	} else {
 		cod_retorno = -2;	//Segmentation fault. Se quiso escribir por fuera de los límites de la memoria del segmento
-		return;
 	}	
 
 	return cod_retorno;
@@ -399,18 +398,8 @@ void *solicitar_bytes(t_list *listaSegmentos, uint32_t base, uint32_t offset, ui
 	nanosleep(retardo, NULL);
 
 	char *retorno = NULL;
-	
-	/*
-		Para enviar_bytes no hay problema en asignar un código de retorno, pero no sé si será posible que solicitar_bytes retorne
-		valores negativos (asumo que si, que se pueden almacenar valores negativos para las variables, y que solicitar_bytes puede
-		retornar valores negativos). La única forma de avisar de un error al usuario es haciendo que el puntero que retorna esta 
-		función sea NULL. La desventaja es que el código que nos llama no puede distinguir el tipo de fallo (si no existe el segmento
-		o si se pasó del tamaño de lectura). Si esto llega a romper, volvemos a como estaba y que Dios se apiade de nosotros si tenemos
-		que devolver un valor de -1 o -2.
-	*/
-
-	//char *noHaySegmento = "-1";
-	//char *violacionLimite = "-2";
+	char *noHaySegmento = "-1";
+	char *violacionLimite = "-2";
 
 	
 	int lectura_valida = 0;
@@ -419,9 +408,7 @@ void *solicitar_bytes(t_list *listaSegmentos, uint32_t base, uint32_t offset, ui
 
 	if(seg == NULL){
 		printf("#ERROR#	El proceso activo %d no tiene un segmento con base %d\n", PROCESO_ACTIVO, base);
-		//Segmentation fault. El proceso activo no tiene un segmento con esa base.
-		//return noHaySegmento;
-		return retorno;
+		return ((void *) noHaySegmento);
 	}
 	
 	if(lectura_valida = chequear_limites_lectoescritura(seg, offset, *tamanio)){
@@ -429,9 +416,7 @@ void *solicitar_bytes(t_list *listaSegmentos, uint32_t base, uint32_t offset, ui
 		memcpy(retorno, seg->pos_mem_ppal + offset, *tamanio);
 	} else {
 		printf("#ERROR#	Se quiso leer por fuera de los límites del segmento con base %d, proceso activo: %d\n", base, PROCESO_ACTIVO);
-		//Segmentation fault. Se quiso leer/escribir por fuera de los límites de la memoria del segmento
-		//return violacionLimite;
-		return retorno;
+		return ((void *) violacionLimite);
 	}	
 
 	return (void *) retorno;

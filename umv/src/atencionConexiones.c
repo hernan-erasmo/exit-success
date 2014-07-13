@@ -27,7 +27,7 @@ void *atencionConexiones(void *config)
 		switch(paq.id){
 			case 'P':
 				;
-				uint32_t resp = 0;
+				int resp = 0;
 				handler_plp(*sock, &resp, paq.mensaje, parametros_memoria, logger);
 
 				break;
@@ -60,7 +60,7 @@ void *atencionConexiones(void *config)
 		pthread_exit(NULL);
 }
 
-void handler_plp(int sock, uint32_t *respuesta, char *orden, t_param_memoria *parametros_memoria, t_log *logger)
+void handler_plp(int sock, int *respuesta, char *orden, t_param_memoria *parametros_memoria, t_log *logger)
 {
 	char *savePtr1 = NULL;
 	char *comando = strtok_r(orden, ",", &savePtr1);
@@ -91,7 +91,6 @@ void handler_plp(int sock, uint32_t *respuesta, char *orden, t_param_memoria *pa
 
 	if(strcmp(comando,"destruir_segmentos") == 0){
 		handler_destruir_segmentos(respuesta, parametros_memoria, &savePtr1, logger);
-		//enviar_respuesta_numerica(&sock, *respuesta, logger);
 		return;
 	}
 	
@@ -111,7 +110,7 @@ void handler_cpu(int sock, void *respuesta, char *orden, t_param_memoria *parame
 {
 	char *savePtr1 = NULL;
 	char *comando = strtok_r(orden, ",", &savePtr1);
-	uint32_t resp_num = 0;
+	int resp_num = 0;
 
 	log_info(logger, "[ATENCION_CONN] Estoy atendiendo una solicitud de %s de una CPU.", comando);
 	if(comando == NULL){
@@ -184,7 +183,7 @@ void handler_crear_segmento(uint32_t *respuesta, char *orden, t_param_memoria *p
 	return;
 }
 
-void handler_enviar_bytes(uint32_t *respuesta, char *orden, t_param_memoria *parametros_memoria, char **savePtr1, t_log *logger)
+void handler_enviar_bytes(int *respuesta, char *orden, t_param_memoria *parametros_memoria, char **savePtr1, t_log *logger)
 {
 	char *base = strtok_r(NULL, ",", savePtr1);
 	char *offset = strtok_r(NULL, ",", savePtr1);
@@ -253,14 +252,16 @@ void enviar_respuesta_numerica(int *socket, uint32_t respuesta, t_log *logger)
 
 void enviar_respuesta_buffer(int *socket, void *respuesta, uint32_t *tam_buffer, t_log *logger)
 {
-	if(respuesta == NULL){
-		log_error(logger, "[ATENCION_CONN] Algo va a reventar en cualquier momento, porque una llamada a solicitar_bytes está por retornar NULL");
-	}
 
 	t_paquete_programa respuestaAlComando;
 		respuestaAlComando.id = 'U';
+
+	if(respuesta == NULL){
+		log_error(logger, "[ATENCION_CONN] Algo va a reventar en cualquier momento, porque una llamada a solicitar_bytes está por retornar NULL");
+	} else {
 		respuestaAlComando.mensaje = (char *) respuesta;
 		respuestaAlComando.sizeMensaje = *tam_buffer;
+	}
 
 	char *respuesta_serializada = serializar_paquete(&respuestaAlComando, logger);
 	int bEnv = respuestaAlComando.tamanio_total;

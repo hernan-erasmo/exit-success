@@ -29,11 +29,11 @@ t_puntero definirVariable(t_nombre_variable identificador_variable)
 		respuesta = solicitar_enviar_bytes(socket_umv, pcb.seg_stack, offset, 1, nom_var, pcb.id, 'C', logger);
 		if(respuesta == -1){
 			log_error(logger, "[CPU] Segmentation fault. La UMV dice que este proceso no tiene ningún segmento con base %d.", pcb.seg_stack);
-			//acá hay que terminar la ejecución del programa
+			salimosPorError = 1;
 			return 0;
 		} else if(respuesta == -2) {
 			log_error(logger, "[CPU] Segmentation fault. La UMV dice que intentar escribir %d bytes en la base %d, offset %d, quedaría fuera de rango.", tamanio_escritura, pcb.seg_stack, offset);
-			//acá hay que terminar la ejecución del programa
+			salimosPorError = 1;
 			return 0;
 		} else {
 			dictionary_put(diccionario_variables, nom_var, puntero_al_valor);
@@ -78,9 +78,13 @@ t_valor_variable dereferenciar(t_puntero direccion_variable)
 		//solicitar_cambiar_proceso_activo(socket_umv, pcb.id, 'C', logger);
 		
 		ret = (t_valor_variable *) solicitar_solicitar_bytes(socket_umv, pcb.seg_stack, direccion_variable, tamanio_lectura, pcb.id, 'C', logger);
-		if(ret == NULL){
+		if(*ret == -1){
 			log_error(logger, "[CPU] Segmentation fault. La UMV dice que no se pudo leer. (base=%d, offset=%d, tamaño=%d).", pcb.seg_stack, direccion_variable, tamanio_lectura);
-			//acá hay que terminar la ejecución del programa
+			salimosPorError = 1;
+			return 0;
+		} else if(*ret == -2){
+			log_error(logger, "[CPU] Se quiso leer por fuera de los límites del segmento con base %d, offset %d y tamaño de lectura %d", pcb.seg_stack, direccion_variable, tamanio_lectura);
+			salimosPorError = 1;
 			return 0;
 		}
 	
@@ -106,11 +110,11 @@ void asignar(t_puntero direccion_variable, t_valor_variable valor)
 		respuesta = solicitar_enviar_bytes(socket_umv, pcb.seg_stack, direccion_variable, tamanio_escritura, v, pcb.id, 'C', logger);
 		if(respuesta == -1){
 			log_error(logger, "[CPU] Segmentation fault. La UMV dice que este proceso no tiene ningún segmento con base %d.", pcb.seg_stack);
-			//acá hay que terminar la ejecución del programa
+			salimosPorError = 1;
 			return;
 		} else if(respuesta == -2) {
 			log_error(logger, "[CPU] Segmentation fault. La UMV dice que intentar escribir %d bytes en la base %d, offset %d, quedaría fuera de rango.", tamanio_escritura, pcb.seg_stack, direccion_variable);
-			//acá hay que terminar la ejecución del programa
+			salimosPorError = 1;
 			return;
 		} else {
 			log_info(logger, "[PRIMITIVA] _asignar cambió correctamente el valor en la posición %d a %d.", direccion_variable, valor);
@@ -262,11 +266,15 @@ void irAlLabel(t_nombre_etiqueta nombre_etiqueta)
 		nombre_etiqueta[aux - 1] = '\0';
 
 	etiquetas_serializado = (char *) solicitar_solicitar_bytes(socket_umv, pcb.seg_idx_etq, 0, pcb.size_idx_etq, pcb.id, 'C', logger);
-	if(etiquetas_serializado == NULL){
-		log_error(logger, "[CPU] Segmentation fault. La UMV dice que no se pudo leer. (base=%d, offset=%d, tamaño=%d).", pcb.seg_idx_etq, 0, pcb.size_idx_etq);
+	if(etiquetas_serializado == "-1"){
+		log_error(logger, "[CPU] La UMV dice que no existe el segmento %d)", pcb.seg_idx_etq);
 		salimosPorError = 1;
 		return;
-	}	
+	} else if(etiquetas_serializado == "-2"){
+		log_error(logger, "[CPU] La UMV dice que se quiso leer por fuera de los límites del segmento %d, con base %d y offset %d)", pcb.seg_idx_etq, 0, pcb.size_idx_etq);
+		salimosPorError = 1;
+		return;
+	}
 
 	//actualizamos el program counter
 	log_info(logger, "[PRIMITIVA_irAlLabel] Antes de actualizarse por salto, el program counter del proceso %d es %d.", pcb.id, pcb.p_counter);
@@ -376,12 +384,10 @@ void retornar(t_valor_variable retorno)
 		respuesta_escritura = solicitar_enviar_bytes(socket_umv, pcb.seg_stack, respuesta_pop, 4, (void *) &retorno, pcb.id, 'C', logger);
 		if(respuesta_escritura == -1){
 			log_error(logger, "[CPU] Segmentation fault. La UMV dice que este proceso no tiene ningún segmento con base %d.", respuesta_pop);
-			//acá hay que terminar la ejecución del programa
 			salimosPorError = 1;
 			return;
 		} else if(respuesta_escritura == -2) {
 			log_error(logger, "[CPU] Segmentation fault. La UMV dice que intentar escribir %d bytes en la base %d, offset %d, quedaría fuera de rango.", 4, respuesta_pop, 0);
-			//acá hay que terminar la ejecución del programa
 			salimosPorError = 1;
 			return;
 		}
@@ -676,11 +682,11 @@ int _pushConRetorno(int puntero_cursor_aux, int cursor_viejo, int program_counte
 		respuesta = solicitar_enviar_bytes(socket_umv, pcb.seg_stack, puntero_cursor_aux, 4, (void *) &cursor_viejo, pcb.id, 'C', logger);
 		if(respuesta == -1){
 			log_error(logger, "[CPU] Segmentation fault. La UMV dice que este proceso no tiene ningún segmento con base %d.", pcb.seg_stack);
-			//acá hay que terminar la ejecución del programa
+			salimosPorError = 1;
 			return -1;
 		} else if(respuesta == -2) {
 			log_error(logger, "[CPU] Segmentation fault. La UMV dice que intentar escribir %d bytes en la base %d, offset %d, quedaría fuera de rango.", 8, pcb.seg_stack, puntero_cursor_aux);
-			//acá hay que terminar la ejecución del programa
+			salimosPorError = 1;
 			return -2;
 		}
 
@@ -688,11 +694,11 @@ int _pushConRetorno(int puntero_cursor_aux, int cursor_viejo, int program_counte
 		respuesta = solicitar_enviar_bytes(socket_umv, pcb.seg_stack, puntero_cursor_aux + 4, 4, (void *) &program_counter_viejo, pcb.id, 'C', logger);
 		if(respuesta == -1){
 			log_error(logger, "[CPU] Segmentation fault. La UMV dice que este proceso no tiene ningún segmento con base %d.", pcb.seg_stack);
-			//acá hay que terminar la ejecución del programa
+			salimosPorError = 1;
 			return -1;
 		} else if(respuesta == -2) {
 			log_error(logger, "[CPU] Segmentation fault. La UMV dice que intentar escribir %d bytes en la base %d, offset %d, quedaría fuera de rango.", 8, pcb.seg_stack, puntero_cursor_aux);
-			//acá hay que terminar la ejecución del programa
+			salimosPorError = 1;
 			return -2;
 		}
 
@@ -700,11 +706,11 @@ int _pushConRetorno(int puntero_cursor_aux, int cursor_viejo, int program_counte
 		respuesta = solicitar_enviar_bytes(socket_umv, pcb.seg_stack, puntero_cursor_aux + 8, 4, (void *) &donde_retornar, pcb.id, 'C', logger);
 		if(respuesta == -1){
 			log_error(logger, "[CPU] Segmentation fault. La UMV dice que este proceso no tiene ningún segmento con base %d.", pcb.seg_stack);
-			//acá hay que terminar la ejecución del programa
+			salimosPorError = 1;
 			return -1;
 		} else if(respuesta == -2) {
 			log_error(logger, "[CPU] Segmentation fault. La UMV dice que intentar escribir %d bytes en la base %d, offset %d, quedaría fuera de rango.", 8, pcb.seg_stack, puntero_cursor_aux);
-			//acá hay que terminar la ejecución del programa
+			salimosPorError = 1;
 			return -2;
 		}
 	pthread_mutex_unlock(&operacion);
@@ -723,11 +729,11 @@ int _pushSinRetorno(int puntero_cursor_aux, int cursor_viejo, int program_counte
 		respuesta = solicitar_enviar_bytes(socket_umv, pcb.seg_stack, puntero_cursor_aux, 4, (void *) &cursor_viejo, pcb.id, 'C', logger);
 		if(respuesta == -1){
 			log_error(logger, "[CPU] Segmentation fault. La UMV dice que este proceso no tiene ningún segmento con base %d.", pcb.seg_stack);
-			//acá hay que terminar la ejecución del programa
+			salimosPorError = 1;
 			return -1;
 		} else if(respuesta == -2) {
 			log_error(logger, "[CPU] Segmentation fault. La UMV dice que intentar escribir %d bytes en la base %d, offset %d, quedaría fuera de rango.", 8, pcb.seg_stack, puntero_cursor_aux);
-			//acá hay que terminar la ejecución del programa
+			salimosPorError = 1;
 			return -2;
 		}
 
@@ -735,11 +741,11 @@ int _pushSinRetorno(int puntero_cursor_aux, int cursor_viejo, int program_counte
 		respuesta = solicitar_enviar_bytes(socket_umv, pcb.seg_stack, puntero_cursor_aux + 4, 4, (void *) &program_counter_viejo, pcb.id, 'C', logger);
 		if(respuesta == -1){
 			log_error(logger, "[CPU] Segmentation fault. La UMV dice que este proceso no tiene ningún segmento con base %d.", pcb.seg_stack);
-			//acá hay que terminar la ejecución del programa
+			salimosPorError = 1;
 			return -1;
 		} else if(respuesta == -2) {
 			log_error(logger, "[CPU] Segmentation fault. La UMV dice que intentar escribir %d bytes en la base %d, offset %d, quedaría fuera de rango.", 8, pcb.seg_stack, puntero_cursor_aux);
-			//acá hay que terminar la ejecución del programa
+			salimosPorError = 1;
 			return -2;
 		}
 	pthread_mutex_unlock(&operacion);
@@ -763,16 +769,23 @@ int _popConRetorno()
 	pthread_mutex_lock(&operacion);
 		//Recupero el valor de la posición donde tengo que almacenar el retorno.
 		ret = (int *) solicitar_solicitar_bytes(socket_umv, pcb.seg_stack, off_dir_guardar_retorno, 4, pcb.id, 'C', logger);
-		if(ret == NULL){
+		if(*ret == -1){
 			log_error(logger, "[CPU] Segmentation fault. La UMV dice que no se pudo leer. (base=%d, offset=%d, tamaño=%d).", pcb.seg_stack, off_dir_guardar_retorno, 4);
+			return -1;
+		} else if(*ret == -2){
+			log_error(logger, "[CPU] Se quiso leer por fuera de los límites del segmento con base %d, offset %d y tamaño de lectura %d", pcb.seg_stack, off_dir_guardar_retorno, 4);
+			return -1;
 		} else {
 			valorRetorno = *ret;
 		}
 
 		//Recupero el valor del program counter
 		ret = (int *) solicitar_solicitar_bytes(socket_umv, pcb.seg_stack, off_p_counter_anterior, 4, pcb.id, 'C', logger);
-		if(ret == NULL){
+		if(*ret == -1){
 			log_error(logger, "[CPU] Segmentation fault. La UMV dice que no se pudo leer. (base=%d, offset=%d, tamaño=%d).", pcb.seg_stack, off_p_counter_anterior, 4);
+			return -1;
+		} else if(*ret == -2){
+			log_error(logger, "[CPU] Se quiso leer por fuera de los límites del segmento con base %d, offset %d y tamaño de lectura %d", pcb.seg_stack, off_p_counter_anterior, 4);
 			return -1;
 		} else {
 			log_info(logger, "[PRIMITIVA_aux] _popConRetorno: El program counter del proceso %d valía %d y lo voy a actualizar.", pcb.id, pcb.p_counter);
@@ -783,8 +796,11 @@ int _popConRetorno()
 
 		//Recupero el valor del puntero al comienzo del contexto
 		ret = (int *) solicitar_solicitar_bytes(socket_umv, pcb.seg_stack, off_cursor_stack_anterior, 4, pcb.id, 'C', logger);
-		if(ret == NULL){
+		if(*ret == -1){
 			log_error(logger, "[CPU] Segmentation fault. La UMV dice que no se pudo leer. (base=%d, offset=%d, tamaño=%d).", pcb.seg_stack, off_cursor_stack_anterior, 4);
+			return -1;
+		} else if(*ret == -2){
+			log_error(logger, "[CPU] Se quiso leer por fuera de los límites del segmento con base %d, offset %d y tamaño de lectura %d", pcb.seg_stack, off_cursor_stack_anterior, 4);
 			return -1;
 		} else {
 			pcb.cursor_stack = *ret;
@@ -816,8 +832,11 @@ int _popSinRetorno()
 	pthread_mutex_lock(&operacion);
 		//Recupero el valor del program counter
 		ret = (int *) solicitar_solicitar_bytes(socket_umv, pcb.seg_stack, off_p_counter_anterior, 4, pcb.id, 'C', logger);
-		if(ret == NULL){
+		if(*ret == -1){
 			log_error(logger, "[CPU] Segmentation fault. La UMV dice que no se pudo leer. (base=%d, offset=%d, tamaño=%d).", pcb.seg_stack, off_p_counter_anterior, 4);
+			return -1;
+		} else if(*ret == -2){
+			log_error(logger, "[CPU] Se quiso leer por fuera de los límites del segmento con base %d, offset %d y tamaño de lectura %d", pcb.seg_stack, off_p_counter_anterior, 4);
 			return -1;
 		} else {
 			log_info(logger, "[PRIMITIVA_aux] _popSinRetorno: El program counter del proceso %d valía %d y lo voy a actualizar.", pcb.id, pcb.p_counter);
@@ -828,8 +847,11 @@ int _popSinRetorno()
 
 		//Recupero el valor del puntero al comienzo del contexto
 		ret = (int *) solicitar_solicitar_bytes(socket_umv, pcb.seg_stack, off_cursor_stack_anterior, 4, pcb.id, 'C', logger);
-		if(ret == NULL){
+		if(*ret == -1){
 			log_error(logger, "[CPU] Segmentation fault. La UMV dice que no se pudo leer. (base=%d, offset=%d, tamaño=%d).", pcb.seg_stack, off_cursor_stack_anterior, 4);
+			return -1;
+		} else if(*ret == -2){
+			log_error(logger, "[CPU] Se quiso leer por fuera de los límites del segmento con base %d, offset %d y tamaño de lectura %d", pcb.seg_stack, off_cursor_stack_anterior, 4);
 			return -1;
 		} else {
 			log_info(logger, "[PRIMITIVA_aux] _popSinRetorno, cursor al comienzo del contexto apunta al offset: %d", pcb.cursor_stack);

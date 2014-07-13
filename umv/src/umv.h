@@ -27,7 +27,7 @@ void inicializarConfigConsola(t_consola_init **c_init, uint32_t sizeMem, void *m
 void manejar_salida(int sig);
 
 uint32_t compactar(t_list *segmentos, void *mem_ppal, uint32_t size_mem_ppal);
-uint32_t enviar_bytes(t_list *listaSegmentos, uint32_t base, uint32_t offset, uint32_t tamanio, void *buffer);
+int enviar_bytes(t_list *listaSegmentos, uint32_t base, uint32_t offset, uint32_t tamanio, void *buffer);
 void *solicitar_bytes(t_list *listaSegmentos, uint32_t base, uint32_t offset, uint32_t *tamanio);
 t_segmento *buscar_segmento_solicitado(t_list *listaSegmentos, uint32_t base);
 bool buscar_por_proceso_activo(void *seg);
