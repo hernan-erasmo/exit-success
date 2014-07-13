@@ -39,7 +39,7 @@ void *hilo_semaforo(void *init_semaforo)
 				*valor_sem = *valor_sem + 1;
 
 				_mostrar_cola_semaforo((t_semaforo_ansisop *) init_semaforo, logger);
-			pthread_mutex_lock(&encolar);
+			pthread_mutex_unlock(&encolar);
 	}
 
 	pthread_exit(NULL);
