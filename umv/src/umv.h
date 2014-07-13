@@ -18,6 +18,7 @@
 #include "segmento.h"
 
 struct timespec *retardo;
+uint32_t retardo_ms;
 
 int crearLogger(t_log **logger);
 int cargarConfig(t_config **config, char *path);

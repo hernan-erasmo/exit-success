@@ -60,6 +60,9 @@ void *consola(void *consola_init)
 		} else if (strcmp(comando,"h") == 0) {
 			printf("UMV> Falta implementar la ayuda. Perdón :(\n");
 		
+		} else if (strcmp(comando,"retardo") == 0){
+			comando_retardo();
+
 		} else if (strlen(comando) == 0) {
 			//para cuando se presiona 'enter' sin ningún caracter, repite el prompt indefinidamente.
 		
@@ -275,6 +278,7 @@ void comando_info_memoria(void *mem_ppal, t_list *listaSegmentos, uint32_t taman
 {
 	t_list *esp_libre = buscarEspaciosLibres(listaSegmentos, mem_ppal, tamanio_mem_ppal);
 	printf("\tEl algoritmo de compactación actual es: %s\n", algoritmo);
+	printf("\tEl retardo está configurado en: %d milisegundos.\n", retardo_ms);
 	printf("\tEl proceso activo tiene ID: %d\n", get_proceso_activo());
 
 	if(list_is_empty(esp_libre)){
@@ -403,4 +407,21 @@ void comando_matar_umv(pid_t pid, t_consola_init *c_init)
 	freeaddrinfo(serverInfo);
 	*(c_init->noTerminar) = 0;
 	close(sock);
+}
+
+void comando_retardo()
+{
+	uint32_t nuevo_retardo = 0;
+
+	printf("\tIngrese el valor de retardo en milisegundos: ");
+	scanf("%d", &nuevo_retardo);
+
+	inicializarTiempoRetardo(&retardo, nuevo_retardo);
+	setRetardo(retardo);
+	retardo_ms = nuevo_retardo;
+	
+	//Si no hago este fgetc() entonces se repite dos veces el prompt de UMV> cuando retorna al bucle principal.
+	fgetc(stdin);
+
+	return;
 }

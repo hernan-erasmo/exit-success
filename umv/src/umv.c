@@ -60,7 +60,7 @@ int main(int argc, char *argv[])
 		return EXIT_FAILURE;
 	}
 
-	uint32_t retardo_ms = 0;
+	retardo_ms = 0;
 
 	//Cargo los valores desde la configuración
 	tamanio_mem_ppal = config_get_int_value(config, "TAMANIO_MEM_PPAL_BYTES");
