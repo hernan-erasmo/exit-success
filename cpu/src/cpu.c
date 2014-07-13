@@ -129,6 +129,7 @@ int main(int argc, char *argv[])
 			generarDiccionarioVariables();
 
 			for(q = pcb.quantum; q > 0; q--){
+				log_debug(logger, "[CPU] Comienza QUANTUM");
 				debo_actualizar_manualmente_p_counter = 1;
 				proxima_instruccion = obtener_proxima_instruccion(socket_umv, logger);
 				analizadorLinea(proxima_instruccion, funciones_comunes, funciones_kernel);
@@ -138,7 +139,8 @@ int main(int argc, char *argv[])
 					pcb.p_counter = pcb.p_counter + 1;
 					debo_actualizar_manualmente_p_counter = 0;
 				}
-
+				
+				log_debug(logger, "[CPU] Finaliza QUANTUM");
 				if(salimosPorFin || salimosPorSyscallBloqueante || salimosPorError)
 					break;
 			}
@@ -159,7 +161,7 @@ int main(int argc, char *argv[])
 
 				log_error(logger, "[CPU] La ejecución del proceso con ID = %d finalizó de forma anormal.", pcb.id);
 				
-				if(enviarPcbProcesado(socket_pcp, 'X', logger) > 0){
+				if(enviarPcbProcesado(socket_pcp, 'E', logger) > 0){
 					log_error(logger, "[CPU] Error en la transmisión hacia el PCP. Motivo: %s", strerror(errno));
 					goto liberarRecursos;
 					return EXIT_FAILURE;
@@ -185,6 +187,12 @@ int main(int argc, char *argv[])
 					}
 
 					if(salimosPorSIGUSR1){
+						if(enviarPcbProcesado(socket_pcp, 'X', logger) > 0){
+							log_error(logger, "[CPU] Error en la transmisión hacia el PCP. Motivo: %s", strerror(errno));
+							goto liberarRecursos;
+							return EXIT_FAILURE;
+						}
+
 						goto liberarRecursos;
 						return EXIT_SUCCESS;			
 					}

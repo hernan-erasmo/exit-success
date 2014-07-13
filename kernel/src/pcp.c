@@ -108,6 +108,7 @@ void *pcp(void *datos_pcp)
 					t_header_cpu *head_cpu;
 					status = recvAll(&mensaje_cpu, sockActual);
 					t_pcb *pcb_modificado = NULL;
+					int tamanio_ready = 0;
 
 					if(status){
 						switch(mensaje_cpu.id)		//Reciclo el campo id de paquete_programa y lo uso para saber qué quiere hacer la CPU
@@ -171,7 +172,7 @@ void *pcp(void *datos_pcp)
 							case 'Q':	//Terminó la ráfaga de CPU, por quantum, y me está mandando el PCB para guardar
 								;
 
-								int tamanio_ready = 0;
+								tamanio_ready = 0;
 								pcb_modificado = malloc(sizeof(t_pcb));
 								deserializarPcb(pcb_modificado, (void *) mensaje_cpu.mensaje);
 
@@ -200,13 +201,21 @@ void *pcp(void *datos_pcp)
 								pthread_mutex_unlock(&encolar);
 
 								break;
-							case 'X':	//La CPU me avisa que se va, asi que ya no la considero más.
+							case 'X':	//La CPU me avisa que se va por SIGUSR1, asi que ya no la considero más. Acaba de finalizar su quantum.
 								;
+									tamanio_ready = 0;
+									pcb_modificado = malloc(sizeof(t_pcb));
+									deserializarPcb(pcb_modificado, (void *) mensaje_cpu.mensaje);
 
-								/*
-								*	Acá hago lo que tenga que hacer en este caso. Ahora no se me ocurre nada que tenga que hacer.
-								*	sem_wait(&s_hay_cpus);
-								*/
+									log_info(logger, "[PCP] Una CPU me mandó el PCB de su último proceso (id: %d) antes de salir por SIGUSR1. (program counter=%d)", pcb_modificado->id, pcb_modificado->p_counter);
+									pthread_mutex_lock(&encolar);
+										tamanio_ready = list_size(cola_ready);
+										list_add_in_index(cola_ready, tamanio_ready, pcb_modificado);	//Lo mando al fondo de la cola, es Round-Robin.
+										sem_post(&s_ready_nuevo);
+										quitar_cpu(cpus_ociosas, sockActual);
+										sem_wait(&s_hay_cpus);
+									pthread_mutex_unlock(&encolar);
+								
 								break;
 							case 'E':	//La CPU me avisa que finalizó por un error en la ejecución del script. (stack overflow, seg. fault, etc)
 								;
@@ -229,7 +238,6 @@ void *pcp(void *datos_pcp)
 					} else {
 						log_info(logger, "[PCP] El socket %d cerró su conexión y ya no está en mi lista de sockets.", sockActual);
 						log_info(logger, "[PCP] Saco a la CPU con el socket %d de mi lista de CPUs.", sockActual);
-						//quitar_cpu(cpus_ociosas, sockActual);
 						close(sockActual);
 						FD_CLR(sockActual, &master);
 					}
