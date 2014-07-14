@@ -5,3 +5,6 @@ cpu: ./src/cpu.c ./src/cpu.h ../utils/comunicacion.c ../utils/interfaz_umv.c ./s
 run-cpu:
 	$(MAKE) cpu
 	valgrind --leak-check=full ./bin/cpu ./config_files/cpu.config
+
+prod-cpu:
+	./bin/cpu ./config_files/cpu.config

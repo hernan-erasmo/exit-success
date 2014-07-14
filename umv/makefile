@@ -5,3 +5,6 @@ umv: ./src/umv.c ./src/atencionConexiones.c ./src/segmento.c ./src/consola.c ../
 run-umv: 
 	$(MAKE) umv
 	valgrind --leak-check=full ./bin/umv ./config_files/umv.config
+
+prod-umv:
+	./bin/umv ./config_files/umv.config
