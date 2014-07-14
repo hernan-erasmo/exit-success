@@ -190,7 +190,7 @@ int crearLogger(t_log **logger)
 {
 	char *nombreArchivoLog = "umv_log";
 
-	if ((*logger = log_create(nombreArchivoLog,"UMV",true,LOG_LEVEL_DEBUG)) == NULL) {
+	if ((*logger = log_create(nombreArchivoLog,"UMV",false,LOG_LEVEL_DEBUG)) == NULL) {
 		printf("No se pudo inicializar un logger.\n");
 		return 1;
 	}
