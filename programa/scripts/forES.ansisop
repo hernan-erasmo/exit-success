@@ -1,15 +1,14 @@
 #!/usr/bin/ansisop
+#Alliance - S4
+
 begin
 variables f, i, t
 
 	#`f`: Hasta donde contar
 	f=20
-	#`i`: Iterador
-	i=0
-	
 	:inicio
 
-	#Iterar
+	#`i`: Iterador
 	i=i+1
 	
 	#Imprimir el contador
@@ -18,8 +17,10 @@ variables f, i, t
 	#`t`: Comparador entre `i` y `f`
 	t=f-i
 	#De no ser iguales, salta a inicio
-	jnz t inicio
 
+	#esperar
+	io HDD1 3
+	jnz t inicio
 end
 
 
