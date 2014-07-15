@@ -122,6 +122,8 @@ void *pcp(void *datos_pcp)
 
 								//Agrego la cpu a la lista de ociosas
 								list_add(cpus_ociosas, head_cpu);
+								log_info(logger, "[PCP] Hay una CPU libre, su socket es: %d.", head_cpu->socket);
+								log_info(logger, "[PCP] La lista de CPUs ociosas tiene un tamaño de %d", list_size(cpus_ociosas));
 
 								//mostrar_cola_ready(logger);
 
@@ -213,7 +215,7 @@ void *pcp(void *datos_pcp)
 										list_add_in_index(cola_ready, tamanio_ready, pcb_modificado);	//Lo mando al fondo de la cola, es Round-Robin.
 										sem_post(&s_ready_nuevo);
 										quitar_cpu(cpus_ociosas, sockActual);
-										sem_wait(&s_hay_cpus);
+										//sem_wait(&s_hay_cpus);
 									pthread_mutex_unlock(&encolar);
 								
 								break;
