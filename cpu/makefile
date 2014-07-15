@@ -6,5 +6,6 @@ run-cpu:
 	$(MAKE) cpu
 	valgrind --leak-check=full ./bin/cpu ./config_files/cpu.config
 
-prod-cpu:
-	./bin/cpu ./config_files/cpu.config
+prod-cpu-prueba1:
+	./bin/cpu ./config_files/prueba1.config
+

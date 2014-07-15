@@ -6,5 +6,5 @@ run-umv:
 	$(MAKE) umv
 	valgrind --leak-check=full ./bin/umv ./config_files/umv.config
 
-prod-umv:
-	./bin/umv ./config_files/umv.config
+prod-umv-prueba1:
+	./bin/umv ./config_files/prueba1.config
