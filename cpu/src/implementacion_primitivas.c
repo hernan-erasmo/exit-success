@@ -127,129 +127,137 @@ void asignar(t_puntero direccion_variable, t_valor_variable valor)
 
 t_valor_variable obtenerValorCompartida(t_nombre_compartida variable)
 {
+	pthread_mutex_t obtener_mutex = PTHREAD_MUTEX_INITIALIZER;
 	//t_valor_variable == int
-	log_info(logger, "[PRIMITIVA] Estoy dentro de _obtenerValorCompartida (variable: %s)", variable);
+	
+	pthread_mutex_lock(&obtener_mutex);
+		log_info(logger, "[PRIMITIVA] Estoy dentro de _obtenerValorCompartida (variable: %s)", variable);
 
-	char nombre_syscall[] = "obtenerValorCompartida\0";
-	int nombre_syscall_len = strlen(nombre_syscall);
-	int variable_len = strlen(variable);
-	char *paqueteSerializado, *comando = calloc(nombre_syscall_len + 1 + 1 + variable_len + 1 + 1, 1);
-	int offset = 0;
-	int bEnv = 0;
-	int aux = 0;
+		char nombre_syscall[] = "obtenerValorCompartida\0";
+		int nombre_syscall_len = strlen(nombre_syscall);
+		int variable_len = strlen(variable);
+		char *paqueteSerializado, *comando = calloc(nombre_syscall_len + 1 + 1 + variable_len + 1 + 1, 1);
+		int offset = 0;
+		int bEnv = 0;
+		int aux = 0;
 
-	aux = strlen(variable);
-	if(variable[aux - 1] == '\n')
-		variable[aux - 1] = '\0';
+		aux = strlen(variable);
+		if(variable[aux - 1] == '\n')
+			variable[aux - 1] = '\0';
 
-	memcpy(comando + offset, nombre_syscall, nombre_syscall_len);
-	offset += nombre_syscall_len;
+		memcpy(comando + offset, nombre_syscall, nombre_syscall_len);
+		offset += nombre_syscall_len;
 
-	memcpy(comando + offset, ",", 1);
-	offset += 1;
+		memcpy(comando + offset, ",", 1);
+		offset += 1;
 
-	memcpy(comando + offset, variable, variable_len);
-	offset += variable_len;
+		memcpy(comando + offset, variable, variable_len);
+		offset += variable_len;
 
-	t_paquete_programa paq;
-		paq.id = 'S';	//porque el pcp reconoce que es una syscall si le mandás 'S'
-		paq.mensaje = comando;
-		paq.sizeMensaje = strlen(comando);
+		t_paquete_programa paq;
+			paq.id = 'S';	//porque el pcp reconoce que es una syscall si le mandás 'S'
+			paq.mensaje = comando;
+			paq.sizeMensaje = strlen(comando);
 
-	paqueteSerializado = serializar_paquete(&paq, logger);
-	bEnv = paq.tamanio_total;
-	if(sendAll(socket_pcp, paqueteSerializado, &bEnv)){
-		log_error(logger, "[PRIMITIVA_obtenerValorCompartida] Hubo un error al tratar de enviar el syscall al PCP");
-	}
-
-	free(paq.mensaje);
-
-	/*
-	**	Ahora espero la respuesta del Kernel
-	*/
-	log_info(logger, "[PRIMITIVA_obtenerValorCompartida] Estoy esperando el valor de \'%s\'", variable);
-	int status = 0;
-	t_paquete_programa respuesta;
-	while(1)
-	{
-		status = recvAll(&respuesta, socket_pcp);
-		if(status){
-			log_info(logger, "[PRIMITIVA_obtenerValorCompartida] La variable global \'%s\' vale %s", variable, respuesta.mensaje);
-			return atoi(respuesta.mensaje);
-		} else {
-			log_error(logger, "[PRIMITIVA_obtenerValorCompartida] El socket PCP cerró su conexión de manera inesperada.");
-			break;
+		paqueteSerializado = serializar_paquete(&paq, logger);
+		bEnv = paq.tamanio_total;
+		if(sendAll(socket_pcp, paqueteSerializado, &bEnv)){
+			log_error(logger, "[PRIMITIVA_obtenerValorCompartida] Hubo un error al tratar de enviar el syscall al PCP");
 		}
-	}
 
+		free(paq.mensaje);
+
+		/*
+		**	Ahora espero la respuesta del Kernel
+		*/
+		log_info(logger, "[PRIMITIVA_obtenerValorCompartida] Estoy esperando el valor de \'%s\'", variable);
+		int status = 0;
+		t_paquete_programa respuesta;
+		while(1)
+		{
+			status = recvAll(&respuesta, socket_pcp);
+			if(status){
+				log_info(logger, "[PRIMITIVA_obtenerValorCompartida] La variable global \'%s\' vale %s", variable, respuesta.mensaje);
+				return atoi(respuesta.mensaje);
+			} else {
+				log_error(logger, "[PRIMITIVA_obtenerValorCompartida] El socket PCP cerró su conexión de manera inesperada.");
+				break;
+			}
+		}
+	pthread_mutex_unlock(&obtener_mutex);
+	
 	return 0;
 }
 
 t_valor_variable asignarValorCompartida(t_nombre_compartida variable, t_valor_variable valor)
 {
 	//t_valor_variable == int
-	log_info(logger, "[PRIMITIVA] Estoy dentro de _asignarValorCompartida (variable: %s, valor: %d)", variable, valor);
+	pthread_mutex_t asignar_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-	char nombre_syscall[] = "asignarValorCompartida\0";
-	char valor_serializado[10];
-	sprintf(valor_serializado, "%d", valor);
-	int valor_serializado_len = strlen(valor_serializado);
-	int nombre_syscall_len = strlen(nombre_syscall);
-	int variable_len = strlen(variable);
-	char *paqueteSerializado, *comando = calloc(nombre_syscall_len + 1 + 1 + variable_len + 1 + 1 + valor_serializado_len + 1 + 1, 1);
-	int offset = 0;
-	int bEnv = 0;
-	int aux = 0;
+	pthread_mutex_lock(&asignar_mutex);
+		log_info(logger, "[PRIMITIVA] Estoy dentro de _asignarValorCompartida (variable: %s, valor: %d)", variable, valor);
 
-	aux = strlen(variable);
-	if(variable[aux - 1] == '\n')
-		variable[aux - 1] = '\0';
+		char nombre_syscall[] = "asignarValorCompartida\0";
+		char valor_serializado[10];
+		sprintf(valor_serializado, "%d", valor);
+		int valor_serializado_len = strlen(valor_serializado);
+		int nombre_syscall_len = strlen(nombre_syscall);
+		int variable_len = strlen(variable);
+		char *paqueteSerializado, *comando = calloc(nombre_syscall_len + 1 + 1 + variable_len + 1 + 1 + valor_serializado_len + 1 + 1, 1);
+		int offset = 0;
+		int bEnv = 0;
+		int aux = 0;
 
-	memcpy(comando + offset, nombre_syscall, nombre_syscall_len);
-	offset += nombre_syscall_len;
+		aux = strlen(variable);
+		if(variable[aux - 1] == '\n')
+			variable[aux - 1] = '\0';
 
-	memcpy(comando + offset, ",", 1);
-	offset += 1;
+		memcpy(comando + offset, nombre_syscall, nombre_syscall_len);
+		offset += nombre_syscall_len;
 
-	memcpy(comando + offset, variable, variable_len);
-	offset += variable_len;
+		memcpy(comando + offset, ",", 1);
+		offset += 1;
 
-	memcpy(comando + offset, ",", 1);
-	offset += 1;
+		memcpy(comando + offset, variable, variable_len);
+		offset += variable_len;
 
-	memcpy(comando + offset, valor_serializado, valor_serializado_len);
-	offset += valor_serializado_len;
+		memcpy(comando + offset, ",", 1);
+		offset += 1;
 
-	t_paquete_programa paq;
-		paq.id = 'S';	//porque el pcp reconoce que es una syscall si le mandás 'S'
-		paq.mensaje = comando;
-		paq.sizeMensaje = strlen(comando);
+		memcpy(comando + offset, valor_serializado, valor_serializado_len);
+		offset += valor_serializado_len;
 
-	paqueteSerializado = serializar_paquete(&paq, logger);
-	bEnv = paq.tamanio_total;
-	if(sendAll(socket_pcp, paqueteSerializado, &bEnv)){
-		log_error(logger, "[PRIMITIVA_asignarValorCompartida] Hubo un error al tratar de enviar la syscall al PCP");
-	}
+		t_paquete_programa paq;
+			paq.id = 'S';	//porque el pcp reconoce que es una syscall si le mandás 'S'
+			paq.mensaje = comando;
+			paq.sizeMensaje = strlen(comando);
 
-	free(paq.mensaje);
-
-	/*
-	**	Ahora espero la respuesta del Kernel
-	*/
-	log_info(logger, "[PRIMITIVA_asignarValorCompartida] Estoy esperando el nuevo valor de \'%s\'", variable);
-	int status = 0;
-	t_paquete_programa respuesta;
-	while(1)
-	{
-		status = recvAll(&respuesta, socket_pcp);
-		if(status){
-			log_info(logger, "[PRIMITIVA_asignarValorCompartida] La variable global \'%s\' ahora vale %s", variable, respuesta.mensaje);
-			return atoi(respuesta.mensaje);
-		} else {
-			log_error(logger, "[PRIMITIVA_asignarValorCompartida] El socket PCP cerró su conexión de manera inesperada.");
-			break;
+		paqueteSerializado = serializar_paquete(&paq, logger);
+		bEnv = paq.tamanio_total;
+		if(sendAll(socket_pcp, paqueteSerializado, &bEnv)){
+			log_error(logger, "[PRIMITIVA_asignarValorCompartida] Hubo un error al tratar de enviar la syscall al PCP");
 		}
-	}
+
+		free(paq.mensaje);
+
+		/*
+		**	Ahora espero la respuesta del Kernel
+		*/
+		log_info(logger, "[PRIMITIVA_asignarValorCompartida] Estoy esperando el nuevo valor de \'%s\'", variable);
+		int status = 0;
+		t_paquete_programa respuesta;
+		while(1)
+		{
+			status = recvAll(&respuesta, socket_pcp);
+			if(status){
+				log_info(logger, "[PRIMITIVA_asignarValorCompartida] La variable global \'%s\' ahora vale %s", variable, respuesta.mensaje);
+				return atoi(respuesta.mensaje);
+			} else {
+				log_error(logger, "[PRIMITIVA_asignarValorCompartida] El socket PCP cerró su conexión de manera inesperada.");
+				break;
+			}
+		}
+	pthread_mutex_unlock(&asignar_mutex);
 
 	return 0;
 }
@@ -901,6 +909,7 @@ void _wait_bloqueante(t_nombre_semaforo identificador_semaforo)
 	log_info(logger, "[PRIMITIVA_wait] wait bloqueante tira el comando: %s", mi_syscall);
 
 	salimosPorSyscallBloqueante = 1;
+	//debo_actualizar_manualmente_p_counter = 0;
 
 	return;
 }

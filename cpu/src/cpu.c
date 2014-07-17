@@ -140,12 +140,12 @@ int main(int argc, char *argv[])
 					debo_actualizar_manualmente_p_counter = 0;
 				}
 				
-				log_debug(logger, "[CPU] Finaliza QUANTUM");
 				if(salimosPorFin || salimosPorSyscallBloqueante || salimosPorError)
 					break;
 			}
 			
 			if(salimosPorSyscallBloqueante){
+				log_debug(logger, "[CPU] Finaliza QUANTUM por syscall bloqueante");
 				log_info(logger, "[CPU] El proceso con ID = %d quiere ejecutar una syscall (%s).", pcb.id, mi_syscall);
 
 				if(enviarPcbProcesado(socket_pcp, 'S', logger) > 0){
@@ -157,6 +157,7 @@ int main(int argc, char *argv[])
 				salimosPorSyscallBloqueante = 0;
 
 			} else if(salimosPorError) {
+				log_debug(logger, "[CPU] Finaliza QUANTUM por error en runtime");
 				salimosPorError = 0;
 
 				log_error(logger, "[CPU] La ejecución del proceso con ID = %d finalizó de forma anormal.", pcb.id);
@@ -169,6 +170,7 @@ int main(int argc, char *argv[])
 			} else {
 				
 				if(salimosPorFin){
+					log_debug(logger, "[CPU] Finaliza QUANTUM por haber llegado al fin del proceso.");
 					salimosPorFin = 0;
 					log_info(logger, "[CPU] Finalizó normalmente la ejecución del proceso con ID = %d.", pcb.id);
 					
