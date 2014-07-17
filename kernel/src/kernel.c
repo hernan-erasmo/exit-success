@@ -293,7 +293,7 @@ void cargarInfoCompartidas(t_list **listaCompartidas, t_config *config, t_log *l
 	for(i = 0; i < cantVariablesCompartidas; i++){
 		comp = malloc(sizeof(t_cola_io));
 		comp->nombre = variables_compartidas[i];
-		comp->valor = 98;
+		comp->valor = 0;
 
 		list_add(*listaCompartidas, comp);
 		
@@ -404,75 +404,83 @@ int syscall_entradaSalida(char *nombre_dispositivo, t_pcb *pcb_en_espera, uint32
 
 int syscall_obtenerValorCompartida(char *nombre_compartida, int socket_respuesta, t_log *logger)
 {
-	int i, tamanio_lista = list_size(listaCompartidas);
-	t_compartida *variable = NULL;
-	int encontrada = 0;
+	pthread_mutex_t obtener_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-	for(i = 0; i < tamanio_lista; i++){
-		variable = list_get(listaCompartidas, i);
+	pthread_mutex_lock(&obtener_mutex);
+		int i, tamanio_lista = list_size(listaCompartidas);
+		t_compartida *variable = NULL;
+		int encontrada = 0;
 
-		if(strcmp(variable->nombre,nombre_compartida) == 0){
-			encontrada = 1;
-			break;
+		for(i = 0; i < tamanio_lista; i++){
+			variable = list_get(listaCompartidas, i);
+
+			if(strcmp(variable->nombre,nombre_compartida) == 0){
+				encontrada = 1;
+				break;
+			}
 		}
-	}
 
-	if(!encontrada){
-		log_error(logger, "[SYS_obtenerValorCompartida] No se encontró la variable buscada.");
-		return -1;
-	}
+		if(!encontrada){
+			log_error(logger, "[SYS_obtenerValorCompartida] No se encontró la variable buscada.");
+			return -1;
+		}
 
-	char str_valor[10];
-	t_paquete_programa paq;
-		paq.id = 'K';
-		sprintf(str_valor, "%d", variable->valor);
-		paq.mensaje = str_valor;
-		paq.sizeMensaje = strlen(str_valor);
+		char str_valor[10];
+		t_paquete_programa paq;
+			paq.id = 'K';
+			sprintf(str_valor, "%d", variable->valor);
+			paq.mensaje = str_valor;
+			paq.sizeMensaje = strlen(str_valor);
 
-	char *paq_serializado = serializar_paquete(&paq, logger);
-	int bEnv = paq.tamanio_total;
-	if(sendAll(socket_respuesta, paq_serializado, &bEnv)){
-		log_error(logger, "[SYS_obtenerValorCompartida] Hubo un error al tratar de enviar la respuesta a la CPU");
-	}
+		char *paq_serializado = serializar_paquete(&paq, logger);
+		int bEnv = paq.tamanio_total;
+		if(sendAll(socket_respuesta, paq_serializado, &bEnv)){
+			log_error(logger, "[SYS_obtenerValorCompartida] Hubo un error al tratar de enviar la respuesta a la CPU");
+		}
 
+	pthread_mutex_unlock(&obtener_mutex);
 	return 0;
 }
 
 int syscall_asignarValorCompartida(char *nombre_compartida, int socket_respuesta, int nuevo_valor, t_log *logger)
 {
-	int i, tamanio_lista = list_size(listaCompartidas);
-	t_compartida *variable = NULL;
-	int encontrada = 0;
+	pthread_mutex_t asignar_mutex = PTHREAD_MUTEX_INITIALIZER;
+	
+	pthread_mutex_lock(&asignar_mutex);
+		int i, tamanio_lista = list_size(listaCompartidas);
+		t_compartida *variable = NULL;
+		int encontrada = 0;
 
-	for(i = 0; i < tamanio_lista; i++){
-		variable = list_get(listaCompartidas, i);
+		for(i = 0; i < tamanio_lista; i++){
+			variable = list_get(listaCompartidas, i);
 
-		if(strcmp(variable->nombre,nombre_compartida) == 0){
-			encontrada = 1;
-			break;
+			if(strcmp(variable->nombre,nombre_compartida) == 0){
+				encontrada = 1;
+				break;
+			}
 		}
-	}
 
-	if(!encontrada){
-		log_error(logger, "[SYS_asignarValorCompartida] No se encontró la variable buscada.");
-		return -1;
-	}
+		if(!encontrada){
+			log_error(logger, "[SYS_asignarValorCompartida] No se encontró la variable buscada.");
+			return -1;
+		}
 
-	variable->valor = nuevo_valor;
+		variable->valor = nuevo_valor;
 
-	char str_valor[10];
-	t_paquete_programa paq;
-		paq.id = 'K';
-		sprintf(str_valor, "%d", variable->valor);
-		paq.mensaje = str_valor;
-		paq.sizeMensaje = strlen(str_valor);
+		char str_valor[10];
+		t_paquete_programa paq;
+			paq.id = 'K';
+			sprintf(str_valor, "%d", variable->valor);
+			paq.mensaje = str_valor;
+			paq.sizeMensaje = strlen(str_valor);
 
-	char *paq_serializado = serializar_paquete(&paq, logger);
-	int bEnv = paq.tamanio_total;
-	if(sendAll(socket_respuesta, paq_serializado, &bEnv)){
-		log_error(logger, "[SYS_asignarValorCompartida] Hubo un error al tratar de enviar la respuesta a la CPU");
-	}
+		char *paq_serializado = serializar_paquete(&paq, logger);
+		int bEnv = paq.tamanio_total;
+		if(sendAll(socket_respuesta, paq_serializado, &bEnv)){
+			log_error(logger, "[SYS_asignarValorCompartida] Hubo un error al tratar de enviar la respuesta a la CPU");
+		}
 
+	pthread_mutex_unlock(&asignar_mutex);
 	return 0;
 }
 
@@ -483,6 +491,7 @@ int syscall_wait(char *nombre_semaforo, t_pcb *pcb_a_wait, int socket_respuesta,
 	int encontrado = 0;
 	t_semaforo_ansisop *sem_buscado = NULL;
 	int *valor_semaforo = NULL;
+	pthread_mutex_t modificar_semaforo = PTHREAD_MUTEX_INITIALIZER;
 
 	for(i = 0; i < cant_semaforos; i++){
 		sem_buscado = list_get(semaforos_ansisop, i);
@@ -499,31 +508,38 @@ int syscall_wait(char *nombre_semaforo, t_pcb *pcb_a_wait, int socket_respuesta,
 	}
 
 	if(pcb_a_wait == NULL){	//esto es una consulta para ver si bloquearía o no
-		if(*valor_semaforo > 0){
-			*valor_semaforo = *valor_semaforo - 1;
-			log_info(logger, "[SYS_wait] Respondo al PCB que siga operando, y mi valor ahora reducido es: %d", *valor_semaforo);
-			_responderWait(socket_respuesta, 1, logger);
-			return 1;
-		} else {
-			_responderWait(socket_respuesta, 0, logger);
-			log_info(logger, "[SYS_wait] Respondo al PCB que se va a bloquear, mi valor actual (sin reducir) es: %d", *valor_semaforo);
-			return 0;
-		}
+		pthread_mutex_lock(&modificar_semaforo);
+			if(*valor_semaforo > 0){
+				*valor_semaforo = *valor_semaforo - 1;
+				log_info(logger, "[SYS_wait] Respondo al PCB que siga operando, y mi valor ahora reducido es: %d", *valor_semaforo);
+				_responderWait(socket_respuesta, 1, logger);
+				pthread_mutex_unlock(&modificar_semaforo);
+				return 1;
+			} else {
+				_responderWait(socket_respuesta, 0, logger);
+				log_info(logger, "[SYS_wait] Respondo al PCB que se va a bloquear, mi valor actual (sin reducir) es: %d", *valor_semaforo);
+				pthread_mutex_unlock(&modificar_semaforo);
+				return 0;
+			}
+
 	} else {	// la cpu ya había preguntado, 
-		if(*valor_semaforo > 0){	// si pasa esto, es porque entre la consulta del proceso y el envío del pcb se liberó una instancia
-									// el famoso caso "Te comiste un desalojo al pedo"
-			*valor_semaforo = *valor_semaforo - 1;
-			list_add(sem_buscado->pcbs_en_wait, pcb_a_wait);
-			sem_post(sem_buscado->liberar);
-			log_info(logger, "[SYS_wait] Caso \"TCUDAP\".");
-			return 1;
-		} else {
-			*valor_semaforo = *valor_semaforo - 1;
-			list_add(sem_buscado->pcbs_en_wait, pcb_a_wait);
+		int size_cola_sem = 0;
+
+		pthread_mutex_lock(&modificar_semaforo);
+			size_cola_sem = list_size(sem_buscado->pcbs_en_wait);
+
+			list_add_in_index(sem_buscado->pcbs_en_wait,size_cola_sem,pcb_a_wait);	//agrego al proceso en el fondo de la cola de bloqueados
 			log_info(logger, "[SYS_wait] Voy a meter en la cola del semáforo \'%s\' al proceso con ID: %d.", sem_buscado->nombre, pcb_a_wait->id);
 			_mostrar_cola_semaforo(sem_buscado, logger);
-			return 1;
-		}
+
+			if(*valor_semaforo > 0){	// si pasa esto, es porque entre la consulta del proceso y el envío del pcb se liberó una instancia
+										// el famoso caso "Te comiste un desalojo al pedo"
+
+				sem_post(sem_buscado->liberar);
+				log_info(logger, "[SYS_wait] Caso \"TCUDAP\". Es como ver una estrella fugaz, o un hincha de Arsenal. ¡Pedí un deseo!");
+			}			
+		pthread_mutex_unlock(&modificar_semaforo);
+		return 1;
 	}
 
 	return 678;
@@ -568,7 +584,6 @@ int syscall_signal(char *nombre_semaforo, t_log *logger)
 	}
 
 	sem_post(sem_buscado->liberar);
-	//no incremento el valor, porque ya lo hace el hilo del semáforo. Creo.
 	return 1;
 }
 
