@@ -9,3 +9,8 @@ run-cpu:
 prod-cpu-prueba1:
 	./bin/cpu ./config_files/prueba1.config
 
+prod-cpu-prueba_io_plp:
+	./bin/cpu ./config_files/prueba_io_plp.config
+
+prod-cpu-prueba_umv:
+	./bin/cpu ./config_files/prueba_umv.config

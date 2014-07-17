@@ -8,3 +8,12 @@ run-kernel:
 
 prod-kernel:
 	./bin/kernel ./config_files/kernel.config
+
+prod-kernel-prueba1:
+	./bin/kernel ./config_files/prueba1.config
+
+prod-kernel-prueba_io_plp:
+	./bin/kernel ./config_files/prueba_io_plp.config
+
+prod-kernel-prueba_umv:
+	./bin/kernel ./config_files/prueba_umv.config
