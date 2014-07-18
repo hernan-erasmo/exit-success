@@ -181,12 +181,6 @@ int main(int argc, char *argv[])
 					}
 				} else {
 					log_info(logger, "[CPU] Finalizó el quantum. Enviando PCB al Kernel.");
-					
-					if(enviarPcbProcesado(socket_pcp, 'Q', logger) > 0){
-						log_error(logger, "[CPU] Error en la transmisión hacia el PCP. Motivo: %s", strerror(errno));
-						goto liberarRecursos;
-						return EXIT_FAILURE;
-					}
 
 					if(salimosPorSIGUSR1){
 						if(enviarPcbProcesado(socket_pcp, 'X', logger) > 0){
@@ -197,6 +191,12 @@ int main(int argc, char *argv[])
 
 						goto liberarRecursos;
 						return EXIT_SUCCESS;			
+					}
+					
+					if(enviarPcbProcesado(socket_pcp, 'Q', logger) > 0){
+						log_error(logger, "[CPU] Error en la transmisión hacia el PCP. Motivo: %s", strerror(errno));
+						goto liberarRecursos;
+						return EXIT_FAILURE;
 					}
 				}
 			}

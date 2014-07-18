@@ -45,12 +45,17 @@ void *pcp(void *datos_pcp)
 
 		log_info(logger, "[PCP] Estoy escuchando conexiones de CPUs en el puerto %s", puerto_escucha_cpu);
 
+		int valor_s_hay_cpus = 0;
+
 		log_info(logger, "[PCP] Estoy creando el semáforo para la cola de Ready");
 		if(sem_init(&s_ready_max, 0, multiprogramacion) || sem_init(&s_ready_nuevo, 0, 0) || sem_init(&s_hay_cpus, 0, 0)){
 			log_info(logger, "[PCP] No se pudo inicializar un semáforo.");
 			goto liberarRecursos;
 			pthread_exit(NULL);
 		}
+		
+		sem_getvalue(&s_hay_cpus, &valor_s_hay_cpus);
+		log_info(logger, "[PCP] El valor del semáforo de las cpus libres es %d", valor_s_hay_cpus);
 		log_info(logger, "[PCP] Se creó el semáforo para la cola de ready, con un valor de %d", multiprogramacion);
 
 		log_info(logger, "[PCP] Creando el hilo Dispatcher, que va a manejar las colas de ready, block y exec.");
@@ -116,6 +121,8 @@ void *pcp(void *datos_pcp)
 							case 'O':	//La cpu dice que está ociosa
 								; //¿Por qué un statement vacío? ver http://goo.gl/6SwXRB
 								
+								printf("La CPU con el socket %d se agrega a la cola de CPUs\n", sockActual);
+
 								head_cpu = malloc(sizeof(t_header_cpu));
 									head_cpu->socket = sockActual;
 									head_cpu->estado = mensaje_cpu.id;	//Me parece que es medio al pedo esto, pero bueno, seguime la corriente.
@@ -129,6 +136,8 @@ void *pcp(void *datos_pcp)
 
 								//Informo al thread que despacha que hay una cpu disponible
 								sem_post(&s_hay_cpus);
+								sem_getvalue(&s_hay_cpus, &valor_s_hay_cpus);
+								log_info(logger, "[PCP] El valor del semáforo de las cpus libres es %d", valor_s_hay_cpus);
 
 								break;
 							case 'S':	//La CPU quiere ejecutar una syscall
@@ -154,7 +163,7 @@ void *pcp(void *datos_pcp)
 										log_info(logger, "\tID:%d\n\tSocket:%d\n\tQuantum:%d\n\tPeso:%d\n\tSeg_cod:%d\n\tSeg_stack:%d\n\t...",pcb_modificado->id,pcb_modificado->socket,pcb_modificado->quantum,pcb_modificado->peso,pcb_modificado->seg_cod,pcb_modificado->seg_stack);	
 									
 										ejecutarSyscall(syscall_serializada,pcb_modificado,&status_op, &respuesta_op, sockActual, logger);
-
+										
 										if(status_op < 0){
 											log_error(logger, "[PCP] Hubo un error al ejecutar la syscall. Me lavo las manos olímpicamente, eh!");
 										}
@@ -214,8 +223,6 @@ void *pcp(void *datos_pcp)
 										tamanio_ready = list_size(cola_ready);
 										list_add_in_index(cola_ready, tamanio_ready, pcb_modificado);	//Lo mando al fondo de la cola, es Round-Robin.
 										sem_post(&s_ready_nuevo);
-										quitar_cpu(cpus_ociosas, sockActual);
-										//sem_wait(&s_hay_cpus);
 									pthread_mutex_unlock(&encolar);
 								
 								break;
@@ -240,6 +247,12 @@ void *pcp(void *datos_pcp)
 					} else {
 						log_info(logger, "[PCP] El socket %d cerró su conexión y ya no está en mi lista de sockets.", sockActual);
 						log_info(logger, "[PCP] Saco a la CPU con el socket %d de mi lista de CPUs.", sockActual);
+						quitar_cpu(cpus_ociosas, sockActual);
+						sem_getvalue(&s_hay_cpus, &valor_s_hay_cpus);
+						log_info(logger, "[PCP] El valor del semáforo de las cpus libres antes del trywait %d", valor_s_hay_cpus);
+						sem_trywait(&s_hay_cpus);
+						sem_getvalue(&s_hay_cpus, &valor_s_hay_cpus);
+						log_info(logger, "[PCP] El valor del semáforo de las cpus libres después del trywait %d", valor_s_hay_cpus);
 						close(sockActual);
 						FD_CLR(sockActual, &master);
 					}
