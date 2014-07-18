@@ -23,9 +23,9 @@ scp-all:
 	-cd .. && scp -rpC ./so-commons-library utnso@$(IP_VM3):/home/utnso/
 	-cd .. && scp -rpC ./ansisop-parser utnso@$(IP_VM3):/home/utnso/
 
-	-cd .. && scp -rpC ./repo utnso@$(IP_VM3):/home/utnso/
-	-cd .. && scp -rpC ./so-commons-library utnso@$(IP_VM3):/home/utnso/
-	-cd .. && scp -rpC ./ansisop-parser utnso@$(IP_VM3):/home/utnso/
+	-cd .. && scp -rpC ./repo utnso@$(IP_VM4):/home/utnso/
+	-cd .. && scp -rpC ./so-commons-library utnso@$(IP_VM4):/home/utnso/
+	-cd .. && scp -rpC ./ansisop-parser utnso@$(IP_VM4):/home/utnso/
 	
 repo-deploy-install:
 	-cd ./programa && $(MAKE) programa
