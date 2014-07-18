@@ -32,7 +32,7 @@ void *hilo_entrada_salida(void *config_hilo_io)
 			free(demora);
 
 		//Ya pasó el tiempo, entonces pongo el pcb nuevamente en ready.
-		log_info(logger, "[DISPOSITIVO-%s] Ya terminé de atender al proceso %d. Lo pongo en ready.", nombre_dispositivo, pcb_a_procesar->pcb_en_espera->id);
+		//log_info(logger, "[DISPOSITIVO-%s] Ya terminé de atender al proceso %d. Lo pongo en ready.", nombre_dispositivo, pcb_a_procesar->pcb_en_espera->id);
 		pthread_mutex_lock(&encolar);
 			posicion = list_size(cola_ready);
 			list_add_in_index(cola_ready,posicion,pcb_a_procesar->pcb_en_espera);	//lo mando al fondo, porque es round robin

@@ -16,7 +16,7 @@ void *hilo_semaforo(void *init_semaforo)
 	log_info(logger, "[SEMAFORO_ANSISOP-%s] Estoy listo. Mi valor inicial es: %d.", nombre_sem, *valor_sem);
 
 	while(1){
-		log_info(logger, "[SEMAFORO_ANSISOP-%s] Me bloqueo esperando liberar algún PCB.", nombre_sem);
+		//log_info(logger, "[SEMAFORO_ANSISOP-%s] Me bloqueo esperando liberar algún PCB.", nombre_sem);
 
 		if(*valor_sem < 0)
 			log_info(logger, "[SEMAFORO_ANSISOP-%s] En este momento hay %d en la cola.", nombre_sem, *valor_sem);

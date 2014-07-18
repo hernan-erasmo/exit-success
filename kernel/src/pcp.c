@@ -55,7 +55,7 @@ void *pcp(void *datos_pcp)
 		}
 		
 		sem_getvalue(&s_hay_cpus, &valor_s_hay_cpus);
-		log_info(logger, "[PCP] El valor del semáforo de las cpus libres es %d", valor_s_hay_cpus);
+		//log_info(logger, "[PCP] El valor del semáforo de las cpus libres es %d", valor_s_hay_cpus);
 		log_info(logger, "[PCP] Se creó el semáforo para la cola de ready, con un valor de %d", multiprogramacion);
 
 		log_info(logger, "[PCP] Creando el hilo Dispatcher, que va a manejar las colas de ready, block y exec.");
@@ -78,12 +78,12 @@ void *pcp(void *datos_pcp)
 	//Bucle principal del PCP
 	while(1){
 		read_fds = master;
-		log_info(logger, "[PCP] Estoy bloqueado en el select.");
+		//log_info(logger, "[PCP] Estoy bloqueado en el select.");
 		if(select(fdmax + 1, &read_fds, NULL, NULL, NULL) == -1){
 			log_error(logger, "[PCP] El select tiró un error, y la verdad que no sé que hacer. Sigo corriendo.");
 			continue;
 		}
-		log_info(logger, "[PCP] Me desbloqueé del select.");
+		//log_info(logger, "[PCP] Me desbloqueé del select.");
 		
 		//Recorro tooooodos los descriptores que tengo
 		for(sockActual = 0; sockActual <= fdmax; sockActual++){
@@ -92,7 +92,7 @@ void *pcp(void *datos_pcp)
 				
 				//...me están avisando que se quiere conectar una cpu que nunca se conectó todavía.
 				if(sockActual == listenningSocket){
-					log_info(logger, "[PCP] Conexion nueva");		
+					//log_info(logger, "[PCP] Conexion nueva");		
 
 					if((newfd = accept(listenningSocket, (struct sockaddr *) &addr, &addrlen)) != -1){
 						FD_SET(newfd, &master);
@@ -107,7 +107,7 @@ void *pcp(void *datos_pcp)
 
 				} else {	//Ya tengo a este socket en mi lista de conexiones
 
-					log_info(logger, "[PCP] Conexión vieja");
+					//log_info(logger, "[PCP] Conexión vieja");
 					
 					t_paquete_programa mensaje_cpu;
 					t_header_cpu *head_cpu;
@@ -121,7 +121,7 @@ void *pcp(void *datos_pcp)
 							case 'O':	//La cpu dice que está ociosa
 								; //¿Por qué un statement vacío? ver http://goo.gl/6SwXRB
 								
-								printf("La CPU con el socket %d se agrega a la cola de CPUs\n", sockActual);
+								log_info(logger, "La CPU con el socket %d se agrega a la lista de CPUs ociosas.", sockActual);
 
 								head_cpu = malloc(sizeof(t_header_cpu));
 									head_cpu->socket = sockActual;
@@ -129,7 +129,7 @@ void *pcp(void *datos_pcp)
 
 								//Agrego la cpu a la lista de ociosas
 								list_add(cpus_ociosas, head_cpu);
-								log_info(logger, "[PCP] Hay una CPU libre, su socket es: %d.", head_cpu->socket);
+								//log_info(logger, "[PCP] Hay una CPU libre, su socket es: %d.", head_cpu->socket);
 								log_info(logger, "[PCP] La lista de CPUs ociosas tiene un tamaño de %d", list_size(cpus_ociosas));
 
 								//mostrar_cola_ready(logger);
@@ -137,7 +137,7 @@ void *pcp(void *datos_pcp)
 								//Informo al thread que despacha que hay una cpu disponible
 								sem_post(&s_hay_cpus);
 								sem_getvalue(&s_hay_cpus, &valor_s_hay_cpus);
-								log_info(logger, "[PCP] El valor del semáforo de las cpus libres es %d", valor_s_hay_cpus);
+								//log_info(logger, "[PCP] El valor del semáforo de las cpus libres es %d", valor_s_hay_cpus);
 
 								break;
 							case 'S':	//La CPU quiere ejecutar una syscall
@@ -249,10 +249,10 @@ void *pcp(void *datos_pcp)
 						log_info(logger, "[PCP] Saco a la CPU con el socket %d de mi lista de CPUs.", sockActual);
 						quitar_cpu(cpus_ociosas, sockActual);
 						sem_getvalue(&s_hay_cpus, &valor_s_hay_cpus);
-						log_info(logger, "[PCP] El valor del semáforo de las cpus libres antes del trywait %d", valor_s_hay_cpus);
+						//log_info(logger, "[PCP] El valor del semáforo de las cpus libres antes del trywait %d", valor_s_hay_cpus);
 						sem_trywait(&s_hay_cpus);
 						sem_getvalue(&s_hay_cpus, &valor_s_hay_cpus);
-						log_info(logger, "[PCP] El valor del semáforo de las cpus libres después del trywait %d", valor_s_hay_cpus);
+						//log_info(logger, "[PCP] El valor del semáforo de las cpus libres después del trywait %d", valor_s_hay_cpus);
 						close(sockActual);
 						FD_CLR(sockActual, &master);
 					}

@@ -57,7 +57,7 @@ void *plp(void *datos_plp)
 			pthread_exit(NULL);
 		}
 		
-		log_info(logger, "[PLP] Intentando conectar con la UMV...");
+		//log_info(logger, "[PLP] Intentando conectar con la UMV...");
 		errorConexion = crear_conexion_saliente(&socket_umv, &dir_umv, ip_umv, puerto_umv, logger, "PLP");
 		if (errorConexion) {
 			log_error(logger, "[PLP] Error al intentar conectar con la UMV");
@@ -66,7 +66,7 @@ void *plp(void *datos_plp)
 		}
 		log_info(logger, "[PLP] Conexión establecida con la UMV!");
 
-		log_info(logger, "[PLP] Estoy creando el semáforo para la cola de Exit");
+		//log_info(logger, "[PLP] Estoy creando el semáforo para la cola de Exit");
 		if(sem_init(&s_exit, 0, 0)){
 			log_info(logger, "[PLP] No se pudo inicializar el semáforo para la cola Exit");
 			goto liberarRecursos;
@@ -74,7 +74,7 @@ void *plp(void *datos_plp)
 		}
 		log_info(logger, "[PLP] Se creó el semáforo para la cola de Exit.");
 
-		log_info(logger, "[PLP] Estoy creando el worker thread para eliminar elementos de Exit");
+		//log_info(logger, "[PLP] Estoy creando el worker thread para eliminar elementos de Exit");
 
 		t_worker_th *wt = malloc(sizeof(t_worker_th));
 			wt->logger = logger;
@@ -97,12 +97,12 @@ void *plp(void *datos_plp)
 	//bucle principal del PLP
 	while(1){
 		read_fds = master;
-		log_info(logger, "[PLP] Me bloqueé en select");
+		//log_info(logger, "[PLP] Me bloqueé en select");
 		if(select(fdmax + 1, &read_fds, NULL, NULL, NULL) == -1){
 			log_error(logger, "[PLP] El select tiró un error, y la verdad que no sé que hacer. Sigo corriendo.");
 			continue;
 		}
-		log_info(logger, "[PLP] Salí del bloqueo del select");
+		//log_info(logger, "[PLP] Salí del bloqueo del select");
 
 		//Recorro tooooodos los descriptores que tengo
 		for(sockActual = 0; sockActual <= fdmax; sockActual++){
@@ -111,7 +111,7 @@ void *plp(void *datos_plp)
 				
 				//...me están avisando que se quiere conectar un programa que nunca se conectó todavía.
 				if(sockActual == listenningSocket){
-					log_info(logger, "[PLP] Me desbloqueé del select por conexion nueva");		
+					//log_info(logger, "[PLP] Me desbloqueé del select por conexion nueva");		
 
 					if((newfd = accept(listenningSocket, (struct sockaddr *) &addr, &addrlen)) != -1){
 						FD_SET(newfd, &master);
@@ -126,7 +126,7 @@ void *plp(void *datos_plp)
 
 				} else {	//Ya tengo a este socket en mi lista de conexiones
 
-					log_info(logger, "[PLP] Me desbloqueé del select por conexion vieja");
+					//log_info(logger, "[PLP] Me desbloqueé del select por conexion vieja");
 					t_paquete_programa paquete;
 					inicializar_paquete(&paquete);
 
@@ -164,7 +164,7 @@ void *plp(void *datos_plp)
 											pthread_mutex_unlock(&encolar);
 										sem_post(&s_ready_nuevo);
 									} else {							//SI, entonces lo pongo en New
-										log_info(logger, "[PLP] Ready está al palo, entonces este PCB queda en New.");
+										log_info(logger, "[PLP] Ready está a full, entonces este PCB queda en New.");
 										pthread_mutex_lock(&encolar);
 											list_add(cola_new, pcb);
 											list_sort(cola_new, ordenar_por_peso);
@@ -191,7 +191,7 @@ void *plp(void *datos_plp)
 								log_info(logger, "[PLP] No es una conexión de un programa");
 						}
 					} else {
-						log_info(logger, "[PLP] El socket %d cerró su conexión y ya no está en mi lista de sockets.", sockActual);
+						//log_info(logger, "[PLP] El socket %d cerró su conexión y ya no está en mi lista de sockets.", sockActual);
 						close(sockActual);
 						FD_CLR(sockActual, &master);
 					}

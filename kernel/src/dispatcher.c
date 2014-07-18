@@ -23,7 +23,7 @@ void *dispatcher(void *init)
 			log_info(logger, "[DISPATCH] Bloqueado esperando alguna CPU ociosa");	
 			
 			sem_getvalue(&s_hay_cpus, &valor_s_hay_cpus);
-			log_info(logger, "[DISPATCH] El valor del semáforo de las cpus libres antes de hacerle un wait es %d", valor_s_hay_cpus);
+			//log_info(logger, "[DISPATCH] El valor del semáforo de las cpus libres antes de hacerle un wait es %d", valor_s_hay_cpus);
 			sem_wait(&s_hay_cpus);
 			log_info(logger, "[DISPATCH] Ya encontré una CPU ociosa.");
 

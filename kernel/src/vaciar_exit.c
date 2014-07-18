@@ -22,7 +22,7 @@ void *vaciar_exit(void *init)
 		
 			pthread_mutex_lock(&procesar_cola);
 				size = list_size(cola_exit);			
-				log_info(logger, "[WH_EXIT] Me desbloqueé. Agárrense, PCBs!. (tamaño de la cola exit = %d)", size);
+				//log_info(logger, "[WH_EXIT] Me desbloqueé. Agárrense, PCBs!. (tamaño de la cola exit = %d)", size);
 
 				//acá habría que llamar a la umv para destruir los segmentos
 				for(i = 0; i < size; i++){
