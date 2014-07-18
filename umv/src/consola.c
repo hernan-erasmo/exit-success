@@ -191,6 +191,9 @@ void comando_destruir_segmentos(t_list *listaSegmentos)
 
 void comando_dump_all(void *mem_ppal, uint32_t tamanio_mem_ppal)
 {
+	char *ruta_archivo = "./dump_memoria.txt";
+	FILE *archivo_output = fopen(ruta_archivo, "a+");
+
 	void *posicion = mem_ppal;
 	void *offset = mem_ppal - 1;
 	void *fin_memoria = mem_ppal + tamanio_mem_ppal - 1;
@@ -206,6 +209,7 @@ void comando_dump_all(void *mem_ppal, uint32_t tamanio_mem_ppal)
 
 		//Si no hago este fgetc() entonces se repite dos veces el prompt de UMV> cuando retorna al bucle principal.
 		fgetc(stdin);
+		fclose(archivo_output);
 		return;		
 	}
 
@@ -214,30 +218,42 @@ void comando_dump_all(void *mem_ppal, uint32_t tamanio_mem_ppal)
 
 		//Si no hago este fgetc() entonces se repite dos veces el prompt de UMV> cuando retorna al bucle principal.
 		fgetc(stdin);
+		fclose(archivo_output);
 		return;		
 	}
 
 	posicion = offset;
+
+	fprintf(archivo_output, "###\n### Comienzo dump\n###\n");
 
 	while(cant > 0){
 		bytesAImprimir = (cant < salto) ? cant : salto;
 		cant -= salto;
 
 		printf("\t%p\t", posicion);
-		imprimirArrayDeBytes(posicion, bytesAImprimir);
+		fprintf(archivo_output, "%p\t", posicion);
+
+		imprimirArrayDeBytes(posicion, bytesAImprimir, archivo_output);
 		printf("\t");
-		imprimirArrayDeChars(posicion, bytesAImprimir);
+		fprintf(archivo_output, "\t");
+		
+		imprimirArrayDeChars(posicion, bytesAImprimir, archivo_output);
 		printf("\n");
+		fprintf(archivo_output, "\n");
 
 		posicion += salto;
 		if(posicion > fin_memoria){
 			printf("\n\t\t ######## FIN DE LA MEMORIA RESERVADA ########\n");
+			fprintf(archivo_output,"\n\t\t ######## FIN DE LA MEMORIA RESERVADA ########\n");
 			break;
 		}
 	}
 
+	fprintf(archivo_output, "###\n### Fin dump\n###\n\n");
+
 	//Si no hago este fgetc() entonces se repite dos veces el prompt de UMV> cuando retorna al bucle principal.
 	fgetc(stdin);
+	fclose(archivo_output);
 	
 	return;
 }
@@ -357,7 +373,7 @@ t_list *buscarSegmentosConId(t_list *listaSegmentos, uint32_t id)
 	return seg;
 }
 
-void imprimirArrayDeBytes(void *offset, uint32_t cantidad)
+void imprimirArrayDeBytes(void *offset, uint32_t cantidad, FILE *archivo_out)
 {
 	int i;
 	unsigned char *c;
@@ -365,12 +381,15 @@ void imprimirArrayDeBytes(void *offset, uint32_t cantidad)
 	for(i = 0; i < cantidad; i++){
 		c = (char *) (offset + i);
 		printf("%02X ", *c);
+
+		if(archivo_out != NULL)
+			fprintf(archivo_out,"%02X ",*c);
 	}
 
 	return;
 }
 
-void imprimirArrayDeChars(void *offset, uint32_t cantidad)
+void imprimirArrayDeChars(void *offset, uint32_t cantidad, FILE *archivo_out)
 {
 	int i;
 	char *c;
@@ -378,10 +397,18 @@ void imprimirArrayDeChars(void *offset, uint32_t cantidad)
 	for(i = 0; i < cantidad; i++){
 		c = (char *) (offset + i);
 
-		if(*c > 32)
+		if(*c > 32){
 			printf("%c", *c);
-		else
+			
+			if(archivo_out != NULL)
+				fprintf(archivo_out,"%c",*c);
+
+		} else {
 			printf(".");
+			
+			if(archivo_out != NULL)
+				fprintf(archivo_out,".");
+		}
 	}
 
 	return;
