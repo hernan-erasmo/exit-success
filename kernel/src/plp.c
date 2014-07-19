@@ -179,8 +179,7 @@ void *plp(void *datos_plp)
 										pthread_mutex_unlock(&encolar);
 									}
 									
-									log_info(logger, "[PLP] Los siguientes procesos están en la cola New:");
-									list_iterate(cola_new, mostrar_datos_cola);
+									mostrar_datos_cola(cola_new, logger);
 								}
 								break;
 
@@ -405,10 +404,17 @@ bool ordenar_por_peso(void *a, void *b)
 	return (pcb_a->peso < pcb_b->peso);
 }
 
-void mostrar_datos_cola(void *item)
+void mostrar_datos_cola(t_list *colaNew, t_log *logger)
 {
-	t_pcb *pcb = (t_pcb *) item;
-	printf("ID del Programa: %d, Peso: %d\n", pcb->id, pcb->peso);
+	int i, sizeCola = list_size(colaNew);
+	t_pcb *pcbAMostrar = malloc(sizeof(t_pcb));
+
+	log_info(logger, "[COLA_NEW] Los siguientes procesos están en la cola New:");
+
+	for(i = 0; i < sizeCola; i++){
+		pcbAMostrar = list_get(cola_new, i);
+		log_info(logger, "\tID del Programa: %d, Peso: %d", pcbAMostrar->id, pcbAMostrar->peso);	
+	}
 
 	return;
 }

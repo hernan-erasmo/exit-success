@@ -43,6 +43,6 @@ int atender_solicitud_programa(int socket_umv, t_paquete_programa *paquete, t_pc
 
 void calcularPeso(t_pcb *pcb, t_metadata_program *metadatos);
 bool ordenar_por_peso(void *a, void *b);
-void mostrar_datos_cola(void *item);
+void mostrar_datos_cola(t_list *colaNew, t_log *logger);
 
 #endif /* PLP_H */
