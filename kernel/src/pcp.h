@@ -26,6 +26,4 @@ int extraerComandoYPcb(char *mensaje, char **syscall_serializada, char **pcb_ser
 void ejecutarSyscall(char *syscall_completa, t_pcb *pcb_a_atender, int *status_op, void **respuesta_op, int socket_respuesta, t_log *logger);
 void quitar_cpu(t_list *cpus_ociosas, int socket_buscado);
 
-void mostrar_cola_ready(t_log *logger);
-
 #endif /* PCP_H */

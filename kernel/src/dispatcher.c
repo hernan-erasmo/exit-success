@@ -3,7 +3,6 @@
 #include <commons/collections/list.h>
 
 #include "dispatcher.h"
-#include "kernel.h"
 
 #define SIZEOF_PCB_QUE_NO_ES_EL_MISMO_QUE_EL_DE_COMUNICACION_C 48
 
@@ -19,6 +18,8 @@ void *dispatcher(void *init)
 		log_info(logger, "[DISPATCH] Bloqueado esperando algún PCB que entre a Ready");
 		sem_wait(&s_ready_nuevo);
 		log_info(logger, "[DISPATCH] Entró un PCB a ready, ahora me falta encontrar una CPU donde mandarlo.");
+
+		mostrar_cola_ready(logger);
 			
 			log_info(logger, "[DISPATCH] Bloqueado esperando alguna CPU ociosa");	
 			
@@ -44,4 +45,23 @@ void *dispatcher(void *init)
 	}
 
 	pthread_exit(NULL);
+}
+
+void mostrar_cola_ready(t_log *logger)
+{
+	int i, cant_elementos = 0;
+	cant_elementos = list_size(cola_ready);
+	t_pcb *p = NULL;
+
+	pthread_mutex_t listarDeCorrido = PTHREAD_MUTEX_INITIALIZER;
+
+	pthread_mutex_lock(&listarDeCorrido);
+		log_info(logger, "[COLA_READY] La cola de ready tiene %d PCBs:", cant_elementos);
+		for(i = 0; i < cant_elementos; i++){
+			p = list_get(cola_ready, i);
+			log_info(logger, "\tID: %d, Peso: %d", p->id, p->peso);
+		}
+	pthread_mutex_unlock(&listarDeCorrido);
+
+	return;
 }

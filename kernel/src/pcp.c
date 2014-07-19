@@ -132,8 +132,6 @@ void *pcp(void *datos_pcp)
 								//log_info(logger, "[PCP] Hay una CPU libre, su socket es: %d.", head_cpu->socket);
 								log_info(logger, "[PCP] La lista de CPUs ociosas tiene un tamaño de %d", list_size(cpus_ociosas));
 
-								//mostrar_cola_ready(logger);
-
 								//Informo al thread que despacha que hay una cpu disponible
 								sem_post(&s_hay_cpus);
 								sem_getvalue(&s_hay_cpus, &valor_s_hay_cpus);
@@ -396,25 +394,6 @@ void ejecutarSyscall(char *syscall_completa, t_pcb *pcb_a_atender, int *status_o
 	//agregar acá nuevas syscalls
 
 	free(syscall_completa);
-	return;
-}
-
-void mostrar_cola_ready(t_log *logger)
-{
-	int i, cant_elementos = 0;
-	cant_elementos = list_size(cola_ready);
-	t_pcb *p = NULL;
-
-	pthread_mutex_t listarDeCorrido = PTHREAD_MUTEX_INITIALIZER;
-
-	pthread_mutex_lock(&listarDeCorrido);
-		log_info(logger, "[COLA_READY] La cola de ready tiene %d PCBs:", cant_elementos);
-		for(i = 0; i < cant_elementos; i++){
-			p = list_get(cola_ready, i);
-			log_info(logger, "\tID: %d, Peso: %d", p->id, p->peso);
-		}
-	pthread_mutex_unlock(&listarDeCorrido);
-
 	return;
 }
 
