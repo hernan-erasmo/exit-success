@@ -38,6 +38,7 @@ void comando_crear_segmento(t_list *listaSegmentos, void *mem_ppal, uint32_t tam
 void comando_destruir_segmentos(t_list *listaSegmentos);
 void comando_dump_all(void *mem_ppal, uint32_t tamanio_mem_ppal);
 void comando_dump_segmentos(t_list *listaSegmentos);
+void comando_enviar_bytes();
 void comando_info_memoria(void *mem_ppal, t_list *listaSegmentos, uint32_t tamanio_mem_ppal, char *algoritmo);
 void comando_matar_umv(pid_t pid, t_consola_init *c_init);
 void comando_retardo();

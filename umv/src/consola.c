@@ -55,8 +55,8 @@ void *consola(void *consola_init)
 			comando_dump_segmentos(listaSegmentos);
 		
 		} else if (strcmp(comando,"enviar-bytes") == 0) {
-			printf("UMV> Falta implementar el comando \"enviar-bytes\".\n");
-		
+			comando_enviar_bytes(listaSegmentos);
+					
 		} else if (strcmp(comando,"h") == 0) {
 			printf("UMV> Falta implementar la ayuda. Perdón :(\n");
 		
@@ -451,4 +451,34 @@ void comando_retardo()
 	fgetc(stdin);
 
 	return;
+}
+
+void comando_enviar_bytes(t_list *listaSegmentos)
+{
+	uint32_t base;
+	uint32_t offset;
+	uint32_t valor;
+	int resultado = 0;
+
+	printf("\tIngrese base, offset y valor (separados por un espacio): ");
+	scanf("%d %d %d", &base, &offset, &valor);
+
+	resultado = enviar_bytes(listaSegmentos, base, offset, 4, (void *) &valor);
+	if(resultado == -1){
+		printf("UMV> No hay ningún segmento con esa base.\n");
+		fgetc(stdin);
+		return;
+	} else if(resultado == -2) {
+		printf("UMV> Se quiso escribir por fuera de los límites del segmento\n");
+		fgetc(stdin);
+		return;
+	}
+
+	//printf("La base es: %d, el offset: %d y el valor %d\n", base, offset, valor);
+
+	//Si no hago este fgetc() entonces se repite dos veces el prompt de UMV> cuando retorna al bucle principal.
+	fgetc(stdin);
+
+	return;
+
 }
