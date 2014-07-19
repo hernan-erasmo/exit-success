@@ -135,7 +135,7 @@ int main(int argc, char *argv[])
 				analizadorLinea(proxima_instruccion, funciones_comunes, funciones_kernel);
 				
 				if(debo_actualizar_manualmente_p_counter){
-					log_info(logger, "[CPU] Incremento el program counter del proceso %d, antes valía %d, y ahora va a valer %d.", pcb.id, pcb.p_counter, (pcb.p_counter + 1));
+					//log_info(logger, "[CPU] Incremento el program counter del proceso %d, antes valía %d, y ahora va a valer %d.", pcb.id, pcb.p_counter, (pcb.p_counter + 1));
 					pcb.p_counter = pcb.p_counter + 1;
 					debo_actualizar_manualmente_p_counter = 0;
 				}
@@ -146,7 +146,7 @@ int main(int argc, char *argv[])
 			
 			if(salimosPorSyscallBloqueante){
 				log_debug(logger, "[CPU] Finaliza QUANTUM por syscall bloqueante");
-				log_info(logger, "[CPU] El proceso con ID = %d quiere ejecutar una syscall (%s).", pcb.id, mi_syscall);
+				//log_info(logger, "[CPU] El proceso con ID = %d quiere ejecutar una syscall (%s).", pcb.id, mi_syscall);
 
 				if(enviarPcbProcesado(socket_pcp, 'S', logger) > 0){
 					log_error(logger, "[CPU] Error en la transmisión hacia el PCP. Motivo: %s", strerror(errno));
@@ -172,7 +172,7 @@ int main(int argc, char *argv[])
 				if(salimosPorFin){
 					log_debug(logger, "[CPU] Finaliza QUANTUM por haber llegado al fin del proceso.");
 					salimosPorFin = 0;
-					log_info(logger, "[CPU] Finalizó normalmente la ejecución del proceso con ID = %d.", pcb.id);
+					//log_info(logger, "[CPU] Finalizó normalmente la ejecución del proceso con ID = %d.", pcb.id);
 					
 					if(enviarPcbProcesado(socket_pcp, 'F', logger) > 0){
 						log_error(logger, "[CPU] Error en la transmisión hacia el PCP. Motivo: %s", strerror(errno));
@@ -288,7 +288,7 @@ void generarDiccionarioVariables()
 
 	pthread_mutex_lock(&operar);
 		
-		log_info(logger, "[CPU] El tamaño del contexto actual es de: %d.", pcb.size_ctxt_actual);
+		//log_info(logger, "[CPU] El tamaño del contexto actual es de: %d.", pcb.size_ctxt_actual);
 		for(i = 0; i < pcb.size_ctxt_actual; i++){
 		
 			cursor = pcb.cursor_stack + i*5;
@@ -316,8 +316,8 @@ char *obtener_proxima_instruccion(int socket_umv, t_log *logger)
 	pthread_mutex_lock(&prox_instruccion);
 		offset_inst = (uint32_t *) solicitar_solicitar_bytes(socket_umv, pcb.seg_idx_cod, offset, 4, pcb.id, 'C', logger);
 		tamanio_inst = (uint32_t *) solicitar_solicitar_bytes(socket_umv, pcb.seg_idx_cod, offset + 4, 4, pcb.id, 'C', logger);
-		log_info(logger, "[CPU] El índice de código %d me manda a buscar la instrucción con offset %d:", pcb.seg_idx_cod, *offset_inst);
-		log_info(logger, "[CPU] La inst. a recuperar tiene un tamaño de %d bytes.", *tamanio_inst);
+		//log_info(logger, "[CPU] El índice de código %d me manda a buscar la instrucción con offset %d:", pcb.seg_idx_cod, *offset_inst);
+		//log_info(logger, "[CPU] La inst. a recuperar tiene un tamaño de %d bytes.", *tamanio_inst);
 		inst = (char *) solicitar_solicitar_bytes(socket_umv, pcb.seg_cod, *offset_inst, *tamanio_inst, pcb.id, 'C', logger);
 	pthread_mutex_unlock(&prox_instruccion);
 

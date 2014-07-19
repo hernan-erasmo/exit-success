@@ -37,7 +37,7 @@ t_puntero definirVariable(t_nombre_variable identificador_variable)
 			return 0;
 		} else {
 			dictionary_put(diccionario_variables, nom_var, puntero_al_valor);
-			log_info(logger, "[PRIMITIVA] _definirVariable agregó al diccionario (k=%c, v=%d)", *nom_var, *puntero_al_valor);
+			//log_info(logger, "[PRIMITIVA] _definirVariable agregó al diccionario (k=%c, v=%d)", *nom_var, *puntero_al_valor);
 			pcb.size_ctxt_actual = pcb.size_ctxt_actual + 1;
 		}
 	pthread_mutex_unlock(&operacion);
@@ -50,7 +50,7 @@ t_puntero obtenerPosicionVariable(t_nombre_variable identificador_variable)
 {
 	//t_puntero == u_int32_t
 	log_info(logger, "[PRIMITIVA] Estoy dentro de _obtenerPosicionVariable (identificador_variable = %c)", identificador_variable);
-	log_info(logger, "[PRIMITIVA] El tamaño del diccionario de variables es de: %d", dictionary_size(diccionario_variables));
+	//log_info(logger, "[PRIMITIVA] El tamaño del diccionario de variables es de: %d", dictionary_size(diccionario_variables));
 
 	t_puntero *posicion = malloc(sizeof(t_puntero));
 	t_nombre_variable *nom_var = malloc(sizeof(t_nombre_variable) + 1);
@@ -170,7 +170,7 @@ t_valor_variable obtenerValorCompartida(t_nombre_compartida variable)
 		/*
 		**	Ahora espero la respuesta del Kernel
 		*/
-		log_info(logger, "[PRIMITIVA_obtenerValorCompartida] Estoy esperando el valor de \'%s\'", variable);
+		//log_info(logger, "[PRIMITIVA_obtenerValorCompartida] Estoy esperando el valor de \'%s\'", variable);
 		int status = 0;
 		t_paquete_programa respuesta;
 		while(1)
@@ -243,7 +243,7 @@ t_valor_variable asignarValorCompartida(t_nombre_compartida variable, t_valor_va
 		/*
 		**	Ahora espero la respuesta del Kernel
 		*/
-		log_info(logger, "[PRIMITIVA_asignarValorCompartida] Estoy esperando el nuevo valor de \'%s\'", variable);
+		//log_info(logger, "[PRIMITIVA_asignarValorCompartida] Estoy esperando el nuevo valor de \'%s\'", variable);
 		int status = 0;
 		t_paquete_programa respuesta;
 		while(1)
@@ -285,10 +285,10 @@ void irAlLabel(t_nombre_etiqueta nombre_etiqueta)
 	}
 
 	//actualizamos el program counter
-	log_info(logger, "[PRIMITIVA_irAlLabel] Antes de actualizarse por salto, el program counter del proceso %d es %d.", pcb.id, pcb.p_counter);
+	//log_info(logger, "[PRIMITIVA_irAlLabel] Antes de actualizarse por salto, el program counter del proceso %d es %d.", pcb.id, pcb.p_counter);
 	pcb.p_counter = metadata_buscar_etiqueta(nombre_etiqueta,etiquetas_serializado,pcb.size_idx_etq);
 	debo_actualizar_manualmente_p_counter = 0;
-	log_info(logger, "[PRIMITIVA_irAlLabel] Despues de actualizarse por salto, el program counter del proceso %d es %d.", pcb.id, pcb.p_counter);
+	//log_info(logger, "[PRIMITIVA_irAlLabel] Despues de actualizarse por salto, el program counter del proceso %d es %d.", pcb.id, pcb.p_counter);
 
 	return;
 }
@@ -300,7 +300,7 @@ void llamarSinRetorno(t_nombre_etiqueta etiqueta)
 	uint32_t nuevoCursorStack = pcb.cursor_stack + pcb.size_ctxt_actual * 5;
 	int respuesta = 0;
 
-	log_info(logger, "[PRIMITIVA] _llamarSinRetorno, el nuevo cursor de stack apunta a: %d", nuevoCursorStack);
+	//log_info(logger, "[PRIMITIVA] _llamarSinRetorno, el nuevo cursor de stack apunta a: %d", nuevoCursorStack);
 	if((respuesta = _pushSinRetorno(nuevoCursorStack, pcb.cursor_stack, nuevoProgramCounter)) < 0){
 		if(respuesta == -1){
 			log_error(logger, "[CPU] No se encontró el segmento de stack. Muy bizarro. No sigo ni ahí. Olvidate.");	
@@ -331,7 +331,7 @@ void llamarConRetorno(t_nombre_etiqueta etiqueta, t_puntero donde_retornar)
 	uint32_t nuevoCursorStack = pcb.cursor_stack + pcb.size_ctxt_actual * 5;
 	int respuesta = 0;
 
-	log_info(logger, "[PRIMITIVA] _llamarConRetorno, el nuevo cursor de stack apunta a: %d", nuevoCursorStack);
+	//log_info(logger, "[PRIMITIVA] _llamarConRetorno, el nuevo cursor de stack apunta a: %d", nuevoCursorStack);
 	if((respuesta = _pushConRetorno(nuevoCursorStack, pcb.cursor_stack, nuevoProgramCounter, donde_retornar)) < 0){
 		if(respuesta == -1){
 			log_error(logger, "[CPU] No se encontró el segmento de stack. Muy bizarro. No sigo ni ahí. Olvidate.");	
@@ -548,7 +548,7 @@ void entradaSalida(t_nombre_dispositivo dispositivo, int tiempo)
 		memcpy(comando + offset, "|", 1);
 
 		mi_syscall = comando;
-		log_info(logger, "[PRIMITIVA] entradaSalida tira el comando: %s", mi_syscall);
+		//log_info(logger, "[PRIMITIVA] entradaSalida tira el comando: %s", mi_syscall);
 
 	pthread_mutex_unlock(&operacion);
 
@@ -604,7 +604,7 @@ void wait(t_nombre_semaforo identificador_semaforo)
 	/*
 	**	Ahora espero la respuesta del Kernel
 	*/
-	log_info(logger, "[PRIMITIVA_wait?] Estoy esperando la respuesta para ver si me bloqueo o no.");
+	//log_info(logger, "[PRIMITIVA_wait?] Estoy esperando la respuesta para ver si me bloqueo o no.");
 	int status = 0;
 	t_paquete_programa respuesta;
 	while(1)
@@ -686,7 +686,7 @@ int _pushConRetorno(int puntero_cursor_aux, int cursor_viejo, int program_counte
 	pthread_mutex_t operacion = PTHREAD_MUTEX_INITIALIZER;
 
 	pthread_mutex_lock(&operacion);
-		log_info(logger, "[PRIMITIVA_aux] _pushConRetorno apila el cursor de contexto viejo: %d", cursor_viejo);
+		//log_info(logger, "[PRIMITIVA_aux] _pushConRetorno apila el cursor de contexto viejo: %d", cursor_viejo);
 		respuesta = solicitar_enviar_bytes(socket_umv, pcb.seg_stack, puntero_cursor_aux, 4, (void *) &cursor_viejo, pcb.id, 'C', logger);
 		if(respuesta == -1){
 			log_error(logger, "[CPU] Segmentation fault. La UMV dice que este proceso no tiene ningún segmento con base %d.", pcb.seg_stack);
@@ -698,7 +698,7 @@ int _pushConRetorno(int puntero_cursor_aux, int cursor_viejo, int program_counte
 			return -2;
 		}
 
-		log_info(logger, "[PRIMITIVA_aux] _pushConRetorno apila el program counter viejo: %d", program_counter_viejo);
+		//log_info(logger, "[PRIMITIVA_aux] _pushConRetorno apila el program counter viejo: %d", program_counter_viejo);
 		respuesta = solicitar_enviar_bytes(socket_umv, pcb.seg_stack, puntero_cursor_aux + 4, 4, (void *) &program_counter_viejo, pcb.id, 'C', logger);
 		if(respuesta == -1){
 			log_error(logger, "[CPU] Segmentation fault. La UMV dice que este proceso no tiene ningún segmento con base %d.", pcb.seg_stack);
@@ -710,7 +710,7 @@ int _pushConRetorno(int puntero_cursor_aux, int cursor_viejo, int program_counte
 			return -2;
 		}
 
-		log_info(logger, "[PRIMITIVA_aux] _pushConRetorno apila la dirección donde retornar el valor: %d", donde_retornar);
+		//log_info(logger, "[PRIMITIVA_aux] _pushConRetorno apila la dirección donde retornar el valor: %d", donde_retornar);
 		respuesta = solicitar_enviar_bytes(socket_umv, pcb.seg_stack, puntero_cursor_aux + 8, 4, (void *) &donde_retornar, pcb.id, 'C', logger);
 		if(respuesta == -1){
 			log_error(logger, "[CPU] Segmentation fault. La UMV dice que este proceso no tiene ningún segmento con base %d.", pcb.seg_stack);
@@ -733,7 +733,7 @@ int _pushSinRetorno(int puntero_cursor_aux, int cursor_viejo, int program_counte
 	pthread_mutex_t operacion = PTHREAD_MUTEX_INITIALIZER;
 
 	pthread_mutex_lock(&operacion);
-		log_info(logger, "[PRIMITIVA_aux] _pushSinRetorno apila el cursor de contexto viejo: %d", cursor_viejo);
+		//log_info(logger, "[PRIMITIVA_aux] _pushSinRetorno apila el cursor de contexto viejo: %d", cursor_viejo);
 		respuesta = solicitar_enviar_bytes(socket_umv, pcb.seg_stack, puntero_cursor_aux, 4, (void *) &cursor_viejo, pcb.id, 'C', logger);
 		if(respuesta == -1){
 			log_error(logger, "[CPU] Segmentation fault. La UMV dice que este proceso no tiene ningún segmento con base %d.", pcb.seg_stack);
@@ -745,7 +745,7 @@ int _pushSinRetorno(int puntero_cursor_aux, int cursor_viejo, int program_counte
 			return -2;
 		}
 
-		log_info(logger, "[PRIMITIVA_aux] _pushSinRetorno apila el program counter viejo: %d", program_counter_viejo);
+		//log_info(logger, "[PRIMITIVA_aux] _pushSinRetorno apila el program counter viejo: %d", program_counter_viejo);
 		respuesta = solicitar_enviar_bytes(socket_umv, pcb.seg_stack, puntero_cursor_aux + 4, 4, (void *) &program_counter_viejo, pcb.id, 'C', logger);
 		if(respuesta == -1){
 			log_error(logger, "[CPU] Segmentation fault. La UMV dice que este proceso no tiene ningún segmento con base %d.", pcb.seg_stack);
@@ -796,10 +796,10 @@ int _popConRetorno()
 			log_error(logger, "[CPU] Se quiso leer por fuera de los límites del segmento con base %d, offset %d y tamaño de lectura %d", pcb.seg_stack, off_p_counter_anterior, 4);
 			return -1;
 		} else {
-			log_info(logger, "[PRIMITIVA_aux] _popConRetorno: El program counter del proceso %d valía %d y lo voy a actualizar.", pcb.id, pcb.p_counter);
+			//log_info(logger, "[PRIMITIVA_aux] _popConRetorno: El program counter del proceso %d valía %d y lo voy a actualizar.", pcb.id, pcb.p_counter);
 			pcb.p_counter = *ret;
 			debo_actualizar_manualmente_p_counter = 0;
-			log_info(logger, "[PRIMITIVA_aux] _popConRetorno: El program counter del proceso %d ahora vale %d.", pcb.id, pcb.p_counter);
+			//log_info(logger, "[PRIMITIVA_aux] _popConRetorno: El program counter del proceso %d ahora vale %d.", pcb.id, pcb.p_counter);
 		}
 
 		//Recupero el valor del puntero al comienzo del contexto
@@ -847,10 +847,10 @@ int _popSinRetorno()
 			log_error(logger, "[CPU] Se quiso leer por fuera de los límites del segmento con base %d, offset %d y tamaño de lectura %d", pcb.seg_stack, off_p_counter_anterior, 4);
 			return -1;
 		} else {
-			log_info(logger, "[PRIMITIVA_aux] _popSinRetorno: El program counter del proceso %d valía %d y lo voy a actualizar.", pcb.id, pcb.p_counter);
+			//log_info(logger, "[PRIMITIVA_aux] _popSinRetorno: El program counter del proceso %d valía %d y lo voy a actualizar.", pcb.id, pcb.p_counter);
 			pcb.p_counter = *ret;
 			debo_actualizar_manualmente_p_counter = 0;
-			log_info(logger, "[PRIMITIVA_aux] _popSinRetorno: El program counter del proceso %d ahora vale %d.", pcb.id, pcb.p_counter);
+			//log_info(logger, "[PRIMITIVA_aux] _popSinRetorno: El program counter del proceso %d ahora vale %d.", pcb.id, pcb.p_counter);
 		}
 
 		//Recupero el valor del puntero al comienzo del contexto
@@ -862,7 +862,7 @@ int _popSinRetorno()
 			log_error(logger, "[CPU] Se quiso leer por fuera de los límites del segmento con base %d, offset %d y tamaño de lectura %d", pcb.seg_stack, off_cursor_stack_anterior, 4);
 			return -1;
 		} else {
-			log_info(logger, "[PRIMITIVA_aux] _popSinRetorno, cursor al comienzo del contexto apunta al offset: %d", pcb.cursor_stack);
+			//log_info(logger, "[PRIMITIVA_aux] _popSinRetorno, cursor al comienzo del contexto apunta al offset: %d", pcb.cursor_stack);
 			pcb.cursor_stack = *ret;
 		}
 
@@ -906,7 +906,7 @@ void _wait_bloqueante(t_nombre_semaforo identificador_semaforo)
 	memcpy(comando + offset, "|", 1);
 
 	mi_syscall = comando;
-	log_info(logger, "[PRIMITIVA_wait] wait bloqueante tira el comando: %s", mi_syscall);
+	//log_info(logger, "[PRIMITIVA_wait] wait bloqueante tira el comando: %s", mi_syscall);
 
 	salimosPorSyscallBloqueante = 1;
 	//debo_actualizar_manualmente_p_counter = 0;
